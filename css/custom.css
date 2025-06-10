@@ -54,8 +54,75 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-block;
 }
 
+/* Project filters */
+.project-filters {
+    margin: 0 0 30px 0; /* Less margin on top for desktop */
+    text-align: center;
+    display: block; /* Show on all screen sizes */
+}
+
+/* Left-justified filters on index page (desktop only) */
+.index-filters {
+    text-align: left;
+}
+
+/* Center filters on index page for mobile */
+@media only screen and (max-width: 767px) {
+    .index-filters {
+        text-align: center;
+    }
+}
+
+.filter-btn {
+    display: inline-block;
+    margin: 5px 5px;
+    padding: 8px 16px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    background-color: #e9e9e9;
+}
+
+.filter-btn.active {
+    background-color: #A51C30;
+    color: white;
+    border-color: #A51C30;
+}
+
+/* Project grid spacing */
+.grid {
+    margin-bottom: 40px;
+}
+
+.grid-item {
+    margin-bottom: 25px !important;
+}
+
 /* Mobile-specific styles */
 @media only screen and (max-width: 767px) {
+    /* Make project header shorter on mobile */
+    .hero.gray {
+        min-height: 150px;
+        padding: 30px 0;
+    }
+    
+    .hero.gray h1 {
+        margin-bottom: 10px;
+        font-size: 32px;
+    }
+    
+    .hero.gray p {
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
     .hero .content {
         padding-left: 20px; /* Add left padding on mobile */
         margin-left: 0; /* Reset any negative margins on mobile */
