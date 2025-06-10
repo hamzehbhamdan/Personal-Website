@@ -35,8 +35,21 @@
     width: 100%;
     max-width: 800px;
     padding: 50px 40px 0px 0px; /* Top, Right, Bottom, Left padding */
-    margin: 0 0 0 -45px; /* Top, Right, Bottom, Left margin - added -20px left margin */
+    margin: 0 0 0 -45px; /* Restore original desktop positioning */
     z-index: 2;
+}
+
+/* Increase max-width for homepage hero content */
+.hero.fs .content {
+    max-width:850px;
+}
+
+/* Apply 5% padding on mobile, tablet, and small laptops */
+@media only screen and (max-width: 1500px) {
+    .hero .content {
+        padding: 50px 40px 0px 5%; /* Ensure min 5% from left on smaller screens */
+        margin: 0; /* Remove negative margin on smaller screens */
+    }
 }
 
 /* Make all headings black */
