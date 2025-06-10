@@ -14,6 +14,7 @@
     <link rel="stylesheet" type="text/css" href="css/core.css">
     <link rel="stylesheet" type="text/css" href="css/base.css">
     <link rel="stylesheet" type="text/css" href="css/custom.css">
+    <link rel="stylesheet" type="text/css" href="css/project-override.css">
     <link rel="icon" type="image/png" href="favicon.png?v=2">
     <script src="js/assets/jquery.js"></script>
   </head>
@@ -24,8 +25,6 @@
       <ul class="nav">
         <li><a href="index.html">Home </a></li>
         <li><a href="pages/projects.html">Projects </a></li>
-        <li><a href="pages/blog.html">Blog</a></li>
-        <li><a href="pages/photography.html">Photography </a></li>
       </ul>
       <div class="exit"></div>
     </div>
@@ -34,7 +33,7 @@
       <!-- Header-->
       <header>
         <div class="container">
-          <!-- Menu-->li
+          <!-- Menu-->
           <div class="menu"></div>
         </div>
       </header>
@@ -50,7 +49,7 @@
                 <!-- Content-->
                 <div class="content nonselectable" style="width:50%; color:white;">
                   <h1 class="heading-title"><b>Hamzeh<br>Hamdan</b></h1>
-                  <h4>I am a student at Harvard College studying Applied Math with a focus in Economics and Computer Science.</h4>
+                  <h4>I am a Harvard graduate building things with AI.</h4>
                   <a href="https://www.linkedin.com/in/hamzeh-hamdan/" download="Hamzeh_Hamdan_Resume" class="btn btn-hollow btn-header" style="color: white; border-color: white;">LINKEDIN</a></span>
                   <a href="files/resume.pdf" download="Hamzeh_Hamdan_Resume" class="btn btn-hollow btn-header" style="color: white; border-color: white;">DOWNLOAD CV</a></span>
                 </div>
@@ -66,46 +65,179 @@
               <div class="title-block">
                 <h3>About Me</h3>
               </div>
-              <p>Hi! I’m Hamzeh, a student at Harvard College studying Applied Mathematics with a focus in Economics and am a concurrent masters candidate in Computational Science and Engineering.
-                <br><br>My academic passions lie in the intersections between mathematics, economics, and computer science. Through my work, I try to understand and model why we do the things we do and how we can do them better - from computational economic modeling to quantitative statistical analyses.
-                <br><br>Throughout my past semesters at Harvard, I’ve helped plan an international conference, consulted for several Fortune 50 companies, led a team of 35 students to source $565k in consulting cases for Harvard Undergraduate Consulting on Business and the Environment, conducted research with Harvard Undergraduate Foreign Policy Initiative for NATO, and am currently in the process of learning different forms of data analyses.
-                <br><br>One thing I’ve noticed at Harvard is that, for many, there is a large barrier to acquiring knowledge. To some, it is monetary, and to others, it is complexity. As part of my passion for education, I am working on an ongoing project on making knowledge more accessible; for now, this will include: college applications, computer science, game theory, and microeconomic modeling.</p>
+              <p>Hi, I’m Hamzeh! I recently graduated with honors from Harvard University, where I studied Computer Science and Statistics. My passion lies at the intersection of data science and artificial intelligence, where I strive to build impactful solutions that address real-world challenges.
+                <br><br>I develop software applications that leverage artificial intelligence to solve complex problems, aiming to create tools that are both innovative and practical. I also engage in data-driven research projects that uncover insights into pressing issues.
+                <br><br>Through this website, I aim to share my projects, insights, and the journey of applying AI and data science to make a meaningful difference.
+              </p>
             </div>
           </div>
         </div>
       </section>
-      <section class="top-line content gray nonselectable">
-        <div class="container content text-center">
+
+      <section id="education">
+        <div class="container content">
           <div class="row">
-            <div class="col-md-3 service">
-              <div class="icon ion-ios-book item"></div>
-              <h4>Academic Studies</h4>
-            </div>
-            <div class="col-md-3 service">
-              <div class="icon ion-earth item"></div>
-              <h4>Extra Curriculars</h4>
-            </div>
-            <div class="col-md-3 service">
-              <div class="icon ion-monitor item"></div>
-              <h4>Projects</h4>
-            </div>
-            <div class="col-md-3 service">
-              <div class="icon ion-camera item"></div>
-              <h4>Photography</h4>
+            <div class="col-md-8 col-md-offset-2 nonselectable">
+              <div class="title-block">
+                <br>
+                <h3>Education</h3>
+              </div>
+              <p>
+                <strong>Degree:</strong> Harvard University, A.B. in Computer Science and Statistics (Honors), Minor in Mathematics<br>
+                <strong>Graduation Date:</strong> May 2025<br><br>
+                <strong>Thesis Title:</strong> Cross-Market Signals: Economic Spillovers Across Markets<br>
+                <strong>Thesis Description:</strong> This thesis investigates the interconnectedness of the U.S. and Chinese stock markets, analyzing how macroeconomic factors from one country affect the equity returns of the other. Using statistical and machine learning models on the Jensen, Kelly, and Pedersen Global Factors dataset, the study finds strong spillover effects from the U.S. to China, but minimal effects in the reverse direction.<br>
+                <a href="files/Senior_Thesis.pdf" class="btn btn-hollow btn-header" target="_blank">View Thesis</a>
+              </p>
+              <div class="courses-section">
+                <div class="courses-tabs">
+                  <strong>Relevant Courses:</strong>
+                  <div class="tabs-header">
+                    <button class="tab-btn active" data-tab="math">Mathematics</button>
+                    <button class="tab-btn" data-tab="cs">Computer Science</button>
+                    <button class="tab-btn" data-tab="stats">Statistics</button>
+                  </div>
+                  <div class="tab-content active" id="math-tab">
+                    <ul>
+                      <li>Graph Theory (AM 107)</li>
+                      <li>Complex and Fourier Analysis (AM 104)</li>
+                      <li>Mathematical Modeling (AM 115)</li>
+                      <li>Game Theory (EC 1057)</li>
+                    </ul>
+                  </div>
+                  <div class="tab-content" id="cs-tab">
+                    <ul>
+                      <li>Systems Development (AC 207)</li>
+                      <li>Systems Programming and Machine Organization (CS 61)</li>
+                      <li>Algorithms (CS 120)</li>
+                      <li>Software Engineering with Generative AI (CS 106)</li>
+                      <li>Big Data (EC 50)</li>
+                    </ul>
+                  </div>
+                  <div class="tab-content" id="stats-tab">
+                    <ul>
+                      <li>Probability (STAT 110)</li>
+                      <li>Data Science (AC 209A, STAT 109B)</li>
+                      <li>Statistical Inference (STAT 111)</li>
+                      <li>Linear Models (STAT 139)</li>
+                      <li>Sports Analytics (STAT 106)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="extracurriculars-section" style="margin-top: 20px;">
+                <strong>Academic Activities & Extracurriculars:</strong><br>
+                <div class="activities-grid">
+                  <div class="activity-card consulting-card">
+                    <h4>Board Member</h4>
+                    <p class="activity-subtitle" style="margin-bottom: 10px;">Consulting on Business and the Environment</p>
+                    <ul class="activity-details">
+                      <li>Overlooked sourcing of over $550k in 4 weeks, a 37% increase from our previous record cycle; trained Managing Directors and their sourcing teams on email scraping and sending, sales calls, and writing project briefs and SOWs.</li>
+                      <li>Organized several analyst trainings in which I taught them how to properly use business and industry analysis models, including Porter's Five Forces and SWOT analyses, as well as creating MECE recommendations.</li>
+                      <li>Led several cases across the pharmaceutical and fintech industries, working on risk assessments, market analyses of new technologies, and market-entry strategies.</li>
+                    </ul>
+                  </div>
+                  
+                  <div class="right-column">
+                    <div class="activity-card">
+                      <h4>Project Lead</h4>
+                      <p class="activity-subtitle" style="margin-bottom: 10px;">Machine Intelligence Community</p>
+                      <ul class="activity-details">
+                        <li>Co-led the development of VertiasGPT, an LLM application that navigates Harvard course, dining hall, transportation, and academic calendar data.</li>
+                        <li>The application uses an AgentGPT architecture for live data and RAG for static data.</li>
+                      </ul>
+                    </div>
+                    
+                    <div class="activity-card">
+                      <h4>Researcher</h4>
+                      <p class="activity-subtitle" style="margin-bottom: 10px;">Undergraduate Foreign Policy Initiative</p>
+                      <ul class="activity-details">
+                        <li>Researched emerging and disruptive technologies, with a focus in applications of AI and quantum computing on climate change and energy, and developed investment recommendations for NATO.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+
       <section>
         <div class="container">
           <div class="intro">
-            <h3>Recent Work</h3>
+            <h3>Projects</h3>
             <p>All cover artwork is generated using Dall-E.</p>
           </div>
           <!-- Portfolio grid-->
           <div class="grid">
             <!-- Portfolio item-->
-            <div class="grid-sizer"></div><a href="pages/projects/firm.html" class="grid-item tall">
+            <div class="grid-sizer"></div>
+            <!-- Portfolio item--><a href="pages/projects/opportunity.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/opportunityatlas.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Public Policy</div>
+                <div class="description">
+                  <h4>Redesigning Opportunity</h4>
+                  <p>Based on Raj Chetty's Opportunity Atlas, this tool helps parents assess demographics and opportunities in their zipcodes, exploring local community and school options.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/crypto.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/crypto.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Financial Analysis</div>
+                <div class="description">
+                  <h4>Advanced Cryptocurrency Time Series Analysis</h4>
+                  <p>Comprehensive analysis of BTC and ETH price movements using time series analysis, machine learning models, and deep learning architectures.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/financialindicators.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/financialindicators.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Financial Modeling</div>
+                <div class="description">
+                  <h4>Predicting Stock Price Variation</h4>
+                  <p>Analysis of stock price movements using financial and economic indicators with statistical learning and machine learning techniques.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/bettingbaseball.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/baseballbetting.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Data Science</div>
+                <div class="description">
+                  <h4>Baseball Analytics: Creating a Betting Edge</h4>
+                  <p>Analysis of baseball metrics to understand and predict team performance, providing insights for team management and betting strategies.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/NFL.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/NFL.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Game Theory</div>
+                <div class="description">
+                  <h4>Analysis of NFL Two-Point Conversions</h4>
+                  <p>Modeling when coaches should go for two-point attempts versus extra points based on game situations and analytics.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/baseballmontecarlo.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/baseballmontecarlo.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Simulation</div>
+                <div class="description">
+                  <h4>Modeling Baseball Games with Monte Carlo</h4>
+                  <p>Estimating player value and team performance using Monte Carlo simulations with high school baseball statistics.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/10k.html" class="grid-item tall">
+              <div style="background-image: url(images/projects/10k.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / NLP</div>
+                <div class="description">
+                  <h4>Analyzing Similarity of Companies Using 10-K Filings</h4>
+                  <p>Provides methods for assessing company similarity using specified sub-sections of 10-K filings. Uses cosine similarity of BERT embeddings for similarity.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="pages/projects/firm.html" class="grid-item tall">
               <div style="background-image: url(images/projects/gametheory.png)" class="thumb"></div>
               <div class="caption">
                 <div class="type">Game Theory x Microeconomic Modelling</div>
@@ -129,7 +261,7 @@
                 <div class="type">Big Data</div>
                 <div class="description">
                   <h4>Exploring Racial Inequality in El Paso: A Big Data Approach</h4>
-                  <p>A tract-level correlational analysis of economic growth factors, such as education and employment rate, on group income at the 25th percentile, separated by gender and race.</p>
+                  <p>A tract-level correlational analysis of economic growth factors, such as education and employment rate, on income, separated by gender and race.</p>
                 </div>
               </div></a>
             <!-- Portfolio item--><a href="pages/projects/graphics.html" class="grid-item tall">
@@ -138,7 +270,7 @@
                 <div class="type">Linear Algebra</div>
                 <div class="description">
                   <h4>Computer Graphics</h4>
-                  <p>An explanation of the basics of computer graphics. Includes discussions on transformations in 2D and 3D space, quaternions, perspective projections, and shadow mapping.</p>
+                  <p>An explanation of basic computer graphics. Includes discussions on transformations in 2D and 3D space, quaternions, perspective projections, and shadow mapping.</p>
                 </div>
               </div></a>
             <!--
@@ -188,5 +320,26 @@
     <script src="modules/tera-lightbox/tera-lightbox.js"></script>
     <script src="js/assets/animsition.js"></script>
     <script src="js/functions.js"></script>
+    <script>
+      // Tab functionality for courses
+      document.addEventListener('DOMContentLoaded', function() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        
+        tabBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+            // Remove active class from all buttons and content
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Show corresponding content
+            const tabId = this.getAttribute('data-tab') + '-tab';
+            document.getElementById(tabId).classList.add('active');
+          });
+        });
+      });
+    </script>
   </body>
 </html>
