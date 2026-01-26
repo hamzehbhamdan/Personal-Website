@@ -1,0 +1,240 @@
+:root {
+	box-sizing: border-box;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	-moz-tap-highlight-color: transparent;
+	-ms-tap-highlight-color: transparent;
+	-o-tap-highlight-color: transparent;
+	tap-highlight-color: transparent;
+}
+*,
+:before,
+:after {
+	box-sizing: inherit;
+}
+html, body {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+html {
+	overflow: hidden;
+}
+
+body {
+	margin: 0;
+	overflow: auto;
+	overflow-x: hidden;
+	overflow-y: scroll;
+	-webkit-overflow-scrolling: touch;
+	-moz-overflow-scrolling: touch;
+	-ms-overflow-scrolling: touch;
+	-o-overflow-scrolling: touch;
+	overflow-scrolling: touch;
+	-ms-overflow-style: ms-autohiding-scrollbar;
+}
+#world svg,
+#container svg,
+button {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: block;
+	font-size: 0;
+	line-height: 0;
+	overflow: hidden;
+	-webkit-contain: strict;
+	-moz-contain: strict;
+	-ms-contain: strict;
+	-o-contain: strict;
+	contain: strict;
+}
+#world,
+#container {
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	width: 100%;
+	height: 0;
+	margin: 0;
+	padding-top: 49.82167946%; /* Aspect ratio */
+}
+#container {
+	z-index: 1;
+	padding-top: 51.56646615%; /* Aspect ratio */
+}
+.map {
+	fill: #ddd;
+}
+.pulse,
+#paradise,
+.map,
+.pulse,
+svg {
+	cursor: default;
+	pointer-events: none;
+}
+#marker {
+	animation: fall 1000ms ease-in both !important;
+}
+#marker,
+#marker > svg {
+	transform: translateZ(0);
+	transform-origin: 50% 100%;
+	backface-visibility: hidden;
+}
+#marker:hover > svg {
+	animation: wobble 1000ms both !important;
+}
+.me {
+	transform-origin: 50% 50%;
+	animation: pulse 3000ms ease-in infinite both !important;
+}
+.reveal #c {
+	animation: reveal 900ms ease-in both;
+}
+.hide #c {
+	animation: hide 900ms ease-out both;
+}
+.reveal .map,
+.reveal .pulse {
+	animation: fade-out 200ms ease-in both;
+	pointer-events: none;
+	cursor: default;
+}
+.hide .map,
+.hide .pulse {
+	animation: fade-in 300ms 600ms ease-out both;
+}
+button {
+	background: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	box-shadow: none;
+	cursor: pointer;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	-ms-appearance: none;
+	-o-appearance: none;
+	appearance: none;
+}
+.tail-1 {
+ animation-delay: 1400ms;
+ animation-timing-function: linear;
+}
+.tail-2 {
+ animation-delay: 1800ms;
+ animation-timing-function: linear;
+}
+
+@keyframes draw {
+ 0% {
+  stroke-dashoffset: 400;
+ }
+ 100% {
+  stroke-dashoffset: 0;
+ }
+}
+@keyframes fall {
+	0% {
+		animation-timing-function: ease-in;
+		transform: translateY(-50vmax) scale(1, 1);
+	}
+	50% {
+		animation-timing-function: ease-out;
+		transform: translateY(0) scale(1, 1);
+	}
+	55% {
+		transform: scale(1.3, 0.8);
+	}
+	60% {
+		transform: translateY(-8%) scale(1, 1);
+	}
+	64% {
+		transform: translateY(-14%) scale(0.85, 1.03);
+	}
+	70% {
+		transform: translateY(0) scale(0.95, 1.05);
+	}
+	73%,
+	100% {
+		transform: scale(1, 1);
+	}
+}
+@keyframes wobble {
+	15% {
+		transform: rotate(-5deg);
+	}
+	30% {
+		transform: rotate(3deg);
+	}
+	45% {
+		transform: rotate(-3deg);
+	}
+	60% {
+		transform: rotate(2deg);
+	}
+	75% {
+		transform: rotate(-1deg);
+	}
+}
+@keyframes pulse {
+	0% {
+		r: 0;
+		opacity: 0.00001;
+	}
+	50%,
+	70% {
+		opacity: 0.4;
+	}
+	100% {
+		r: 9;
+		opacity: 0.00001;
+	}
+}
+@keyframes reveal {
+	0% {
+		r: 1.9;
+	}
+	100% {
+		r: 845.2;
+	}
+}
+@keyframes hide {
+	0% {
+		r: 845.2;
+	}
+	100% {
+		r: 1.9;
+	}
+}
+@keyframes fade-out {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0.00001;
+	}
+}
+@keyframes fade-in {
+	0% {
+		opacity: 0.00001;
+	}
+	100% {
+		opacity: 1;
+	}
+}

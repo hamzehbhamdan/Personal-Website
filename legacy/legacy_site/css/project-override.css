@@ -1,0 +1,12 @@
+/* Override grid aspect ratio for 9:16 photos */
+@media screen and (min-width: 992px) {
+  .grid .grid-item.tall:before {
+    padding-top: 177.78%; /* 16:9 aspect ratio (16/9 = 1.778) */
+  }
+}
+
+/* Ensure thumbs cover the entire container */
+.grid .grid-item .thumb {
+  background-size: cover;
+  background-position: center center;
+}

@@ -1,0 +1,200 @@
+<!-- 
+  - Ec 50, done
+  - Math 157 ChatGPT, done
+  - Math 22b Computer Graphics, done
+  - Ec 1057 research, done
+
+  - CS 50 AIME Trainer
+  - EASTD Twitter Sentiment Analysis
+  - CS 196 Website?
+  - US NEWS
+  - CBE Portal
+  - School Portal
+  - Nutrition App
+  - Game
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Projects</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="../css/core.css">
+    <link rel="stylesheet" type="text/css" href="../css/base.css">
+    <link rel="stylesheet" type="text/css" href="../css/custom.css">
+    <link rel="stylesheet" type="text/css" href="../css/project-override.css">
+    <link rel="icon" type="image/png" href="../favicon.png?v=2">
+    <script src="../js/assets/jquery.js"></script>
+  </head>
+  <body>
+    <div class="body-overlay"></div>
+    <!-- Menu-->
+    <div class="nav-container">
+      <ul class="nav">
+        <li><a href="../index.html">Home </a></li>
+        <li><a href="projects.html">Projects </a></li>
+      </ul>
+      <div class="exit"></div>
+    </div>
+    <!-- Wrapper-->
+    <div id="wrapper" class="container-fluid smooth-transition">
+      <!-- Header-->
+      <header>
+        <div class="container">
+          <!-- Menu-->
+          <div class="menu"></div>
+        </div>
+      </header>
+      <!-- Hero-->
+      <section class="hero vbottom gray">
+        <!-- Background-->
+        <div style="background-image: url(../images/08.jpg);" class="bg faded parallax"></div>
+        <div class="container">
+          <!-- Content-->
+          <div class="content">
+            <h1 style="color: #A51C30;">Projects</h1>
+            <p>All cover artwork is generated using Imagen 4.</p>
+          </div>
+        </div>
+      </section>
+      <section style="margin-top: 60px; padding-top: 0;">
+        <div class="container">
+          <!-- Project filters -->
+          <div class="project-filters">
+            <button class="filter-btn active" data-filter="*">All</button>
+            <button class="filter-btn" data-filter=".finance">Finance</button>
+            <button class="filter-btn" data-filter=".sports">Sports Analytics</button>
+            <button class="filter-btn" data-filter=".opportunity">Opportunity Atlas</button>
+            <button class="filter-btn" data-filter=".ai">Artificial Intelligence</button>
+            <button class="filter-btn" data-filter=".ml">Machine Learning</button>
+            <button class="filter-btn" data-filter=".other">Other</button>
+          </div>
+          <!-- Portfolio grid-->
+          <div class="grid">
+            <div class="grid-sizer"></div>
+            <!-- Portfolio item--><a href="projects/opportunity.html" class="grid-item tall opportunity ai">
+              <div style="background-image: url(../images/projects/opportunityatlas.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Public Policy</div>
+                <div class="description">
+                  <h4>Redesigning Opportunity</h4>
+                  <p>Based on Raj Chetty's Opportunity Atlas, this tool helps parents assess demographics and opportunities in their zipcodes, exploring local community and school options.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/crypto.html" class="grid-item tall finance ml">
+              <div style="background-image: url(../images/projects/crypto.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Financial Analysis</div>
+                <div class="description">
+                  <h4>Advanced Cryptocurrency Time Series Analysis</h4>
+                  <p>Comprehensive analysis of BTC and ETH price movements using time series analysis, machine learning models, and deep learning architectures.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/financialindicators.html" class="grid-item tall finance ml">
+              <div style="background-image: url(../images/projects/financialindicators.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / Financial Modeling</div>
+                <div class="description">
+                  <h4>Predicting Stock Price Variation</h4>
+                  <p>Analysis of stock price movements using financial and economic indicators with statistical learning and machine learning techniques.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/bettingbaseball.html" class="grid-item tall sports">
+              <div style="background-image: url(../images/projects/baseballbetting.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Data Science</div>
+                <div class="description">
+                  <h4>Baseball Analytics: Creating a Betting Edge</h4>
+                  <p>Analysis of baseball metrics to understand and predict team performance, providing insights for team management and betting strategies.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/NFL.html" class="grid-item tall sports">
+              <div style="background-image: url(../images/projects/NFL.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Game Theory</div>
+                <div class="description">
+                  <h4>Analysis of NFL Two-Point Conversions</h4>
+                  <p>Modeling when coaches should go for two-point attempts versus extra points based on game situations and analytics.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/baseballmontecarlo.html" class="grid-item tall sports">
+              <div style="background-image: url(../images/projects/baseballmontecarlo.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Sports Analytics / Simulation</div>
+                <div class="description">
+                  <h4>Modeling Baseball Games with Monte Carlo</h4>
+                  <p>Estimating player value and team performance using Monte Carlo simulations with high school baseball statistics.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/10k.html" class="grid-item tall finance ml">
+              <div style="background-image: url(../images/projects/10k.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Data Science / NLP</div>
+                <div class="description">
+                  <h4>Analyzing Similarity of Companies Using 10-K Filings</h4>
+                  <p>Provides methods for assessing company similarity using specified sub-sections of 10-K filings. Uses cosine similarity of BERT embeddings for similarity.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/firm.html" class="grid-item tall finance">
+              <div style="background-image: url(../images/projects/gametheory.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Game Theory x Microeconomic Modelling</div>
+                <div class="description">
+                  <h4>Simulating Firm Behavior Under Duopolies</h4>
+                  <p>A model of firm behavior under a duopoly using classical microecnonimic multivariate maximization and game theory.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/chatgpt.html" class="grid-item tall ai ml other">
+              <div style="background-image: url(../images/projects/neuralnetworks.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Computer Science x Mathematics</div>
+                <div class="description">
+                  <h4>Understanding ChatGPT: Neural Networks from Scratch</h4>
+                  <p>An explanation of how ChatGPT works from the ground up. Topics include basic neural networks, recurrent neural networks, and long short-term memory networks.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/elpaso.html" class="grid-item tall opportunity other">
+              <div style="background-image: url(../images/projects/inequality.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Big Data</div>
+                <div class="description">
+                  <h4>Exploring Racial Inequality in El Paso: A Big Data Approach</h4>
+                  <p>A tract-level correlational analysis of economic growth factors, such as education and employment rate, on group income at the 25th percentile, separated by gender and race.</p>
+                </div>
+              </div></a>
+            <!-- Portfolio item--><a href="projects/graphics.html" class="grid-item tall other">
+              <div style="background-image: url(../images/projects/graphics.png)" class="thumb"></div>
+              <div class="caption">
+                <div class="type">Linear Algebra</div>
+                <div class="description">
+                  <h4>Computer Graphics</h4>
+                  <p>An explanation of the basics of computer graphics. Includes discussions on transformations in 2D and 3D space, quaternions, perspective projections, and shadow mapping.</p>
+                </div>
+              </div></a>
+          </div>
+        </div>
+      </section>
+      <!-- Footer-->
+      <footer>
+        <div class="container content">
+          <div class="row">
+            <!-- Contact info-->
+            <div class="col-md-2"> 
+              <p>hamzehhamdan@college.harvard.edu</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script src="../js/assets/bootstrap.js"></script>
+    <script src="../js/assets/imagesloaded.pkgd.min.js"></script>
+    <script src="../js/assets/validation.js"></script>
+    <script src="../js/assets/masonry.pkgd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js"></script>
+    <script src="../modules/tera-slider/tera-slider.js"></script>
+    <script src="../modules/tera-lightbox/tera-lightbox.js"></script>
+    <script src="../js/assets/animsition.js"></script>
+    <script src="../js/functions.js"></script>
+    <script src="../js/project-filters.js"></script>
+  </body>
+</html>
