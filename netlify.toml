@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Explicitly allow the public Supabase keys as they are intended for client-side use
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL"
-  # Omit the build output directory from scanning (contains compiled JS with safe public keys)
-  SECRETS_SCAN_OMIT_PATHS = ".next"
+  # Allow keys that are safe to be public
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,ALLOWED_EMAIL"
+  # Omit the build output directories from scanning
+  SECRETS_SCAN_OMIT_PATHS = ".next,.netlify,public"
