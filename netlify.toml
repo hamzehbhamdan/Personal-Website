@@ -4,3 +4,6 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Prevent Netlify from scanning the Next.js build output for the public Supabase key
+  # The Anon key is INTENDED to be public and helps the client connect to Supabase.
+  SECRETS_SCAN_OMIT_PATHS = ".next/*"
