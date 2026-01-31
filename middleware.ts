@@ -7,6 +7,15 @@ export async function middleware(request: NextRequest) {
             headers: request.headers,
         },
     });
+    // Subdomain routing
+    const hostname = request.headers.get("host") || "";
+    const subdomain = hostname.split(".")[0];
+    const isLocalhost = hostname.includes("localhost");
+
+    // If we are on "my." subdomain (e.g. my.hamzehhamdan.com), rewrite to /dashboard
+    if (subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard")) {
+        return NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url));
+    }
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
