@@ -2,8 +2,8 @@
 export const personalInfo = {
     name: "Hamzeh Hamdan",
     title: "Software Engineer at Cresset Capital",
-    bio: "I'm a Software Engineer at Cresset Capital in Chicago, where I work across the AI stack—from training teams and building custom solutions to vendor collaboration and compliance monitoring.",
-    bioEducation: "I recently graduated with honors from Harvard University, where I studied Computer Science and Statistics and wrote my senior thesis on cross-market economic spillovers between the U.S. and Chinese stock markets.",
+    bio: "I'm a Software Engineer at Cresset Capital in Chicago, where I work across the AI stack—from training teams and building custom solutions to vendor collaboration and compliance monitoring. I recently graduated with honors from Harvard University, where I studied Computer Science and Statistics and wrote my senior thesis on cross-market economic spillovers between the U.S. and Chinese stock markets.",
+    bioEducation: "",
     fullBio: "I am currently a Software Engineer at Cresset Capital in Chicago, where I design and build AI infrastructure that supports business operations across the entire organization. My work focuses on driving enterprise-wide AI adoption, architecting intelligent agent systems, and developing analytics frameworks for usage monitoring and compliance. My background is in Computer Science and Statistics from Harvard University, where I conducted research on cross-market economic spillovers and developed AI agents for campus data. I am passionate about building scalable, impactful solutions that bridge the gap between advanced technology and real-world application.",
     email: "hamzeh@alumni.harvard.edu",
     phone: "915 383 5070",
