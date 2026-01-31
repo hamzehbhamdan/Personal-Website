@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
 
     // If we are on "my." subdomain (e.g. my.hamzehhamdan.com), rewrite to /dashboard
     if (subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard")) {
-        return NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url));
+        response = NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url));
     }
 
     const supabase = createServerClient(
@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
 
     // Authenticated Routes Protection
     // Only protect /dashboard and specific API routes
-    const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+    const isDashboard = request.nextUrl.pathname.startsWith("/dashboard") || subdomain === "my";
     const isProtectedApi = request.nextUrl.pathname.startsWith("/api/vector") || request.nextUrl.pathname.startsWith("/api/briefing");
 
     if (isDashboard || isProtectedApi) {
