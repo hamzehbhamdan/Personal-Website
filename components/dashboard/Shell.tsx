@@ -142,6 +142,17 @@ export function DashboardShell() {
             return;
         }
 
+        if (actionId.startsWith("google-search:")) {
+            const query = actionId.replace("google-search:", "");
+            const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            if (settings.openSearchInNewTab) {
+                window.open(url, '_blank');
+            } else {
+                window.location.href = url;
+            }
+            return;
+        }
+
         if (type === "contact") {
             setActiveView("crm");
             return;

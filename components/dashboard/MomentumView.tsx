@@ -369,8 +369,18 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                             try {
                                 if (val.toLowerCase() === 'help') {
                                     toast.info("Terminal Commands:", {
-                                        description: "note: <text>, task: <text>, focus, theme",
+                                        description: "note: <text>, task: <text>, focus, theme, g: <text>",
                                     });
+                                    return;
+                                }
+                                if (val.toLowerCase().startsWith('g:') || val.toLowerCase().startsWith('search:')) {
+                                    const query = val.substring(val.indexOf(':') + 1).trim();
+                                    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                                    if (settings.openSearchInNewTab) {
+                                        window.open(url, '_blank');
+                                    } else {
+                                        window.location.href = url;
+                                    }
                                     return;
                                 }
                                 if (val.toLowerCase() === 'focus') {

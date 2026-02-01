@@ -63,7 +63,23 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
     );
 
     // Combined results
-    const results = [...filteredActions, ...dynamicResults];
+    let results = [...filteredActions, ...dynamicResults];
+
+    // Detect Google Search
+    const isGoogleSearch = query.trim().toLowerCase().startsWith("g:") || query.trim().toLowerCase().startsWith("search:");
+    if (isGoogleSearch) {
+        const searchQuery = query.includes(':') ? query.substring(query.indexOf(':') + 1).trim() : "";
+        if (searchQuery) {
+            results = [{
+                id: `google-search:${searchQuery}`,
+                label: `Search Google: "${searchQuery}"`,
+                icon: Search,
+                iconName: "Search",
+                category: "External",
+                type: "action"
+            }, ...results];
+        }
+    }
 
     // Load recently viewed on mount
     useEffect(() => {
