@@ -21,7 +21,12 @@ export async function login(formData: FormData) {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
+                            cookieStore.set(name, value, {
+                                ...options,
+                                domain: ".hamzehhamdan.com",
+                                sameSite: "lax",
+                                secure: true,
+                            })
                         )
                     } catch {
                         // The `setAll` method was called from a Server Component.
