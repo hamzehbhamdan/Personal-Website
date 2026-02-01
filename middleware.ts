@@ -14,10 +14,15 @@ export async function middleware(request: NextRequest) {
     // Subdomain routing
     const hostname = request.headers.get("host") || "";
     const subdomain = hostname.split(".")[0];
-    const isLocalhost = hostname.includes("localhost");
+
+    console.log(`[Middleware] Host: ${hostname}, Subdomain: ${subdomain}, Path: ${request.nextUrl.pathname}`);
 
     // Check if we need to rewrite to /dashboard (for "my." subdomain)
     const isRewrite = subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard");
+
+    if (isRewrite) {
+        console.log(`[Middleware] Rewriting to /dashboard${request.nextUrl.pathname}`);
+    }
 
     let response = isRewrite
         ? NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url), {
