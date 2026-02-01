@@ -62,7 +62,7 @@ const QuickCommTerminal = ({ onSubmit }: { onSubmit: (val: string) => void }) =>
     };
 
     return (
-        <div className="relative group flex flex-col items-end gap-1">
+        <div className="relative group flex-col items-end gap-1 hidden md:flex">
             <span
                 onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
                 className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 group-hover:text-primary/60 transition-colors cursor-pointer hover:text-primary"
@@ -317,7 +317,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
     return (
         <div className="flex flex-col items-center justify-center h-full w-full text-black dark:text-white relative z-10 px-10">
             {/* Top Area: Status Nodes (Outliers) */}
-            <div className="absolute top-12 left-12 flex gap-12 z-50">
+            <div className="absolute top-12 left-12 hidden md:flex gap-12 z-50">
                 {/* Date Node (First) */}
                 <div className="flex flex-col gap-1 transition-all hover:opacity-100 opacity-60">
                     <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">System Date</span>
@@ -336,7 +336,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
             {/* Top Right: (Empty for now) */}
 
             {/* Bottom Right: Daily Velocity Progress Ring */}
-            <div className="absolute bottom-12 right-12 flex gap-6 z-50">
+            <div className="absolute bottom-12 right-12 hidden md:flex gap-6 z-50">
                 {/* System Status & Velocity Group */}
                 <div className="flex flex-col items-end gap-6 text-right">
 
@@ -413,7 +413,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
             </div>
 
             {/* Bottom Left: Toolbelt (Column) */}
-            <div className="absolute bottom-12 left-12 flex flex-col gap-4 z-[50]">
+            <div className="absolute bottom-12 left-12 hidden md:flex flex-col gap-4 z-[50]">
                 {/* Focus Icon */}
                 <button
                     onClick={() => setIsFocusOpen(true)}
@@ -473,12 +473,12 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                 className="text-center"
             >
                 {showClock && (
-                    <h1 className="text-[12rem] font-bold tracking-tighter leading-none select-none drop-shadow-2xl opacity-90 transition-all hover:opacity-100 hover:scale-[1.02] cursor-default">
+                    <h1 className="text-6xl md:text-[12rem] font-bold tracking-tighter leading-none select-none drop-shadow-2xl opacity-90 transition-all hover:opacity-100 hover:scale-[1.02] cursor-default">
                         {format(time, "HH:mm")}
                     </h1>
                 )}
 
-                <h2 className={`text-4xl font-light mt-4 mb-16 tracking-tight flex items-center justify-center gap-3 ${!showClock ? "text-6xl" : ""}`}>
+                <h2 className={`text-2xl md:text-4xl font-light mt-4 mb-16 tracking-tight flex items-center justify-center gap-3 ${!showClock ? "md:text-6xl" : ""}`}>
                     {settings.showQuotes && currentQuote ? (
                         <AnimatePresence mode="wait">
                             <motion.span
@@ -518,7 +518,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                                 setIsFocusSet(true);
                                             }
                                         }}
-                                        className="bg-transparent border-b border-white/20 text-center outline-none w-[600px] text-4xl pb-4 focus:border-white transition-all placeholder:text-white/10"
+                                        className="bg-transparent border-b border-white/20 text-center outline-none w-full md:w-[600px] text-2xl md:text-4xl pb-4 focus:border-white transition-all placeholder:text-white/10"
                                         autoFocus
                                         placeholder="Type intention and press Enter..."
                                     />
@@ -539,7 +539,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                     >
                                         <Circle size={20} />
                                     </button>
-                                    <span className="text-5xl font-medium tracking-tight drop-shadow-lg">{focus}</span>
+                                    <span className="text-3xl md:text-5xl font-medium tracking-tight drop-shadow-lg">{focus}</span>
                                 </div>
                             </motion.div>
                         )}
