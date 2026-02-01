@@ -2,20 +2,21 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
-        },
-    });
     // Subdomain routing
     const hostname = request.headers.get("host") || "";
     const subdomain = hostname.split(".")[0];
     const isLocalhost = hostname.includes("localhost");
 
-    // If we are on "my." subdomain (e.g. my.hamzehhamdan.com), rewrite to /dashboard
-    if (subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard")) {
-        response = NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url));
-    }
+    // Check if we need to rewrite to /dashboard (for "my." subdomain)
+    const isRewrite = subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard");
+
+    let response = isRewrite
+        ? NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url), {
+            request: { headers: request.headers },
+        })
+        : NextResponse.next({
+            request: { headers: request.headers },
+        });
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,9 +30,16 @@ export async function middleware(request: NextRequest) {
                     cookiesToSet.forEach(({ name, value, options }) =>
                         request.cookies.set(name, value)
                     );
-                    response = NextResponse.next({
-                        request,
-                    });
+
+                    // Re-create the response preserving the rewrite/next status
+                    response = isRewrite
+                        ? NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url), {
+                            request,
+                        })
+                        : NextResponse.next({
+                            request,
+                        });
+
                     cookiesToSet.forEach(({ name, value, options }) =>
                         response.cookies.set(name, value, options)
                     );
