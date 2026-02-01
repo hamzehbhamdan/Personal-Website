@@ -590,6 +590,22 @@ export function SettingsModal({ isOpen, onClose, currentSettings, onSave }: Sett
                                                     className="w-10 h-10 accent-zinc-900 border-none transition-all cursor-pointer"
                                                 />
                                             </label>
+
+                                            <label className={cn(
+                                                "flex items-center justify-between p-5 rounded-3xl border cursor-pointer transition-all hover:scale-[1.01] mt-3",
+                                                settings.themeMode === 'light' ? 'bg-zinc-50 border-zinc-200' : 'bg-white/5 border-white/5'
+                                            )}>
+                                                <div>
+                                                    <span className="text-sm font-bold block">Search by Default</span>
+                                                    <span className="text-xs opacity-40">Main input searches Google instead of setting focus (use &apos;f: goal&apos; for focus)</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={settings.defaultToSearch ?? false}
+                                                    onChange={(e) => setSettings({ ...settings, defaultToSearch: e.target.checked })}
+                                                    className="w-10 h-10 accent-zinc-900 border-none transition-all cursor-pointer"
+                                                />
+                                            </label>
                                         </div>
                                     </div>
                                 )}

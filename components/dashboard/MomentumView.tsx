@@ -525,15 +525,36 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                         onChange={(e) => setFocus(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter" && focus.trim()) {
-                                                if (focus.toLowerCase().startsWith('g:') || focus.toLowerCase().startsWith('search:')) {
-                                                    const query = focus.substring(focus.indexOf(':') + 1).trim();
+                                                const val = focus.trim();
+                                                const lower = val.toLowerCase();
+
+                                                // Function to execute search
+                                                const executeSearch = (query: string) => {
                                                     const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
                                                     if (settings.openSearchInNewTab) {
                                                         window.open(url, '_blank');
                                                     } else {
                                                         window.location.href = url;
                                                     }
-                                                    setFocus(""); // Clear input after search
+                                                    setFocus("");
+                                                };
+
+                                                // Explicit Search Command
+                                                if (lower.startsWith('g:') || lower.startsWith('search:')) {
+                                                    executeSearch(val.substring(val.indexOf(':') + 1).trim());
+                                                    return;
+                                                }
+
+                                                // Explicit Focus Command
+                                                if (lower.startsWith('f:') || lower.startsWith('focus:')) {
+                                                    setFocus(val.substring(val.indexOf(':') + 1).trim());
+                                                    setIsFocusSet(true);
+                                                    return;
+                                                }
+
+                                                // Default Behavior
+                                                if (settings.defaultToSearch) {
+                                                    executeSearch(val);
                                                 } else {
                                                     setIsFocusSet(true);
                                                 }
@@ -541,7 +562,7 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                         }}
                                         className="bg-transparent border-b border-white/20 text-center outline-none w-full md:w-[600px] text-2xl md:text-4xl pb-4 focus:border-white transition-all placeholder:text-white/10"
                                         autoFocus
-                                        placeholder="Type intention... or 'g: query'"
+                                        placeholder={settings.defaultToSearch ? "Search Google... or 'f: goal'" : "Type intention... or 'g: query'"}
                                     />
                                     <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
                                 </div>
@@ -560,7 +581,13 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                     >
                                         <Circle size={20} />
                                     </button>
-                                    <span className="text-3xl md:text-5xl font-medium tracking-tight drop-shadow-lg">{focus}</span>
+                                    <span
+                                        onClick={() => setIsFocusSet(false)}
+                                        className="text-3xl md:text-5xl font-medium tracking-tight drop-shadow-lg cursor-pointer hover:opacity-80 transition-opacity tooltip"
+                                        title="Click to edit"
+                                    >
+                                        {focus}
+                                    </span>
                                 </div>
                             </motion.div>
                         )}

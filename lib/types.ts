@@ -106,6 +106,7 @@ export interface DashboardSettings {
     autonomousSync: boolean;
     lastBriefingAt?: string;
     openSearchInNewTab?: boolean;
+    defaultToSearch?: boolean;
 }
 
 export interface VectorStore {
