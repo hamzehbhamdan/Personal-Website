@@ -39,6 +39,8 @@ export async function login(formData: FormData) {
     });
 
     if (error) {
+        console.error("Login Error:", error);
+        console.log("Supabase URL Env:", process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + "...");
         return redirect(`/login?message=${encodeURIComponent(error.message)}`);
     }
 
