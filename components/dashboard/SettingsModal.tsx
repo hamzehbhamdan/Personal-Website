@@ -559,7 +559,6 @@ export function SettingsModal({ isOpen, onClose, currentSettings, onSave }: Sett
                                                 </div>
                                             </div>
 
-                                            {/* Autonomous Memory Sync Toggle */}
                                             <label className={cn(
                                                 "flex items-center justify-between p-5 rounded-3xl border cursor-pointer transition-all hover:scale-[1.01] mt-3",
                                                 settings.themeMode === 'light' ? 'bg-zinc-50 border-zinc-200' : 'bg-white/5 border-white/5'
@@ -572,6 +571,22 @@ export function SettingsModal({ isOpen, onClose, currentSettings, onSave }: Sett
                                                     type="checkbox"
                                                     checked={settings.autonomousSync ?? false}
                                                     onChange={(e) => setSettings({ ...settings, autonomousSync: e.target.checked })}
+                                                    className="w-10 h-10 accent-zinc-900 border-none transition-all cursor-pointer"
+                                                />
+                                            </label>
+
+                                            <label className={cn(
+                                                "flex items-center justify-between p-5 rounded-3xl border cursor-pointer transition-all hover:scale-[1.01] mt-3",
+                                                settings.themeMode === 'light' ? 'bg-zinc-50 border-zinc-200' : 'bg-white/5 border-white/5'
+                                            )}>
+                                                <div>
+                                                    <span className="text-sm font-bold block">External Search Handling</span>
+                                                    <span className="text-xs opacity-40">Open Google searches in a new browser tab</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={settings.openSearchInNewTab ?? false}
+                                                    onChange={(e) => setSettings({ ...settings, openSearchInNewTab: e.target.checked })}
                                                     className="w-10 h-10 accent-zinc-900 border-none transition-all cursor-pointer"
                                                 />
                                             </label>

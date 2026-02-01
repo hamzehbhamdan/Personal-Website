@@ -105,6 +105,7 @@ export interface DashboardSettings {
     weatherUnit?: "C" | "F";
     autonomousSync: boolean;
     lastBriefingAt?: string;
+    openSearchInNewTab?: boolean;
 }
 
 export interface VectorStore {

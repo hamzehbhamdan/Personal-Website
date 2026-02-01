@@ -54,7 +54,8 @@ export function DashboardShell() {
             maxTokens: 1000,
             retrievalCount: 5
         },
-        autonomousSync: false
+        autonomousSync: false,
+        openSearchInNewTab: false
     });
 
     // Global listener for command palette

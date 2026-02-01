@@ -515,12 +515,23 @@ export function MomentumView({ settings, setSettings, tasks, setTasks }: { setti
                                         onChange={(e) => setFocus(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter" && focus.trim()) {
-                                                setIsFocusSet(true);
+                                                if (focus.toLowerCase().startsWith('g:') || focus.toLowerCase().startsWith('search:')) {
+                                                    const query = focus.substring(focus.indexOf(':') + 1).trim();
+                                                    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                                                    if (settings.openSearchInNewTab) {
+                                                        window.open(url, '_blank');
+                                                    } else {
+                                                        window.location.href = url;
+                                                    }
+                                                    setFocus(""); // Clear input after search
+                                                } else {
+                                                    setIsFocusSet(true);
+                                                }
                                             }
                                         }}
                                         className="bg-transparent border-b border-white/20 text-center outline-none w-full md:w-[600px] text-2xl md:text-4xl pb-4 focus:border-white transition-all placeholder:text-white/10"
                                         autoFocus
-                                        placeholder="Type intention and press Enter..."
+                                        placeholder="Type intention... or 'g: query'"
                                     />
                                     <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
                                 </div>
