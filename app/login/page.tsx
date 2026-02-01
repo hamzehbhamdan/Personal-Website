@@ -74,9 +74,6 @@ export default async function LoginPage({
                 <p className="text-[9px] text-center text-white/20 mt-8 uppercase tracking-widest font-bold">
                     Secure Connection • Encrypted v4.2
                 </p>
-                <p className="text-[9px] text-center text-red-500/50 mt-2">
-                    Debug: {process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30)}...
-                </p>
             </div>
         </div>
     );
