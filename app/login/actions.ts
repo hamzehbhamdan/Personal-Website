@@ -44,5 +44,5 @@ export async function login(formData: FormData) {
         return redirect(`/login?message=${encodeURIComponent(error.message)}`);
     }
 
-    return redirect("/");
+    return redirect("/dashboard");
 }
