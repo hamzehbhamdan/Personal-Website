@@ -2,6 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+    // 1. Skip middleware for static assets, API routes, and Next.js internals
+    if (
+        request.nextUrl.pathname.startsWith("/api") ||
+        request.nextUrl.pathname.startsWith("/_next") ||
+        request.nextUrl.pathname.includes(".") // Files with extensions
+    ) {
+        return NextResponse.next();
+    }
+
     // Subdomain routing
     const hostname = request.headers.get("host") || "";
     const subdomain = hostname.split(".")[0];
