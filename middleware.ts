@@ -16,7 +16,11 @@ export async function middleware(request: NextRequest) {
     const subdomain = hostname.split(".")[0];
 
     // Check if we need to rewrite to /dashboard (for "my." subdomain)
-    const isRewrite = subdomain === "my" && !request.nextUrl.pathname.startsWith("/dashboard");
+    // Exclude /login, /subdomain, and other root paths that shouldn't be rewritten
+    const isRewrite = subdomain === "my" &&
+        !request.nextUrl.pathname.startsWith("/dashboard") &&
+        !request.nextUrl.pathname.startsWith("/login") &&
+        !request.nextUrl.pathname.startsWith("/auth");
 
     let response = isRewrite
         ? NextResponse.rewrite(new URL(`/dashboard${request.nextUrl.pathname}`, request.url), {
