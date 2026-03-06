@@ -35,7 +35,7 @@ export function HeroMotion() {
                     Portfolio · 2026
                 </motion.p>
 
-                <div className="grid lg:grid-cols-[1fr_300px] gap-12 lg:gap-20 items-start">
+                <div className="grid lg:grid-cols-[1fr_380px] gap-12 lg:gap-16 items-start">
                     {/* Text block */}
                     <div className="space-y-8">
                         <motion.h1
@@ -121,14 +121,14 @@ export function HeroMotion() {
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                        className="mx-auto lg:mx-0 shrink-0 w-[260px] lg:w-full"
+                        className="mx-auto lg:mx-0 shrink-0 w-[300px] lg:w-full"
                     >
-                        <div className="relative aspect-[3/4] overflow-hidden border border-stone-200 bg-stone-100">
+                        <div className="relative aspect-[5/6] overflow-hidden border border-stone-200 bg-stone-100">
                             <Image
                                 src="/portrait.png"
                                 alt="Hamzeh Hamdan"
                                 fill
-                                className="object-cover object-[30%_center]"
+                                className="object-cover object-[10%_center]"
                                 priority
                             />
                         </div>

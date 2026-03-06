@@ -6,12 +6,12 @@ import { motion } from "framer-motion"
 import { Mail, Linkedin, Github, FileText, MapPin, Send, CheckCircle2, Loader2, Copy, Check } from "lucide-react";
 import { personalInfo } from "@/lib/data";
 
-type FormState = "idle" | "submitting" | "success"
+type FormState = "idle" | "submitting" | "success" | "error"
 
 const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" };
 
 export default function ContactPage() {
-    const [form, setForm] = React.useState({ name: "", email: "", subject: "", message: "" })
+    const [form, setForm] = React.useState({ name: "", email: "", subject: "", message: "", botField: "" })
     const [errors, setErrors] = React.useState<Partial<typeof form>>({})
     const [status, setStatus] = React.useState<FormState>("idle")
     const [copied, setCopied] = React.useState(false)
@@ -39,18 +39,29 @@ export default function ContactPage() {
         }
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         const errs = validate()
         if (Object.keys(errs).length > 0) { setErrors(errs); return }
         setStatus("submitting")
-        const subject = encodeURIComponent(form.subject || `Message from ${form.name}`)
-        const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)
-        window.open(`mailto:${personalInfo.email}?subject=${subject}&body=${body}`, "_blank")
-        setTimeout(() => {
+        try {
+            await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    "form-name": "contact",
+                    "bot-field": form.botField ?? "",
+                    name: form.name,
+                    email: form.email,
+                    subject: form.subject,
+                    message: form.message,
+                }).toString(),
+            })
             setStatus("success")
-            setForm({ name: "", email: "", subject: "", message: "" })
-        }, 600)
+            setForm({ name: "", email: "", subject: "", message: "", botField: "" })
+        } catch {
+            setStatus("error")
+        }
     }
 
     const inputBase =
@@ -202,8 +213,8 @@ export default function ContactPage() {
                                             Message Sent!
                                         </h3>
                                         <p className="text-[13px] text-stone-500 leading-relaxed">
-                                            Your email client should have opened. I&apos;ll get back
-                                            to you as soon as possible.
+                                            Thanks for reaching out — I&apos;ll get back to you as
+                                            soon as possible.
                                         </p>
                                     </div>
                                     <button
@@ -226,7 +237,26 @@ export default function ContactPage() {
 
                                     <div className="h-px bg-stone-100" />
 
-                                    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                                    <form
+                                        onSubmit={handleSubmit}
+                                        noValidate
+                                        name="contact"
+                                        data-netlify="true"
+                                        data-netlify-honeypot="bot-field"
+                                        className="space-y-5"
+                                    >
+                                        {/* Honeypot — hidden from real users */}
+                                        <input type="hidden" name="form-name" value="contact" />
+                                        <p hidden>
+                                            <label>
+                                                Don&apos;t fill this out:{" "}
+                                                <input
+                                                    name="bot-field"
+                                                    value={form.botField}
+                                                    onChange={handleChange}
+                                                />
+                                            </label>
+                                        </p>
                                         <div className="grid sm:grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
                                                 <label
@@ -323,6 +353,12 @@ export default function ContactPage() {
                                                 </>
                                             )}
                                         </button>
+
+                                        {status === "error" && (
+                                            <p className="text-[12px] text-red-400 text-center">
+                                                Something went wrong — please try again or email me directly.
+                                            </p>
+                                        )}
 
                                         <div className="pt-2 border-t border-stone-100">
                                             <a
