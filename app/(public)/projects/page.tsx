@@ -43,7 +43,7 @@ export default function ProjectsPage() {
             />
 
             {/* Header */}
-            <section className="relative z-10 w-full pt-20 pb-12 bg-[#f9f8f6]">
+            <section className="relative z-10 w-full pt-16 pb-10 md:pb-12 bg-[#f9f8f6]">
                 <div className="mx-auto max-w-5xl px-6 space-y-8">
                     <motion.p
                         initial={{ opacity: 0, y: 8 }}
@@ -57,7 +57,7 @@ export default function ProjectsPage() {
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                        className="text-5xl md:text-6xl text-stone-900 leading-tight"
+                        className="text-4xl sm:text-5xl md:text-6xl text-stone-900 leading-tight"
                         style={serif}
                     >
                         My Work
@@ -84,17 +84,15 @@ export default function ProjectsPage() {
                             <button
                                 key={cat}
                                 onClick={() => setFilter(cat)}
-                                className={`font-mono text-[10px] uppercase tracking-[0.18em] px-3 py-1.5 border transition-all ${
-                                    filter === cat
+                                className={`font-mono text-[10px] uppercase tracking-[0.18em] px-3 py-1.5 border transition-all ${filter === cat
                                         ? "border-stone-900 bg-stone-900 text-white"
                                         : "border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700 bg-white"
-                                }`}
+                                    }`}
                             >
                                 {cat}
                                 <span
-                                    className={`ml-2 ${
-                                        filter === cat ? "text-stone-400" : "text-stone-300"
-                                    }`}
+                                    className={`ml-2 ${filter === cat ? "text-stone-400" : "text-stone-300"
+                                        }`}
                                 >
                                     ({getCount(cat)})
                                 </span>

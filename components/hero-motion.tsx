@@ -11,7 +11,7 @@ const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', s
 
 export function HeroMotion() {
     return (
-        <section className="relative w-full bg-[#f9f8f6] pt-20 pb-24 md:pt-28 md:pb-32 overflow-hidden">
+        <section className="relative w-full bg-[#f9f8f6] pt-16 pb-16 md:pt-28 md:pb-32 overflow-hidden">
             {/* Noise texture */}
             <div
                 aria-hidden="true"
@@ -35,14 +35,14 @@ export function HeroMotion() {
                     Portfolio · 2026
                 </motion.p>
 
-                <div className="grid lg:grid-cols-[1fr_380px] gap-12 lg:gap-16 items-start">
+                <div className="grid lg:grid-cols-[1fr_380px] gap-8 lg:gap-16 items-start">
                     {/* Text block */}
                     <div className="space-y-8">
                         <motion.h1
                             initial={{ opacity: 0, y: 18 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.65, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                            className="text-5xl md:text-7xl leading-[1.05] text-stone-900"
+                            className="text-4xl sm:text-5xl md:text-7xl leading-[1.05] text-stone-900"
                             style={serif}
                         >
                             Hi, I&apos;m Hamzeh.
@@ -56,7 +56,7 @@ export function HeroMotion() {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.12 }}
-                            className="text-stone-500 text-lg leading-relaxed max-w-lg"
+                            className="text-stone-500 text-base sm:text-lg leading-relaxed max-w-lg"
                         >
                             {personalInfo.bio}
                         </motion.p>
@@ -87,7 +87,7 @@ export function HeroMotion() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ duration: 0.5, delay: 0.32 }}
-                            className="flex items-center gap-6 pt-1"
+                            className="flex items-center gap-5 sm:gap-6 pt-1 flex-wrap"
                         >
                             <a
                                 href={personalInfo.linkedin}
@@ -121,7 +121,7 @@ export function HeroMotion() {
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                        className="mx-auto lg:mx-0 shrink-0 w-[300px] lg:w-full"
+                        className="mx-auto lg:mx-0 shrink-0 w-[260px] sm:w-[300px] lg:w-full"
                     >
                         <div className="relative aspect-[5/6] overflow-hidden border border-stone-200 bg-stone-100">
                             <Image

@@ -197,7 +197,7 @@ export default function ThesisPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400"
+              className="mb-4 font-mono text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.3em] text-stone-400 break-words"
             >
               {THESIS_META.institution} · {THESIS_META.type} · {THESIS_META.date}
             </motion.div>
@@ -206,7 +206,7 @@ export default function ThesisPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              className="text-5xl font-bold leading-[1.05] tracking-tight text-stone-900 sm:text-6xl lg:text-7xl"
+              className="text-3xl font-bold leading-[1.05] tracking-tight text-stone-900 sm:text-5xl lg:text-7xl"
               style={serifStyle}
             >
               {THESIS_META.title}
@@ -216,7 +216,7 @@ export default function ThesisPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.3 }}
-              className="mt-5 text-lg leading-relaxed text-stone-500"
+              className="mt-5 text-base sm:text-lg leading-relaxed text-stone-500"
             >
               {THESIS_META.tagline}
             </motion.p>
@@ -310,7 +310,7 @@ export default function ThesisPage() {
         <p className="mb-4 text-sm text-stone-500">
           This thesis operationalizes two distinct predictive tasks:
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {QUESTION_CONTENT.buttons.map((btn) => (
             <button
               key={btn.anchor}
@@ -486,7 +486,8 @@ export default function ThesisPage() {
               Cross-Direction Comparison — ΔR² by Model Class
             </p>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-stone-100 bg-stone-50/50">
                 <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-wider text-stone-400">Model</th>
@@ -514,6 +515,7 @@ export default function ThesisPage() {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="border-t border-stone-100 bg-stone-50/30 px-5 py-2.5">
             <p className="text-[10px] leading-relaxed text-stone-400">
               Ratio = (U.S.→China ΔR²) ÷ (China→U.S. ΔR²). OLS was estimated for Chinese returns only (shorter window). Kernel row shows cross-country-only R², not ΔR².
@@ -663,16 +665,16 @@ export default function ThesisPage() {
           Cite This Work
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="min-w-0">
             <div className="mb-1.5 text-xs font-medium text-stone-500">BibTeX</div>
-            <div className="rounded-sm border border-stone-200 bg-stone-900 p-4">
-              <pre className="overflow-x-auto whitespace-pre font-mono text-xs leading-relaxed text-stone-200">
+            <div className="overflow-x-auto rounded-sm border border-stone-200 bg-stone-900 p-4">
+              <pre className="whitespace-pre font-mono text-xs leading-relaxed text-stone-200">
                 {CITE.bibtex}
               </pre>
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="mb-1.5 text-xs font-medium text-stone-500">APA</div>
             <div className="rounded-sm border border-stone-200 bg-stone-50 px-4 py-3 font-mono text-xs leading-relaxed text-stone-600">
               {CITE.apa}

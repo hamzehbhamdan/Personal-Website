@@ -73,13 +73,15 @@ function DerivationStepper({ embedded = false }: { embedded?: boolean }) {
         >
           <p className="mb-4 text-sm text-stone-500">{current.description}</p>
           <div
-            className={`flex items-center justify-center rounded-sm px-4 py-5 ${
+            className={`overflow-x-auto rounded-sm px-4 py-5 ${
               current.highlight ? "bg-[#A51C30] shadow-sm" : "bg-stone-900"
             }`}
           >
-            <BlockTeX className={current.highlight ? "[&_.katex]:text-white" : "[&_.katex]:text-stone-100"}>
-              {current.latex}
-            </BlockTeX>
+            <div className="flex items-center justify-center min-w-fit">
+              <BlockTeX className={current.highlight ? "[&_.katex]:text-white" : "[&_.katex]:text-stone-100"}>
+                {current.latex}
+              </BlockTeX>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>

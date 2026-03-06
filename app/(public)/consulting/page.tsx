@@ -58,7 +58,7 @@ function EditorialSection({
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className={`relative z-10 mx-auto px-6 py-20 ${wide ? "max-w-6xl" : "max-w-4xl"} ${className}`}
+            className={`relative z-10 mx-auto px-6 py-12 md:py-20 ${wide ? "max-w-6xl" : "max-w-4xl"} ${className}`}
         >
             {label && (
                 <div className="mb-10 flex items-center gap-4">
@@ -147,14 +147,14 @@ function ServicesTabs() {
     return (
         <div className="mt-0">
             {/* ── 3-service at-a-glance cards ── */}
-            <div className="mb-6 grid grid-cols-3 gap-2">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {serviceTabs.map((s) => (
                     <button
                         key={s.id}
                         onClick={() => setActive(s.id)}
                         className={`rounded-sm border p-3 text-left transition-all ${active === s.id
-                                ? "border-[#A51C30]/25 bg-[#A51C30]/5"
-                                : "border-stone-200 bg-white/60 hover:border-stone-300 hover:bg-white/80"
+                            ? "border-[#A51C30]/25 bg-[#A51C30]/5"
+                            : "border-stone-200 bg-white/60 hover:border-stone-300 hover:bg-white/80"
                             }`}
                     >
                         <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">{s.number}</div>
@@ -274,7 +274,7 @@ export default function ConsultingPage() {
             <NoiseLayer />
 
             {/* ── HERO ──────────────────────────────────────────────── */}
-            <section className="relative z-10 mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-center px-6 py-24">
+            <section className="relative z-10 mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-center px-6 py-16 sm:py-24">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
                     className="mb-8 font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400"
                 >
@@ -286,7 +286,7 @@ export default function ConsultingPage() {
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                            className="text-5xl font-bold leading-[1.06] tracking-tight text-stone-900 sm:text-6xl lg:text-7xl"
+                            className="text-4xl font-bold leading-[1.06] tracking-tight text-stone-900 sm:text-5xl lg:text-7xl"
                             style={serif}
                         >
                             Adopting AI.
@@ -300,7 +300,7 @@ export default function ConsultingPage() {
                             AI adoption is hard. Too many tools, too much hype, too little guidance. I help individuals and organizations cut through the noise — building real skills and measurable ROI, one use case at a time.
                         </motion.p>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.5 }}
-                            className="mt-8 flex flex-wrap gap-3"
+                            className="mt-8 flex flex-col sm:flex-row flex-wrap gap-3"
                         >
                             <Link href="/contact"
                                 className="flex items-center gap-2 rounded-sm bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-700"
@@ -326,7 +326,7 @@ export default function ConsultingPage() {
                     >
                         <div className="w-full rounded-sm border border-stone-200 bg-white/70 p-6">
                             <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Background</div>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {proofStats.map((s) => (
                                     <div key={s.label} className="rounded-sm border border-stone-100 bg-stone-50 px-3 py-3">
                                         <div className="text-lg font-bold text-stone-800" style={serif}>{s.value}</div>
@@ -494,7 +494,7 @@ export default function ConsultingPage() {
             <Divider />
 
             {/* ── 05 BOOK A CALL ────────────────────────────────────── */}
-            <section id="book" className="relative z-10 w-full bg-[#f9f8f6] px-6 py-20">
+            <section id="book" className="relative z-10 w-full bg-[#f9f8f6] px-6 py-12 md:py-20">
                 <div className="mx-auto max-w-5xl">
                     {/* Section label */}
                     <div className="mb-10 flex items-center gap-4">

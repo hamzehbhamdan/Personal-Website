@@ -82,7 +82,7 @@ export default function ContactPage() {
             />
 
             {/* Header */}
-            <section className="relative z-10 w-full pt-20 pb-16 bg-[#f9f8f6]">
+            <section className="relative z-10 w-full pt-16 pb-12 md:pb-16 bg-[#f9f8f6]">
                 <div className="mx-auto max-w-5xl px-6 space-y-6">
                     <motion.p
                         initial={{ opacity: 0, y: 8 }}
@@ -95,7 +95,7 @@ export default function ContactPage() {
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                        className="text-5xl md:text-6xl text-stone-900 leading-tight"
+                        className="text-4xl sm:text-5xl md:text-6xl text-stone-900 leading-tight"
                         style={serif}
                     >
                         Let&apos;s Connect
@@ -109,7 +109,7 @@ export default function ContactPage() {
             </div>
 
             {/* Main content */}
-            <section className="relative z-10 w-full py-16">
+            <section className="relative z-10 w-full py-10 md:py-16">
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="grid md:grid-cols-[1fr_440px] gap-12 md:gap-16">
 

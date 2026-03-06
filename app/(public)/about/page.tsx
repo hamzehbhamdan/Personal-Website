@@ -56,7 +56,7 @@ export default function AboutPage() {
             />
 
             {/* Hero */}
-            <section className="relative w-full pt-20 pb-24 md:pt-28 md:pb-32 bg-[#f9f8f6]">
+            <section className="relative w-full pt-16 pb-16 md:pt-28 md:pb-32 bg-[#f9f8f6]">
                 <div className="relative z-10 mx-auto max-w-5xl px-6">
                     <motion.p
                         initial={{ opacity: 0, y: 8 }}
@@ -72,7 +72,7 @@ export default function AboutPage() {
                                 initial={{ opacity: 0, y: 18 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.65, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                                className="text-5xl md:text-6xl leading-[1.05] text-stone-900"
+                                className="text-4xl sm:text-5xl md:text-6xl leading-[1.05] text-stone-900"
                                 style={serif}
                             >
                                 Bridging AI
@@ -84,7 +84,7 @@ export default function AboutPage() {
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6, delay: 0.12 }}
-                                className="text-stone-500 text-lg leading-relaxed max-w-xl"
+                                className="text-stone-500 text-base sm:text-lg leading-relaxed max-w-xl"
                             >
                                 {personalInfo.fullBio}
                             </motion.p>
@@ -117,7 +117,7 @@ export default function AboutPage() {
                             initial={{ opacity: 0, y: 18 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                            className="mx-auto lg:mx-0 shrink-0 w-[300px] lg:w-full"
+                            className="mx-auto lg:mx-0 shrink-0 w-[260px] sm:w-[300px] lg:w-full"
                         >
                             <div className="relative aspect-[5/6] overflow-hidden border border-stone-200 bg-stone-100">
                                 <Image
@@ -136,7 +136,7 @@ export default function AboutPage() {
             <Divider />
 
             {/* 01 — My Journey */}
-            <EditorialSection className="relative z-10 w-full py-20">
+            <EditorialSection className="relative z-10 w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
@@ -185,7 +185,7 @@ export default function AboutPage() {
             <Divider />
 
             {/* 02 — Work Experience */}
-            <EditorialSection className="relative z-10 w-full py-20">
+            <EditorialSection className="relative z-10 w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
@@ -236,7 +236,7 @@ export default function AboutPage() {
             <Divider />
 
             {/* 03 — Education */}
-            <EditorialSection className="relative z-10 w-full py-20">
+            <EditorialSection className="relative z-10 w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
@@ -316,7 +316,7 @@ export default function AboutPage() {
             <Divider />
 
             {/* 04 — Beyond the Code */}
-            <EditorialSection className="relative z-10 w-full py-20">
+            <EditorialSection className="relative z-10 w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">

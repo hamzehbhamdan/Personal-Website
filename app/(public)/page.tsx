@@ -61,7 +61,7 @@ export default function Home() {
             <Divider />
 
             {/* 01 — Experience */}
-            <EditorialSection className="w-full py-20">
+            <EditorialSection className="w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
@@ -115,7 +115,7 @@ export default function Home() {
             <Divider />
 
             {/* 02 — Education */}
-            <EditorialSection className="w-full py-20">
+            <EditorialSection className="w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
@@ -159,7 +159,7 @@ export default function Home() {
             <Divider />
 
             {/* 03 — Featured Work */}
-            <EditorialSection className="w-full py-20">
+            <EditorialSection className="w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -207,7 +207,7 @@ export default function Home() {
             </EditorialSection>
 
             {/* 04 — Consulting CTA (dark) */}
-            <section className="w-full bg-stone-900 py-20">
+            <section className="w-full bg-stone-900 py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="grid md:grid-cols-[1fr_auto] gap-12 items-start">
                         <div className="space-y-6">
@@ -215,7 +215,7 @@ export default function Home() {
                                 04 — AI Consulting
                             </p>
                             <h2
-                                className="text-4xl md:text-5xl text-white leading-tight"
+                                className="text-3xl sm:text-4xl md:text-5xl text-white leading-tight"
                                 style={serif}
                             >
                                 Work With Me
@@ -224,7 +224,7 @@ export default function Home() {
                                 Whether you&apos;re an individual getting started with AI or an organization
                                 building the right adoption strategy — I can help.
                             </p>
-                            <div className="grid sm:grid-cols-3 gap-3 pt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                                 {[
                                     { icon: BookOpen, label: "Personal Training", rate: "$200 / hr" },
                                     { icon: Building2, label: "Corporate Adoption", rate: "Package" },
@@ -241,7 +241,7 @@ export default function Home() {
                                 ))}
                             </div>
                         </div>
-                        <div className="flex flex-col gap-3 shrink-0">
+                        <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
                             <Link
                                 href="/consulting"
                                 className="inline-flex items-center justify-center gap-2 bg-white text-stone-900 text-sm font-medium px-6 py-3 hover:bg-stone-100 transition-colors whitespace-nowrap"

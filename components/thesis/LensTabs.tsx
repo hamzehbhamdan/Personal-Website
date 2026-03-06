@@ -46,10 +46,10 @@ export function LensTabs() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="mt-6 grid gap-6 md:grid-cols-5"
+          className="mt-6 grid gap-6 md:grid-cols-5 overflow-hidden"
         >
           {/* Left: description + equations (3 cols) */}
-          <div className="md:col-span-3 space-y-4">
+          <div className="md:col-span-3 space-y-4 min-w-0">
             <div>
               <h3 className="mb-2 text-lg font-semibold text-stone-800">{activeLens.title}</h3>
               <p className="text-sm leading-relaxed text-stone-600">{activeLens.description}</p>
@@ -87,7 +87,7 @@ export function LensTabs() {
           </div>
 
           {/* Right: what this lens reveals + model count (2 cols) */}
-          <div className="md:col-span-2 flex flex-col gap-3">
+          <div className="md:col-span-2 flex flex-col gap-3 min-w-0">
             <div className="rounded-sm border border-[#A51C30]/12 bg-[#A51C30]/5 p-4">
               <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-[#A51C30]">
                 What this lens reveals

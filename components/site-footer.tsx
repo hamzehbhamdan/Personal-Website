@@ -5,7 +5,7 @@ import { Linkedin, Github, Mail, FileText } from "lucide-react";
 
 export function SiteFooter() {
     return (
-        <footer className="border-t border-stone-200 bg-[#f9f8f6] py-14">
+        <footer className="border-t border-stone-200 bg-[#f9f8f6] py-10 md:py-14">
             <div className="mx-auto max-w-5xl px-6">
                 <div className="flex flex-col md:flex-row justify-between gap-12">
                     {/* Brand */}
@@ -55,7 +55,7 @@ export function SiteFooter() {
 
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-stone-200 flex items-center justify-between">
+                <div className="mt-10 md:mt-12 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-300">
                         © {new Date().getFullYear()} {personalInfo.name}
                     </p>
