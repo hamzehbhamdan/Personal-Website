@@ -26,7 +26,7 @@ const siteUrl = "https://www.hamzehhamdan.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Hamzeh Hamdan | AI Software Engineer",
+    default: "Hamzeh | Building AI",
     template: "%s | Hamzeh Hamdan",
   },
   description:
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "Hamzeh Hamdan",
-    title: "Hamzeh Hamdan | AI Software Engineer",
+    title: "Hamzeh | Building AI",
     description:
       "AI Software Engineer at Cresset Capital. Harvard graduate building intelligent systems at the intersection of AI and quantitative finance.",
     images: [
@@ -59,13 +59,13 @@ export const metadata: Metadata = {
         url: "/portrait.png",
         width: 1200,
         height: 630,
-        alt: "Hamzeh Hamdan — AI Software Engineer",
+        alt: "Hamzeh Hamdan — Building AI",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hamzeh Hamdan | AI Software Engineer",
+    title: "Hamzeh | Building AI",
     description:
       "AI Software Engineer at Cresset Capital. Harvard graduate building intelligent systems at the intersection of AI and quantitative finance.",
     images: ["/portrait.png"],
