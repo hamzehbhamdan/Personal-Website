@@ -1,0 +1,181 @@
+\chapter{Statistical Framework}
+
+\section{Theoretical Framework and Statistical Formulation}
+
+\subsection{General Model}
+
+A primitive approach to the portfolio replication problem is to re-frame it as an optimization problem in which asset weights are chosen to minimize a loss function that quantifies the error of the constructed portfolio. While a more primitive approach, linear models have a deep root in the statistical applications in finance. 
+
+\subsubsection{Probabilistic Setup}
+
+Let $(\Omega, \mathcal{F}, P)$ be the probability space representing the financial markets. Define the following two random variables on this space: $R^M_t$ representing the target market return and $R^P_t$ representing the replicating portfolio return at time $t$. Assume that both $R^M_t$ and $R^P_t$ are well-defined distributions with finite mean and variance and that they are mean-centered.
+
+Let $\mu_M = \mathbb{E}[R^M_t]=0$ and $\mu_P = \mathbb{E}[R^P_t]=0$ for their expected values, $\sigma_M^2 = \mathrm{Var}(R^M_t)$ and $\sigma_P^2 = \mathrm{Var}(R^P_t)$ for their variances, and $\mathrm{Cov}(R^M_t, R^P_t)$ for their covariance.
+
+\subsubsection{Portfolio Replication Problem}
+
+The portfolio replication problem is one of constructing a \textit{replicating portfolio} with returns that closely match the target market’s returns distribution. Suppose we have a vector of $N$ asset returns or set of factors $\vec{R}_t=(R_{1,t}, R_{2,t}, \dots, R_{N,t})^\top$ that serve as building blocks; note that these are assumed to be linearly independent and mean-centered.
+
+A replicating portfolio is defined by a weight vector $\vec{w}=(w_1,\dots,w_N)^\top$ such that the returns of the replicating portfolio are $R_t^P=\vec{w}^\top\vec{R}_t=\sum_{i=1}^Nw_iR_{i,t}$. There are several constraints that can be placed on the weight vector: (1) for a fully invested portfolio, the weights must sum to 1, (2) if short-selling is prohibited, the weights must all be non-negative.
+
+\subsubsection{Optimal Linear Replication}
+
+We can think of the portfolio replication problem as a stochastic optimization problem, in which the objective function is the mean squared tracking error. More formally, we must find $\vec{w}^*$ that minimizes $\mathbb{E}\left[\left(R_t^M-\vec{w}^\top\vec{R}_t\right)^2\right]$ subject to any portfolio constraints. 
+
+Imposing the expectation matching constraint to ensure that the replicating portfolio is unbiased, we have: $$\mathbb{E}[R_t^P]=\mathbb{E}[R_t^M]$$ Since $R_t^P=\vec{w}^\top\vec{R}_t$, we have: $$\vec{w}^\top\mathbb{E}[\vec{R}_t]=\mu_M$$ This is naturally satisfied under the assumption that asset returns are mean-centered.
+
+Thus, we select: $$\vec{w}^*=\arg\min_{\vec{w}} \mathbb{E}\left[\left(R_t^M-\vec{w}^\top\vec{R}_t\right)^2\right]$$ Expanding, we get: $$\vec{w}^*=\arg\min_{\vec{w}} \mathbb{E}\left[\left(R_t^M\right)^2-2R_t^M\vec{w}^\top\vec{R}_t +\left(\vec{w}^\top\vec{R}_t\right)^2\right]$$ Applying linearity of expectation: $$\vec{w}^* = \arg\min_{\vec{w}} \Bigl\{ \mathbb{E} \left[ (R_t^M)^2 \right] - 2 \vec{w}^\top \mathbb{E} [R_t^M \vec{R}_t] + \vec{w}^\top \mathbb{E} [\vec{R}_t \vec{R}_t^\top] \vec{w} \Bigr\}$$ Because $\mathbb{E} \left[ (R_t^M)^2 \right]$ does not depend on $\vec{w}$, it can be ignored when finding the minimum.
+
+Let $\vec{\mu}=\mathbb{E}[\vec{R}_t]$ be the mean vector of basis returns; note that because $\vec{R}_t$ is mean-centered, this is a zero vector. We can calculate the covariance as:
+\begin{align*}
+    \Sigma &= \operatorname{Cov}(\vec{R}_t, \vec{R}_t)\\
+    &= \mathbb{E}[(\vec{R}_t-\vec{\mu})(\vec{R}_t-\vec{\mu})^\top]\\
+    &= \mathbb{E}[\vec{R}_t\vec{R}_t^\top]
+\end{align*}
+
+The covariance vector between basis returns and target returns is given by: 
+\begin{align*}
+    \vec{\sigma}_M &= \operatorname{Cov}(R^M_t, \vec{R}_t) \\
+    &= \mathbb{E}[(R^M_t-\mu_M)(\vec{R}_t-\vec{\mu})] \\
+    &= \mathbb{E}[R_t^M\vec{R}_t]-\mu_M\mathbb{E}[\vec{R}_t]-\mathbb{E}[R^M_t]\vec{\mu}+\mu_M\vec{\mu} \\
+    &= \mathbb{E}[R_t^M\vec{R}_t]
+    && \text{( } \vec{\mu}=\mathbb{E}[\vec{R}_t]=\vec{0}\text{ )}
+\end{align*}
+
+Thus, the minimization can be simplified to: $$\vec{w}^* = \arg\min_{\vec{w}} \bigl\{ -2\vec{w}^\top\vec{\sigma}_M+\vec{w}^\top\Sigma\vec{w} \bigr\}$$ Taking the derivative with respect to $\vec{w}$ and setting the derivative as zero, we get: $$-2\vec{\sigma}_M+2\Sigma \vec{w}=0$$ Implying: $$\Sigma\vec{w}=\vec{\sigma}_M$$
+
+Assuming $\Sigma$ is invertible, the optimal vector is given by: $$\vec{w}^*=\Sigma^{-1}\vec{\sigma}_M$$
+
+We can verify this solution is a minimum and not a maximum by taking the second derivative with respect to $\vec{w}$ we get the Hessian matrix $H=2\Sigma$, which is independent of $\vec{w}$. If $\Sigma$ is positive definite, then $H$ will also be positive definite. The covariance matrix is symmetric and positive semidefinite by definition, and is positive definite if and only if the returns are linearly independent; this follows from our assumption that $\Sigma$ is invertible. The function is thus strictly convex, and the optimal weights are at a global minimum.
+
+Note that assuming linear independence works in theory, but we might encounter near-collinearity in the data, especially as the number of factors increases. This will be addressed in the computational section of this thesis.
+
+This vector represents the best linear unbiased replication of the target portfolio's return, and it has the highest possible correlation with $R_t^M$ using a linear combination of the factors. We can define the residual error as $\epsilon_t=R_t^M-R_t^P$; it has minimal variance at $\vec{w}^*$. We can evaluate the quality of the replicating portfolio by comparing $\epsilon_t$ with the variance of $R_t^M$.
+
+\subsubsection{Distributional Assumptions}
+
+This model includes several important distributional assumptions. The return distributions $R_t^M$ and $R_t^P$ are assumed to be well-defined, with finite mean and variance. They are also assumed to be stationary. The target returns $R_t^M$ and the factor returns $\vec{R}_t$ are assumed to be mean-centered; this implies that $R_t^P$ is also mean-centered. The factors are assumed to be linearly independent, so that their covariance matrix is invertible. 
+
+Note that joint normality of returns is not required for the derivations above. However, if assumed, the conditional expectation $\mathbb{E}[R_t^M|\vec{R}_t]$ is a linear function of $\vec{R}_t$, and the best linear predictor generated from $\vec{w}^*$ is guaranteed to be the best predictor. 
+
+\subsubsection{U.S. Macroeconomic Factors and Market Returns}
+
+This framework will will be applied to model the relationship between U.S. macroeconomic factors and stock market indexes in both the U.S. and China. Setting the target return $R_t^M$ to the Wilshire 5000, we can construct $R_t^P$ from a set of U.S. macroeconomic factors $\vec{X}\in\mathbb{R}^m$. Our basis vector thus becomes $\vec{R}_t\equiv \vec{X}_t$ and the optimal weight vector $\vec{w}^*$ represents the optimal weighted sum of factors that best approximates the US market returns. Similarly, we can set $R_t^M$ to a Chinese market index that represents Chinese market returns, and we can analyze the optimal weight vector. 
+
+The validity of these models should be closely assessed as some of the model assumptions might not hold. First, the macroeconomic variables in $\vec{X}_t$ might be collinear, leading to unstable coefficient estimates. Second, economic factors might not be stationary. Third, the assumption that the covariance between the macroeconomic factors and market returns should remain relatively stable over time might not hold empirically.
+
+It is important to note that in the general model the primary goal is to construct a replicating portfolio that tracks the index by minimizing the MSE. Unlike the future models, it does not decompose the risks associated with the investment.
+
+\subsection{Generalized Additive Models}
+
+So far, we've assumed a linear relationship among the factors in which each factor linearly impacts market returns. Generalized Additive Models (GAMs) allow for nonlinear relationships between each factors and market returns. In the context of the U.S. and Chinese markets, GAMs help in quantifying how U.S. economic conditions nonlinearly influence asset returns. 
+
+\subsubsection{Model Formulation and Statistical Background}
+
+A generalized additive model (GAM) is different from traditional linear regressions as it allows for nonlinear transformations of each predictor. Formally, it allows us to model returns as $$R_t^M=\alpha+f_1(X_{t, 1})+f_2(X_{t, 2})+\dots+f_d(X_{t, d})+\epsilon_t$$ where $\alpha$ is an intercept and $f_j$ are arbitrary smooth functions representing the effect of predictor $X_j$ on $R_t^M$. As usual, $\epsilon_t$ represents the error term and has a zero mean.
+
+Generally, $R_t^M$ can follow any exponential-family distribution with a link function $g$ such that $g(\mathbb{E}[R_t^M|X])=\alpha+\sum_{j}f_j(X_j)$. Additionally, the following constraint is imposed for identifiability: each smooth function must have zero mean over the sample, formally shown as $\sum_{t=1}^d f_j(X_{t, j})=0$ for all $j$. This nesures that $\alpha$ captures the overall mean of $R_t^M$, making the additive decomposition unique.
+
+\subsubsection{Connection to Linear Models and Basis Expansions}
+
+If we restrict each smooth function to be linear, such that $f_j(X_{t, j})=\beta_j X_{t, j}$, then the GAM reduces to a multiple linear regression, in which $R_t^M=\alpha+\beta_1 X_{t, 1}+\beta_2 X_{t, 2}+\dots+\beta_d X_{t, d}+\epsilon_t$. GAMs are extensions of linear models in which the effects are still additive but can be nonlinear.
+
+The smooth functions $f_j(x)$ are unknown and are estimated from the data. The traditional way to do this is to represent each one using a set of basis function, converting the problem into a linear regression in those basis terms. More formally, we can write $f_j(x)=\sum_{k=1}^{K_j}\beta_{j,k}b_{j,k}(x)$, where $\beta_{j,k}$ are estimated from the data. This gives us the following overall model: $$R_t^M=\alpha+\sum_{j=1}^d\sum_{k=1}^{K_j}\beta_{j,k}b_{j,k}(X_{t,j})$$
+
+This model is linear in the parameters $\beta_{j,k}$, but is not linear in terms of the original variables $X_j$. The choice of basis complexity is crucial for avoiding overfitting to the noise. Including a smoothness penalty can help ensure smooth trends are captured. A common approach is to use penalized splines: for each $f_j$, add a penalty term to the loss function that penalizes roughness, which we'll denote as $J(f_j)$. The optimization problem thus becomes $$\min_{\{f_j\}}\sum_{t=1}^N\left(R_t^M-\alpha-\sum_{j=1}^df_j(X_{t, j})\right)^2+\sum_{j=1}^d\lambda_jJ(f_j)$$ where $\lambda_j \ge 0$ are smoothing parameters to control the roughness of $f_j$. Selecting these values can be done using cross-validation.
+
+\subsubsection{Limitations and Practical Considerations}
+
+The first limitation of GAMs is that they assume that there are no interactions amongst the factors. A GAM can include interaction terms, but this increases complexity and the required data size. In practice, interaction terms should be manually included in variables that are plausible.
+
+GAMs also require a generous amount of data as they use up degrees of freedom for each smooth term. Having too many predictors or allowing the $f_j$'s to be too flexible can lead to overfitting. Additionally, choosing how smooth each $f_j$ should be is not trivial, adding another layer of complexity in comparison to standard linear regression. Fitting a GAM is much more computationally expensive than fitting a linear regression. 
+
+Finally, in the context of Chinese market linkages with the U.S. economy, it is important to note that linkages are heavily impacted by trade policies. As such, the stationary assumption should be taken into account when choosing how far back to include data from. One way to tackle this is to include indicator variables for different time periods. Additionally, macroeconomic factors and returns might have inherent lags; we can handle this by including lagged predicted as separate inputs.
+
+\subsection{Nonparametric Kernel Regression}
+
+The previous models introduced assume some parametric relationship between market return and the factors used. The linearity assumption may be too restrictive in practice. To capture complexities in the data, we introduce a nonparametric regression model that does not impose a predetermined functional form on the data.
+
+\subsubsection{Model Setup and Motivation}
+
+Similar to the previous sections, let $R^M_t$ represent the market return at time $t$ and let $X_t$ be a vector of factors at time $t$. We are interested in the conditional expectation of $R^M_t$ given $X_t=x$, which we'll write as $m(x)=\mathbb{E}[R^M_t|X_t=x]$. Unlike the previous models, there is no assumption that the conditional expectation is linear in $x$. It is simply assumed that the relationship can be expressed as $$R_t^M=m(X_t)+\epsilon_t$$ where $m$ is an unknown smooth function and $\epsilon_t$ is an error term with mean zero. The goal is to estimate $m(x)$ from the data in a generalized way that can capture interactions among factors. This generality is the reason we cannot solve for a closed-form solution for $m$. Instead, we can construct an estimator inspired by the k nearest neighbors algorithm.
+
+\subsubsection{Deriving the Nadaraya-Watson Kernel Estimator}
+
+Drawing inspiration from the $k$-NN model, we can estimate $m(x)=\mathbb{E}[R^M_t|X_t=x]$ by averaging the $R^M_t$ values in our data with factors $X_t$ close to $x$. The idea here is that the true value of $m(x)$ should be close to the average of its surrounding neighbors. 
+
+Consider the following estimator, in which a simple rolling sample mean for a small neighborhood around $x$: $$\hat{m}_{window}(x)=\frac{\sum_{t=1}^n\mathrm{I}\{||X_t-x||\leq h\}R_t^M}{\sum_{t=1}^n\mathrm{I}\{||X_t-x||\leq h\}}$$ where $\mathrm{I}$ is an indicator function and $h>0$ is the radius of the neighborhood. While this estimator is powerful, it is not typically smooth. We can make it smooth by replacing the indicator function with a kernel weight that decays with distance from $x$.
+
+Let $K(u)$ be a kernel function, a smooth, non-negative, and symmetric function that gives higher values for $u$ near 0 and satisfies $\int K(u)\ \mathrm{d}u=1$. Let the kernel weight for observation $t$ at the target point $x$ be $K_h(x-X_t)$, given by $$K_h(u)=\frac{1}{h^d}K\left(\frac{u}{h}\right)$$ where $h$ is the neighborhood radius (also called the bandwidth) and $d=\dim(X_t)$ is the number of factors. The kernel weight is large when $X_t$ is close to $x$ since $\frac{x-X_t}{h}$ is near 0, implying that $K\left(\frac{x-X_t}{h}\right)$ is large. Using these weights, we adjust our estimator to be: $$\hat{m}_h(x)=\frac{\sum_{t=1}^nK_h(x-X_t)R_t^M}{\sum_{t=1}^nK_h(x-X_t)}$$ This estimator was proposed by Nadaraya and Watson independently in 1964 and is called the Nadaraya-Watson kernel regression estimator.\cite{nadaraya, watson}
+
+Note that this does not assume a specific kernel function. Studies have also shown that the choice of the kernel is less critical than the choice of the bandwidth.
+
+\subsubsection{Bandwidth Selection and the Bias-Variance Trade-Off}
+
+The choice of the bandwidth is critical in kernel regression. A small $h$ only uses observations very close to $x$, which reduces bias and increases the variance of the estimates. A large $h$ gives a smoother, low-variance estimate but can blend points that may have different true means together. 
+
+This is an example of the classic bias-variance trade-off. We want to capture local detail with a smaller $h$, but we don't want it to be so small that $\hat{m}_h(x)$ becomes volatile. Cross-validation can be helpful in practice for selecting the bandwidth, typically using the MSE as the objective function.
+
+\subsubsection{Assumptions and Theoretical Properties}
+
+The first assumption is that the data samples are expected to be independent across $t$. This assumption justifies using the empirical local average to estimate the conditional expectation. Typically, identical distributions are also assumed in theory, but in practice a weaker assumption of stationary distributions has been shown to suffice.
+
+The true conditional mean function $m(x)$ is assumed to be smooth in $x$. This ensures that observations near $x$ do have similar expected values of $R^M_t$, making local averaging effective. 
+
+The kernel is typically assumed to be symmetric about 0 and has a finite variance. The Gaussian and the Epanechnikov kernels satisfy these conditions and are common choices for a kernel. The bandwidth sequence is typically chosen such that $h$ shrinks as the number of data samples increases. 
+
+Under these conditions, the Nadaraya-Watson estimator is consistent for $m(x)$.\cite{nadaraya, watson} More formally, if $h_n\to 0$ as $n\to \infty$, $m_{h_n}(x)\to m(x)$ in probability for each fixed point $x$ where $f_X(x)>0$. 
+
+\subsubsection{Application to Market Return Prediction with Macroeconomic Factors}
+
+We can apply this model to the market by letting $R^M_t$ represent the return of a market index in month $t$ and $X_t$ be a vector of macroeconomic indicators observed at month $t$. By using a kernel regression, we can estimate the impact of specific factors without assuming linearity in the underlying relationship. 
+
+The advantages of flexibility and minimal assumptions come at a cost of interpretability and scalability. Unlike a traditional linear model, which returns a set of easily-interpretable coefficients, kernel regression returns the estimated $\hat{m}(x)$, which is harder to interpret without visualizations or further examination into other factors. Kernel regression also struggles in cases where the dimension of $x$ is large or in cases with limited data. In practice, this limits kernel regression to a small number of key factors or requires some form of dimension reduction, which can lose more interpretability. Kernel regression is also far more computationally expensive than OLS regression, especially for larger values of $n$.
+
+\section{Statistical Modeling Frameworks}
+
+This section covers the empirical frameworks that this thesis considers employing to analyzing the impact of the U.S. and Chinese economies on their markets. These frameworks build on the statistical models previously discussed.
+
+\subsection{Linear Regression with Regularization}
+
+In practice, linear regression can be improved by adding regularization terms to the loss function. Techniques like Ridge Regression and Lasso Regression can help with multicollinearity and overfitting.
+
+The main idea is to start with the same OLS objective and add a penalty term on the coefficients, making the minimizing function $$\vec{w}^*=\arg\min_{\vec{w}}\mathbb{E}\left[\left(R_t^M-\vec{w}^\top \vec{R}_t\right)^2\right]+\lambda P(\vec{w})$$ where $P(\vec{w})$ is a penalty function with $\lambda \ge 0$ representing its strength.
+
+In Ridge regression, $P(\vec{w})=\sum_{j=1}^d w_j^2$. The penalty shrinks all coefficients towards zero. In Lasso regression, $P(\vec{w})=\sum_{j=1}^d |w_j|$. The penalty here can set some coefficients to zero and can act as some form of variable selection. Empirically, Lasso can be unstable in highly correlated features.
+
+In Python, Lasso and Ridge regression can be implemented using scikit-learn. After standardizing the factors, we can choose the optimal $\lambda$ using cross-validation using RidgeCV or LassoCV.
+
+\subsection{Sparse Additive Models}
+
+Standard GAMs are prone to overfitting when many factors are irrelevant, especially as the dimensionality of the data increases. Sparse Additive Models (SpAM) impose a sparsity constraint on GAMs so that only a subset of the $f_j$ functions have non-zero value, analogous to the effect of Lasso regularization on a linear regression.
+
+It applies a Lasso penalty to each $f_j$. If we represent each $f_j$ as a basis, we can apply a group lasso penalty to highlight the most important $f_j$ factors. SpAMs have been found to be very effective in this method, correctly identifying the relevant components with high probability given enough data. 
+
+While there isn't a specific library for SpAMs in Library, one could use pyGAM to create a basis expansion for each feature and then apply the Lasso penalty across the groups of basis coefficients for each feature.
+
+\subsection{Kernel Regression}
+
+In the theoretical modeling section, we introduced kernel regression and the Nadaraya-Watson estimator as a method for accounting for nonlinearities.
+
+Using the statsmodels Python package, we can use the KernelReg class, which fits the model using the Nadaraya-Watson estimator. We can also use scikit-learn's kernel-based algorithms, which include the kernel ridge regression, Gaussian process regressors, and support vector regressors.
+
+An important choice in kernel regression is the selection of the bandwidth. In order to ensure comparability in distance measurements across factors, it's important to first standardize the data. After that, cross-validation can be used to choose a bandwidth.
+
+\subsection{Empirical Considerations}
+
+There are several challenges to be aware of when moving from theory to empirical implementation. Although they vary in importance, testing for the impact of the challenges and accounting for them is central towards achieving an accurate model.
+
+\subsubsection{Non-Stationarity}
+
+The models above all assume stationarity in the underlying distributions. This is not a natural assumption in financial data, which naturally have cycles of expansion and contraction. Beyond that, changes in regimes and global policy can impact the underlying distributions of economies.
+
+Non-stationarity can be handle with data transformations. Incorporating time indicators can also help adjust for shifts in the data, potentially marked by regime changes.
+
+\subsubsection{Factor Relevance and Spanning}
+
+When analyzing economic conditions, the data is naturally limited as it is typically measured monthly. With many potential factors impacting the market, identifying significant factors is important for applying these models. This is particularly important in models that require numerous data, like kernel regression. Multicollinearity among the factors can also be harmful, leading to unstable and unreliable coefficient estimates. 
+
+Economic factors, especially when reduced to smaller set, likely will not fully capture the risks in the market. Thus, factor selection is critical to the success of the models. Selecting too many factors makes some models impossible to estimate accurately, but not selecting enough significant factors can prevent the degree to which the models can accurately represent the market.
+
+The data used in this thesis has 13 themes and over 150 factors. To combat this issue, I will use the themes data in the kernel regression as they typically aggregate several similar factors' information.
