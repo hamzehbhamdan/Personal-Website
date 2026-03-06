@@ -152,11 +152,10 @@ function ServicesTabs() {
                     <button
                         key={s.id}
                         onClick={() => setActive(s.id)}
-                        className={`rounded-sm border p-3 text-left transition-all ${
-                            active === s.id
+                        className={`rounded-sm border p-3 text-left transition-all ${active === s.id
                                 ? "border-[#A51C30]/25 bg-[#A51C30]/5"
                                 : "border-stone-200 bg-white/60 hover:border-stone-300 hover:bg-white/80"
-                        }`}
+                            }`}
                     >
                         <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">{s.number}</div>
                         <div className="mt-1 text-xs font-semibold text-stone-800">{s.tab}</div>
@@ -255,7 +254,7 @@ export default function ConsultingPage() {
         if (intake["bot-field"]) return
         setIntakeStatus("submitting")
         try {
-            await fetch("/", {
+            await fetch("/netlify-forms.html", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({ "form-name": "consulting-intake", ...intake }).toString(),

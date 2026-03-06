@@ -45,7 +45,7 @@ export default function ContactPage() {
         if (Object.keys(errs).length > 0) { setErrors(errs); return }
         setStatus("submitting")
         try {
-            await fetch("/", {
+            await fetch("/netlify-forms.html", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
