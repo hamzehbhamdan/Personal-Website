@@ -1,5 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { BackToTop } from "@/components/back-to-top";
+import { PageTransition } from "@/components/page-transition";
 
 export default function PublicLayout({
     children,
@@ -9,10 +11,13 @@ export default function PublicLayout({
     return (
         <>
             <SiteHeader />
-            <div className="flex-1">
-                {children}
-            </div>
+            <PageTransition>
+                <div className="flex-1">
+                    {children}
+                </div>
+            </PageTransition>
             <SiteFooter />
+            <BackToTop />
         </>
     );
 }

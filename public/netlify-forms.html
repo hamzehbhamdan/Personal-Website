@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Netlify Forms Registration</title></head>
+<body>
+  <!--
+    This file exists solely for Netlify's build bot to detect and register
+    the consulting intake form. It is never shown to users.
+    The actual form is rendered by React and submitted via fetch().
+  -->
+  <form name="consulting-intake" netlify netlify-honeypot="bot-field" hidden>
+    <input type="text"     name="name"       />
+    <input type="email"    name="email"      />
+    <input type="text"     name="company"    />
+    <input type="text"     name="engagement" />
+    <input type="text"     name="timeline"   />
+    <textarea              name="message"    ></textarea>
+    <input type="text"     name="bot-field"  />
+  </form>
+</body>
+</html>

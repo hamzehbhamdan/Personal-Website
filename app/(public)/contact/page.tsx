@@ -1,102 +1,344 @@
 
 "use client"
 
+import * as React from "react"
 import { motion } from "framer-motion"
-import { Mail, Phone, Linkedin, Github, FileText, MapPin, Send, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Linkedin, Github, FileText, MapPin, Send, CheckCircle2, Loader2, Copy, Check } from "lucide-react";
 import { personalInfo } from "@/lib/data";
 
+type FormState = "idle" | "submitting" | "success"
+
+const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" };
+
 export default function ContactPage() {
+    const [form, setForm] = React.useState({ name: "", email: "", subject: "", message: "" })
+    const [errors, setErrors] = React.useState<Partial<typeof form>>({})
+    const [status, setStatus] = React.useState<FormState>("idle")
+    const [copied, setCopied] = React.useState(false)
+
+    const copyEmail = () => {
+        navigator.clipboard.writeText(personalInfo.email).then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        })
+    }
+
+    const validate = () => {
+        const next: Partial<typeof form> = {}
+        if (!form.name.trim()) next.name = "Name is required."
+        if (!form.email.trim()) next.email = "Email is required."
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Enter a valid email."
+        if (!form.message.trim()) next.message = "Message is required."
+        return next
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+        if (errors[e.target.name as keyof typeof errors]) {
+            setErrors((prev) => ({ ...prev, [e.target.name]: undefined }))
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        const errs = validate()
+        if (Object.keys(errs).length > 0) { setErrors(errs); return }
+        setStatus("submitting")
+        const subject = encodeURIComponent(form.subject || `Message from ${form.name}`)
+        const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)
+        window.open(`mailto:${personalInfo.email}?subject=${subject}&body=${body}`, "_blank")
+        setTimeout(() => {
+            setStatus("success")
+            setForm({ name: "", email: "", subject: "", message: "" })
+        }, 600)
+    }
+
+    const inputBase =
+        "w-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-500 transition-colors"
+
     return (
-        <main className="min-h-[calc(100vh-4rem)] flex flex-col">
-            <section className="flex-1 container mx-auto px-4 py-16 sm:px-8 space-y-12">
-                <div className="flex flex-col md:flex-row justify-between gap-12">
-                    <div className="flex-1 space-y-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="space-y-4"
-                        >
-                            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter">
-                                Let's Connect
-                            </h1>
-                            <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
-                                I'm always open to discussing new opportunities, collaborations, and innovative projects in AI and financial technology.
-                            </p>
-                        </motion.div>
+        <main className="flex flex-col min-h-screen bg-[#f9f8f6]">
+            {/* Noise texture */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed inset-0 z-0"
+                style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "repeat",
+                    backgroundSize: "300px 300px",
+                    opacity: 0.028,
+                }}
+            />
 
-                        <div className="grid gap-6 sm:grid-cols-2">
-                            {[
-                                { icon: Mail, label: "Email", value: personalInfo.email, link: `mailto:${personalInfo.email}` },
-                                { icon: Linkedin, label: "LinkedIn", value: "Hamzeh Hamdan", link: personalInfo.linkedin },
-                                { icon: Github, label: "GitHub", value: "hamzehbhamdan", link: personalInfo.github },
-                                { icon: MapPin, label: "Location", value: personalInfo.location, link: null },
-                            ].map((item, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="p-6 rounded-3xl bg-slate-50/50 dark:bg-slate-900/40 border border-primary/5 hover:border-primary/20 transition-all group"
-                                >
-                                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <item.icon className="h-5 w-5 text-primary" />
-                                    </div>
-                                    <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">{item.label}</div>
-                                    <div className="font-semibold text-lg flex items-center gap-2">
-                                        {item.link ? (
-                                            <a href={item.link} target="_blank" rel="noreferrer" className="hover:text-primary transition-colors flex items-center gap-2">
-                                                {item.value} <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </a>
-                                        ) : (
-                                            item.value
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="w-full md:w-[400px] shrink-0"
+            {/* Header */}
+            <section className="relative z-10 w-full pt-20 pb-16 bg-[#f9f8f6]">
+                <div className="mx-auto max-w-5xl px-6 space-y-6">
+                    <motion.p
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-400"
                     >
-                        <Card className="rounded-[40px] border-none shadow-2xl bg-white dark:bg-slate-950 overflow-hidden">
-                            <div className="h-2 bg-primary w-full" />
-                            <CardHeader className="p-8">
-                                <CardTitle className="text-2xl">Quick Message</CardTitle>
-                                <CardDescription>Reach me directly via email or LinkedIn for the fastest response.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-8 pt-0 space-y-6">
-                                <Button className="w-full h-14 rounded-2xl text-lg font-bold group" size="lg" asChild>
-                                    <a href={`mailto:${personalInfo.email}`} className="flex items-center justify-center gap-3">
-                                        Send an Email <Send className="h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                                    </a>
-                                </Button>
+                        Contact
+                    </motion.p>
+                    <motion.h1
+                        initial={{ opacity: 0, y: 18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+                        className="text-5xl md:text-6xl text-stone-900 leading-tight"
+                        style={serif}
+                    >
+                        Let&apos;s Connect
+                    </motion.h1>
+                </div>
+            </section>
 
-                                <div className="space-y-4 pt-6 border-t border-border/50">
-                                    <div className="text-sm font-bold uppercase tracking-widest">Resources</div>
-                                    <Button variant="outline" className="w-full h-12 rounded-xl justify-start font-semibold" asChild>
-                                        <a href={personalInfo.resume} target="_blank" rel="noreferrer">
-                                            <FileText className="mr-3 h-5 w-5 text-primary" /> View Resume
-                                        </a>
-                                    </Button>
-                                </div>
+            {/* Divider */}
+            <div className="relative z-10 mx-auto w-full max-w-5xl px-6">
+                <div className="h-px bg-stone-200" />
+            </div>
 
-                                <div className="pt-6 border-t border-border/50">
-                                    <h4 className="text-sm font-bold uppercase tracking-widest mb-4">Availability</h4>
-                                    <div className="flex items-start gap-3 p-4 rounded-2xl bg-green-500/5 border border-green-500/10">
-                                        <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 animate-pulse shrink-0" />
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
-                                            Currently focusing on AI infrastructure at Cresset Capital, but open to consulting and collaborations.
+            {/* Main content */}
+            <section className="relative z-10 w-full py-16">
+                <div className="mx-auto max-w-5xl px-6">
+                    <div className="grid md:grid-cols-[1fr_440px] gap-12 md:gap-16">
+
+                        {/* Left: contact info */}
+                        <div className="space-y-10">
+                            <motion.p
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-stone-500 text-lg leading-relaxed max-w-md"
+                            >
+                                I&apos;m always open to discussing new opportunities, collaborations,
+                                and innovative projects in AI and financial technology.
+                            </motion.p>
+
+                            <div className="space-y-0 divide-y divide-stone-100">
+                                {[
+                                    { icon: Mail, label: "Email", value: personalInfo.email, link: `mailto:${personalInfo.email}` },
+                                    { icon: Linkedin, label: "LinkedIn", value: "Hamzeh Hamdan", link: personalInfo.linkedin },
+                                    { icon: Github, label: "GitHub", value: "hamzehbhamdan", link: personalInfo.github },
+                                    { icon: MapPin, label: "Location", value: personalInfo.location, link: null },
+                                ].map((item, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.12 + i * 0.06 }}
+                                        className="flex items-center gap-4 py-4"
+                                    >
+                                        <div className="w-8 h-8 border border-stone-200 bg-white flex items-center justify-center shrink-0">
+                                            <item.icon className="h-3.5 w-3.5 text-stone-400" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-300 mb-0.5">
+                                                {item.label}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                {item.link ? (
+                                                    <a
+                                                        href={item.link}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="text-[13px] text-stone-700 hover:text-[#A51C30] transition-colors block truncate"
+                                                    >
+                                                        {item.value}
+                                                    </a>
+                                                ) : (
+                                                    <p className="text-[13px] text-stone-700">{item.value}</p>
+                                                )}
+                                                {item.label === "Email" && (
+                                                    <button
+                                                        onClick={copyEmail}
+                                                        title={copied ? "Copied!" : "Copy email"}
+                                                        className="shrink-0 text-stone-300 hover:text-stone-600 transition-colors"
+                                                    >
+                                                        {copied
+                                                            ? <Check className="h-3.5 w-3.5 text-[#A51C30]" />
+                                                            : <Copy className="h-3.5 w-3.5" />
+                                                        }
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            {/* Availability badge */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.4 }}
+                                className="flex items-start gap-3 border border-stone-200 bg-white p-4"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 animate-pulse" />
+                                <p className="text-[13px] text-stone-500 leading-relaxed">
+                                    Currently focusing on AI infrastructure at Cresset Capital,
+                                    but open to consulting and collaborations.
+                                </p>
+                            </motion.div>
+                        </div>
+
+                        {/* Right: form */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                            className="border border-stone-200 bg-white"
+                        >
+                            {status === "success" ? (
+                                <div className="flex flex-col items-center justify-center gap-6 p-12 text-center min-h-[420px]">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                    >
+                                        <CheckCircle2 className="h-12 w-12 text-[#A51C30]" />
+                                    </motion.div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-xl text-stone-900" style={serif}>
+                                            Message Sent!
+                                        </h3>
+                                        <p className="text-[13px] text-stone-500 leading-relaxed">
+                                            Your email client should have opened. I&apos;ll get back
+                                            to you as soon as possible.
                                         </p>
                                     </div>
+                                    <button
+                                        onClick={() => setStatus("idle")}
+                                        className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-700 border border-stone-200 px-4 py-2 transition-colors"
+                                    >
+                                        Send Another
+                                    </button>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                            ) : (
+                                <div className="p-8 space-y-6">
+                                    <div>
+                                        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">
+                                            Send a Message
+                                        </p>
+                                        <p className="text-[13px] text-stone-400 mt-1">
+                                            Fill in the form and your email client will open pre-filled.
+                                        </p>
+                                    </div>
+
+                                    <div className="h-px bg-stone-100" />
+
+                                    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                                        <div className="grid sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label
+                                                    htmlFor="name"
+                                                    className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                >
+                                                    Name <span className="text-red-400">*</span>
+                                                </label>
+                                                <input
+                                                    id="name"
+                                                    name="name"
+                                                    type="text"
+                                                    placeholder="Jane Smith"
+                                                    value={form.name}
+                                                    onChange={handleChange}
+                                                    className={`${inputBase} ${errors.name ? "border-red-300" : ""}`}
+                                                />
+                                                {errors.name && (
+                                                    <p className="text-[11px] text-red-400">{errors.name}</p>
+                                                )}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label
+                                                    htmlFor="email"
+                                                    className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                >
+                                                    Email <span className="text-red-400">*</span>
+                                                </label>
+                                                <input
+                                                    id="email"
+                                                    name="email"
+                                                    type="email"
+                                                    placeholder="jane@company.com"
+                                                    value={form.email}
+                                                    onChange={handleChange}
+                                                    className={`${inputBase} ${errors.email ? "border-red-300" : ""}`}
+                                                />
+                                                {errors.email && (
+                                                    <p className="text-[11px] text-red-400">{errors.email}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label
+                                                htmlFor="subject"
+                                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                            >
+                                                Subject
+                                            </label>
+                                            <input
+                                                id="subject"
+                                                name="subject"
+                                                type="text"
+                                                placeholder="Collaboration opportunity"
+                                                value={form.subject}
+                                                onChange={handleChange}
+                                                className={inputBase}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label
+                                                htmlFor="message"
+                                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                            >
+                                                Message <span className="text-red-400">*</span>
+                                            </label>
+                                            <textarea
+                                                id="message"
+                                                name="message"
+                                                rows={5}
+                                                placeholder="Hi Hamzeh, I'd love to discuss..."
+                                                value={form.message}
+                                                onChange={handleChange}
+                                                className={`${inputBase} resize-none ${errors.message ? "border-red-300" : ""}`}
+                                            />
+                                            {errors.message && (
+                                                <p className="text-[11px] text-red-400">{errors.message}</p>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={status === "submitting"}
+                                            className="w-full bg-stone-900 text-white text-sm font-medium py-3 hover:bg-stone-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {status === "submitting" ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    Send Message{" "}
+                                                    <Send className="h-4 w-4" />
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <div className="pt-2 border-t border-stone-100">
+                                            <a
+                                                href={personalInfo.resume}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center gap-2 text-[13px] text-stone-400 hover:text-stone-700 transition-colors"
+                                            >
+                                                <FileText className="h-4 w-4" /> View Resume
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </motion.div>
+                    </div>
                 </div>
             </section>
         </main>

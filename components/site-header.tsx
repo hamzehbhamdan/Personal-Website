@@ -4,99 +4,102 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X } from "lucide-react"
-
+import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
-// import { Icons } from "@/components/icons"
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-    navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 export function SiteHeader() {
     const pathname = usePathname()
     const [isOpen, setIsOpen] = React.useState(false)
 
     const routes = [
-        {
-            href: "/",
-            label: "Home",
-            active: pathname === "/",
-        },
-        {
-            href: "/about",
-            label: "About",
-            active: pathname === "/about",
-        },
-        {
-            href: "/projects",
-            label: "Projects",
-            active: pathname === "/projects",
-        },
-        {
-            href: "/contact",
-            label: "Contact",
-            active: pathname === "/contact",
-        }
+        { href: "/", label: "Home", active: pathname === "/" },
+        { href: "/about", label: "About", active: pathname === "/about" },
+        { href: "/projects", label: "Projects", active: pathname === "/projects" },
+        { href: "/thesis", label: "Thesis", active: pathname === "/thesis" },
+        { href: "/contact", label: "Contact", active: pathname === "/contact" },
     ]
 
+    const isConsultingActive = pathname.startsWith("/consulting")
+
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-14 items-center justify-between px-4 sm:px-8 mx-auto">
-                <Link href="/" className="mr-6 flex items-center space-x-2">
-                    <span className="font-bold text-xl tracking-tight">Hamzeh.</span>
+        <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-[#f9f8f6]/95 backdrop-blur">
+            <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-6">
+                {/* Logo */}
+                <Link
+                    href="/"
+                    className="font-mono text-sm font-medium tracking-[0.14em] text-stone-900 hover:text-[#A51C30] transition-colors"
+                >
+                    HH<span className="text-[#A51C30]">.</span>
                 </Link>
-                <div className="hidden md:flex md:items-center md:gap-2">
-                    <NavigationMenu>
-                        <NavigationMenuList>
-                            {routes.map((route) => (
-                                <NavigationMenuItem key={route.href}>
-                                    <NavigationMenuLink asChild className={cn(navigationMenuTriggerStyle(), route.active && "bg-slate-100 dark:bg-slate-800")}>
-                                        <Link href={route.href}>
-                                            {route.label}
-                                        </Link>
-                                    </NavigationMenuLink>
-                                </NavigationMenuItem>
-                            ))}
-                        </NavigationMenuList>
-                    </NavigationMenu>
-                    <ThemeToggle />
-                </div>
-                <div className="md:hidden flex items-center gap-2">
-                    <ThemeToggle />
+
+                {/* Desktop nav */}
+                <nav className="hidden md:flex items-center gap-7">
+                    {routes.map((route) => (
+                        <Link
+                            key={route.href}
+                            href={route.href}
+                            className={cn(
+                                "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors pb-0.5",
+                                route.active
+                                    ? "text-stone-900 border-b border-[#A51C30]"
+                                    : "text-stone-400 hover:text-stone-700"
+                            )}
+                        >
+                            {route.label}
+                        </Link>
+                    ))}
+                    <Link
+                        href="/consulting"
+                        className={cn(
+                            "font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1 border transition-all",
+                            isConsultingActive
+                                ? "border-[#A51C30] text-[#A51C30] bg-[#A51C30]/8"
+                                : "border-[#A51C30]/32 text-[#A51C30] hover:border-[#A51C30]/80 hover:bg-[#A51C30]/5"
+                        )}
+                    >
+                        Consulting
+                    </Link>
+                </nav>
+
+                {/* Mobile hamburger */}
+                <div className="md:hidden">
                     <Sheet open={isOpen} onOpenChange={setIsOpen}>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="md:hidden">
+                            <button className="p-1 text-stone-500 hover:text-stone-900 transition-colors">
                                 <Menu className="h-5 w-5" />
                                 <span className="sr-only">Toggle Menu</span>
-                            </Button>
+                            </button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                            <div className="flex flex-col h-full pl-6">
-                                <SheetTitle className="sr-only">Menu</SheetTitle>
-                                <div className="flex flex-col space-y-6 mt-8">
-                                    {routes.map((route) => (
-                                        <Link
-                                            key={route.href}
-                                            href={route.href}
-                                            className={cn(
-                                                "text-lg font-medium transition-colors hover:text-primary",
-                                                route.active ? "text-primary font-semibold" : "text-muted-foreground"
-                                            )}
-                                            onClick={() => setIsOpen(false)}
-                                        >
-                                            {route.label}
-                                        </Link>
-                                    ))}
-                                </div>
+                        <SheetContent
+                            side="right"
+                            className="w-[240px] bg-[#f9f8f6] border-l border-stone-200 p-0"
+                        >
+                            <SheetTitle className="sr-only">Menu</SheetTitle>
+                            <div className="flex flex-col pt-16 px-8 gap-7">
+                                {routes.map((route) => (
+                                    <Link
+                                        key={route.href}
+                                        href={route.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={cn(
+                                            "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors",
+                                            route.active ? "text-stone-900" : "text-stone-400 hover:text-stone-700"
+                                        )}
+                                    >
+                                        {route.label}
+                                    </Link>
+                                ))}
+                                <Link
+                                    href="/consulting"
+                                    onClick={() => setIsOpen(false)}
+                                    className={cn(
+                                        "font-mono text-[10px] uppercase tracking-[0.2em] text-[#A51C30] hover:text-[#7a0e1e] transition-colors",
+                                        isConsultingActive && "font-semibold"
+                                    )}
+                                >
+                                    Consulting ›
+                                </Link>
                             </div>
                         </SheetContent>
                     </Sheet>

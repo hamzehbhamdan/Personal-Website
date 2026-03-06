@@ -1,61 +1,69 @@
 
 import { personalInfo } from "@/lib/data";
 import Link from "next/link";
-import { Linkedin, Github, FileText, Mail } from "lucide-react";
+import { Linkedin, Github, Mail, FileText } from "lucide-react";
 
 export function SiteFooter() {
     return (
-        <footer className="border-t bg-slate-50/50 dark:bg-slate-950/20 py-12 md:py-20">
-            <div className="container px-4 sm:px-8 mx-auto">
-                <div className="grid gap-12 md:grid-cols-4">
-                    {/* Brand & Bio */}
-                    <div className="md:col-span-2 space-y-6">
-                        <Link href="/" className="font-bold text-2xl tracking-tighter">Hamzeh<span className="text-primary">.</span></Link>
-                        <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                            AI Software Engineer specializing in the intersection of quantitative finance and artificial intelligence. Harvard Class of 2025.
+        <footer className="border-t border-stone-200 bg-[#f9f8f6] py-14">
+            <div className="mx-auto max-w-5xl px-6">
+                <div className="flex flex-col md:flex-row justify-between gap-12">
+                    {/* Brand */}
+                    <div className="space-y-4">
+                        <Link
+                            href="/"
+                            className="font-mono text-sm font-medium tracking-[0.14em] text-stone-900 hover:text-[#A51C30] transition-colors"
+                        >
+                            HH<span className="text-[#A51C30]">.</span>
+                        </Link>
+                        <p className="text-[13px] text-stone-400 leading-relaxed max-w-[200px]">
+                            AI Software Engineer.<br />Harvard Class of 2025.<br />Chicago, IL.
                         </p>
-                        <div className="flex items-center gap-4">
-                            <a href={personalInfo.linkedin} target="_blank" rel="noreferrer" className="p-2 rounded-full bg-background border border-border hover:border-primary/40 hover:text-primary transition-all">
+                        <div className="flex items-center gap-4 pt-1">
+                            <a
+                                href={personalInfo.linkedin}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                            >
                                 <Linkedin className="h-4 w-4" />
                             </a>
-                            <a href={personalInfo.github} target="_blank" rel="noreferrer" className="p-2 rounded-full bg-background border border-border hover:border-primary/40 hover:text-primary transition-all">
+                            <a
+                                href={personalInfo.github}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                            >
                                 <Github className="h-4 w-4" />
                             </a>
-                            <a href={`mailto:${personalInfo.email}`} className="p-2 rounded-full bg-background border border-border hover:border-primary/40 hover:text-primary transition-all">
+                            <a
+                                href={`mailto:${personalInfo.email}`}
+                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                            >
                                 <Mail className="h-4 w-4" />
+                            </a>
+                            <a
+                                href={personalInfo.resume}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                            >
+                                <FileText className="h-4 w-4" />
                             </a>
                         </div>
                     </div>
 
-                    {/* Navigation Links */}
-                    <div className="space-y-6">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Sitemap</h3>
-                        <nav className="flex flex-col space-y-3 text-sm text-muted-foreground">
-                            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-                            <Link href="/about" className="hover:text-primary transition-colors">About</Link>
-                            <Link href="/projects" className="hover:text-primary transition-colors">Projects</Link>
-                            <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
-                        </nav>
-                    </div>
+                </div>
 
-                    {/* Legal/Meta */}
-                    <div className="space-y-6">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Resources</h3>
-                        <nav className="flex flex-col space-y-3 text-sm text-muted-foreground">
-                            <a href={personalInfo.resume} target="_blank" rel="noreferrer" className="flex items-center hover:text-primary transition-colors">
-                                <FileText className="mr-2 h-4 w-4" />
-                                Resume
-                            </a>
-                            <p className="text-xs pt-4 border-t border-border/50">
-                                &copy; {new Date().getFullYear()} {personalInfo.name}
-                            </p>
-                            <p className="text-xs">
-                                Chicago, IL / Remote
-                            </p>
-                        </nav>
-                    </div>
+                <div className="mt-12 pt-6 border-t border-stone-200 flex items-center justify-between">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-300">
+                        © {new Date().getFullYear()} {personalInfo.name}
+                    </p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-300">
+                        Chicago, IL
+                    </p>
                 </div>
             </div>
         </footer>
-    )
+    );
 }
