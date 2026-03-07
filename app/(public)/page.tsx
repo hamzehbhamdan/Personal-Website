@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Building2, Code2, ExternalLink } from "lucide-react";
-import { projects, experience, education, personalInfo } from "@/lib/data";
+import { projects, experience, education, personalInfo, harvardActivities } from "@/lib/data";
 import { playgroundProjects } from "@/lib/playground";
 import { HeroMotion } from "@/components/hero-motion";
 
@@ -19,6 +19,22 @@ const featuredTitles = [
     "Understanding ChatGPT: Neural Networks from Scratch",
     "Baseball Analytics: Creating a Betting Edge",
 ];
+
+// Only show these 4 activities, in this order, with display names
+const featuredActivities = [
+    "Consulting on Business and the Environment (CBE)",
+    "NATO HQ Presentation",
+    "Harvard Summer Camp (HMC)",
+    "VeritasGPT",
+];
+
+// Display name overrides (remove acronyms / clean up names)
+const activityDisplayNames: Record<string, string> = {
+    "Consulting on Business and the Environment (CBE)": "Consulting on Business and the Environment",
+    "NATO HQ Presentation": "NATO HQ Presentation",
+    "Harvard Summer Camp (HMC)": "Harvard Summer Camp",
+    "VeritasGPT": "Veritas GPT",
+};
 
 function EditorialSection({
     children,
@@ -54,6 +70,10 @@ export default function Home() {
     const featuredProjects = projects
         .filter((p) => featuredTitles.includes(p.title))
         .sort((a, b) => featuredTitles.indexOf(a.title) - featuredTitles.indexOf(b.title));
+
+    const displayedActivities = featuredActivities
+        .map((name) => harvardActivities.find((a) => a.title === name))
+        .filter(Boolean) as typeof harvardActivities;
 
     return (
         <main className="flex flex-col min-h-screen bg-[#f9f8f6]">
@@ -124,11 +144,14 @@ export default function Home() {
                         </p>
                         <div className="flex-1 h-px bg-stone-200" />
                     </div>
-                    <div className="grid md:grid-cols-2 gap-10">
-                        <div className="space-y-3">
-                            <h3 className="text-3xl text-stone-900" style={serif}>
-                                {education.institution}
-                            </h3>
+
+                    <div className="grid lg:grid-cols-[1fr_2fr] gap-12 items-start">
+                        <div className="space-y-4">
+                            <h2 className="text-3xl text-stone-900 leading-snug" style={serif}>
+                                Harvard
+                                <br />
+                                University
+                            </h2>
                             <p className="text-[13px] text-stone-500 leading-relaxed">
                                 {education.degree}
                             </p>
@@ -136,22 +159,93 @@ export default function Home() {
                                 {education.date}
                             </p>
                         </div>
-                        <div className="border border-[#A51C30]/22 bg-white p-6 space-y-4">
+
+                        <div className="grid sm:grid-cols-2 gap-5">
+                            <div className="border border-stone-200 bg-white p-5 space-y-3">
+                                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-stone-400">
+                                    Computer Science
+                                </p>
+                                <ul className="space-y-2">
+                                    {education.courses.cs.map((c, i) => (
+                                        <li key={i} className="text-[12px] text-stone-500 leading-relaxed">
+                                            {c.split("(")[0].trim()}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="border border-stone-200 bg-white p-5 space-y-3">
+                                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-stone-400">
+                                    Stats &amp; Math
+                                </p>
+                                <ul className="space-y-2">
+                                    {[...education.courses.stats, ...education.courses.math]
+                                        .slice(0, 6)
+                                        .map((c, i) => (
+                                            <li key={i} className="text-[12px] text-stone-500 leading-relaxed">
+                                                {c.split("(")[0].trim()}
+                                            </li>
+                                        ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Thesis card */}
+                    <div className="border border-[#A51C30]/22 bg-white p-8 space-y-4">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
                             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#A51C30]">
                                 Senior Thesis
-                            </p>
-                            <h4 className="text-lg text-stone-900 leading-snug" style={serif}>
-                                {education.thesis.title}
-                            </h4>
-                            <p className="text-[13px] text-stone-500 leading-relaxed">
-                                {education.thesis.description}
                             </p>
                             <Link
                                 href="/thesis"
                                 className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#A51C30] hover:text-[#7a0e1e] transition-colors"
                             >
-                                Explore Interactive Thesis <ArrowRight className="h-3 w-3" />
+                                View Interactive Thesis <ArrowRight className="h-3 w-3" />
                             </Link>
+                        </div>
+                        <h3 className="text-2xl text-stone-900" style={serif}>
+                            {education.thesis.title}
+                        </h3>
+                        <p className="text-[13px] text-stone-500 leading-relaxed max-w-3xl">
+                            {education.thesis.description}
+                        </p>
+                    </div>
+
+                    {/* Beyond the Classroom — inside Education */}
+                    <div className="space-y-6">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-stone-400">
+                            Beyond the Classroom
+                        </p>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {displayedActivities.map((activity, i) => (
+                                <div
+                                    key={i}
+                                    className="border border-stone-200 bg-white p-6 hover:border-stone-300 transition-colors space-y-3"
+                                >
+                                    <div>
+                                        <h3
+                                            className="text-[15px] font-medium text-stone-900"
+                                            style={serif}
+                                        >
+                                            {activityDisplayNames[activity.title] ?? activity.title}
+                                        </h3>
+                                        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#A51C30] mt-0.5">
+                                            {activity.role}
+                                        </p>
+                                    </div>
+                                    <ul className="space-y-1.5">
+                                        {activity.details.map((detail, j) => (
+                                            <li
+                                                key={j}
+                                                className="text-[12px] text-stone-400 leading-relaxed flex gap-2"
+                                            >
+                                                <span className="text-stone-300 shrink-0">—</span>
+                                                {detail}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -209,7 +303,7 @@ export default function Home() {
 
             <Divider />
 
-            {/* 04 — Playground */}
+            {/* 05 — Playground */}
             <EditorialSection className="w-full py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center justify-between">
@@ -266,7 +360,7 @@ export default function Home() {
                 </div>
             </EditorialSection>
 
-            {/* 05 — Consulting CTA (dark) */}
+            {/* 06 — Consulting CTA (dark) */}
             <section className="w-full bg-stone-900 py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="grid md:grid-cols-[1fr_auto] gap-12 items-start">

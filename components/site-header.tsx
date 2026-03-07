@@ -14,12 +14,11 @@ export function SiteHeader() {
 
     const routes = [
         { href: "/", label: "Home", active: pathname === "/" },
-        { href: "/about", label: "About", active: pathname === "/about" },
         { href: "/projects", label: "Projects", active: pathname === "/projects" },
         { href: "/thesis", label: "Thesis", active: pathname === "/thesis" },
-        { href: "/contact", label: "Contact", active: pathname === "/contact" },
         { href: "/blog", label: "Blog", active: pathname.startsWith("/blog") },
         { href: "/playground", label: "Playground", active: pathname.startsWith("/playground") },
+        { href: "/contact", label: "Contact", active: pathname === "/contact" },
     ]
 
     const isConsultingActive = pathname === "/consulting"
