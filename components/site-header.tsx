@@ -18,9 +18,10 @@ export function SiteHeader() {
         { href: "/projects", label: "Projects", active: pathname === "/projects" },
         { href: "/thesis", label: "Thesis", active: pathname === "/thesis" },
         { href: "/contact", label: "Contact", active: pathname === "/contact" },
+        { href: "/consulting/blog", label: "Blog", active: pathname.startsWith("/consulting/blog") },
     ]
 
-    const isConsultingActive = pathname.startsWith("/consulting")
+    const isConsultingActive = pathname === "/consulting"
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-[#f9f8f6]/95 backdrop-blur">

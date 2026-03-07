@@ -11,18 +11,105 @@ export interface BlogPost {
     title: string
     date: string
     readTime: string
-    tags: string[]
+    topics: string[]
+    platforms: string[]
     excerpt: string
     content: ContentBlock[]
 }
 
 export const blogPosts: BlogPost[] = [
     {
+        slug: "chatgpt-apps",
+        title: "ChatGPT Apps: When Your AI Can Actually Do Things, Not Just Tell You About Them",
+        date: "March 6, 2026",
+        readTime: "7 min read",
+        topics: ["Connectors", "Tools"],
+        platforms: ["ChatGPT"],
+        excerpt: "For two years, ChatGPT could tell you where to order dinner. Now it can order it. Apps connect third-party services directly into your conversations — DoorDash, Zillow, Khan Academy, Apple Music — so the AI stops stopping at advice.",
+        content: [
+            {
+                type: "paragraph",
+                text: "For the first two years of ChatGPT, there was a clear ceiling on what it could actually do for you. It could tell you which restaurant to try. It could explain what apartments in a neighborhood are going for. It could walk you through a math problem step by step. But it couldn't place the order, pull up live listings, or let you actually practice. That ceiling is what Apps were built to remove.",
+            },
+            {
+                type: "paragraph",
+                text: "OpenAI launched Apps in ChatGPT in October 2025 — a way for third-party services to connect directly to your conversations. The App Directory followed in December. Now when you're talking through dinner options, you can pull DoorDash into the conversation and actually place the order. When you're weighing up neighborhoods, Zillow can surface live listings right there in the chat. The shift is from ChatGPT telling you things to ChatGPT doing things, and it changes how the whole tool feels.",
+            },
+            {
+                type: "heading",
+                text: "What's Actually in the App Directory",
+            },
+            {
+                type: "paragraph",
+                text: "Four apps launched with the directory. They cover very different use cases, but the underlying pattern is the same across all of them:",
+            },
+            {
+                type: "diagram",
+                id: "chatgpt-apps-directory",
+            },
+            {
+                type: "paragraph",
+                text: "The common thread: something that used to require leaving ChatGPT, opening a separate app, doing the task, and coming back can now happen without breaking the conversation. The AI doesn't hand you off — it just handles it.",
+            },
+            {
+                type: "heading",
+                text: "How to Find and Use an App",
+            },
+            {
+                type: "paragraph",
+                text: "The App Directory lives in the tools menu inside ChatGPT — web, iOS, and Android. Browse by category (Featured, Lifestyle, Productivity, Education, Shopping), find something you want, and connect it. Connecting takes about 10 seconds: you authorize the app to access your account via OAuth, and it appears in your workspace. From that point, you can invoke it in any conversation with an @ mention, or ChatGPT may suggest it on its own when the context fits.",
+            },
+            {
+                type: "diagram",
+                id: "chatgpt-apps-invoke",
+            },
+            {
+                type: "heading",
+                text: "When It Actually Makes Sense to Use One",
+            },
+            {
+                type: "paragraph",
+                text: "Apps work best at natural handoff points — the moments in a conversation where you'd normally stop, switch to another app, do the thing, and come back. DoorDash when you're talking through what to eat. Zillow when you've been asking about a neighborhood and want to see what's available. Khan Academy when a concept comes up in a study session and you want to practice rather than just read about it. The value isn't replacing those apps — it's removing the context switch.",
+            },
+            {
+                type: "callout",
+                text: "The apps that make the most sense are the ones you're already interrupting conversations to go use. If talking to ChatGPT reliably leads you to open another app, that's the app that should be in your @ menu.",
+            },
+            {
+                type: "heading",
+                text: "What's Still Limited",
+            },
+            {
+                type: "paragraph",
+                text: "Apps aren't available everywhere yet. Users in the EU, UK, and Switzerland are waiting on a regulatory-compliant rollout. The directory is still small — four launch apps is a starting point. And each connection requires authorizing account access, so it's worth reading what permissions you're granting before approving. The SDK is still in beta, which means the app roster will grow but unevenly for now.",
+            },
+            {
+                type: "list",
+                heading: "Current limitations worth knowing:",
+                items: [
+                    "Not available in EEA, Switzerland, or UK — regulatory review is still in progress",
+                    "Small directory at launch — four apps is a foundation, not a fully-built ecosystem",
+                    "Account authorization required — each app gets scoped access, worth reviewing before you connect",
+                    "ChatGPT's auto-suggest isn't always reliable — invoking via @ mention is more consistent than waiting for it to surface the app",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Getting Started",
+            },
+            {
+                type: "paragraph",
+                text: "Open ChatGPT, tap the tools menu, and browse the App Directory. Find something you already use regularly in a separate app. Connect it. Then bring it into a conversation where it naturally belongs — not as a test, just as part of something you were already doing. The first time the handoff works the way it's supposed to, the value becomes obvious fast.",
+            },
+        ],
+    },
+    {
         slug: "chatgpt-projects-and-gpts",
         title: "ChatGPT Projects & Custom GPTs: The Features That Actually Change How You Work",
         date: "March 4, 2026",
         readTime: "7 min read",
-        tags: ["ChatGPT", "Productivity", "AI Tools"],
+        topics: ["Assistants", "Tools"],
+        platforms: ["ChatGPT"],
         excerpt: "Most people treat ChatGPT like a smarter search engine. Projects and Custom GPTs transform it into a persistent, specialized work partner — and most users have never touched either.",
         content: [
             {
@@ -117,7 +204,8 @@ export const blogPosts: BlogPost[] = [
         title: "Perplexity Computer: The AI Digital Worker That Orchestrates 19 Models to Get Work Done",
         date: "February 26, 2026",
         readTime: "9 min read",
-        tags: ["Perplexity", "AI Agents", "Agentic AI"],
+        topics: ["AI Agents", "Writing", "Research"],
+        platforms: ["Perplexity"],
         excerpt: "Perplexity Computer isn't a browser tool. It's a cloud-based digital worker that decomposes goals into tasks, routes each to one of 19 AI models, connects to 400+ apps, and delivers finished work — autonomously, for hours or months.",
         content: [
             {
@@ -272,6 +360,221 @@ export const blogPosts: BlogPost[] = [
             {
                 type: "paragraph",
                 text: "The goal isn't to automate everything. It's to understand which work belongs to you and which belongs to an agent working on your behalf. Building that judgment — and the habit of delegating at the right level of abstraction — is the core productivity skill of the next several years.",
+            },
+        ],
+    },
+    {
+        slug: "chatgpt-canvas",
+        title: "ChatGPT Canvas: The AI Writing & Coding Workspace You Didn't Know You Needed",
+        date: "February 14, 2026",
+        readTime: "7 min read",
+        topics: ["Writing", "Coding", "Tools"],
+        platforms: ["ChatGPT"],
+        excerpt: "Canvas turns ChatGPT into a side-by-side editor where you work directly on the document — not in chat replies. Version history, live code rendering, one-click shortcuts. It's the tool most users have never found.",
+        content: [
+            {
+                type: "paragraph",
+                text: "Here's what using ChatGPT for real writing work actually looks like without Canvas: you get a response, copy it out, paste it somewhere else, make your edits, switch back, re-explain what changed, get a new version that ignores half of it. For a quick reply, fine. For a report you're going to iterate on for 30 minutes — a proposal, a technical doc, anything with structure — it's a low-grade friction that stacks up fast.",
+            },
+            {
+                type: "paragraph",
+                text: "Canvas removes it. It opens a side-by-side editing workspace directly inside ChatGPT. The document or code lives in a right panel — you work in it directly, highlight what needs changing, and ChatGPT modifies that section, not the whole thing from scratch. Everything auto-saves. Full version history lives in the back button. The first time you use it after months of copy-pasting, the improvement is immediate.",
+            },
+            {
+                type: "heading",
+                text: "How to Open It",
+            },
+            {
+                type: "paragraph",
+                text: "Canvas opens automatically when ChatGPT detects a substantial writing or coding task — roughly when the output would exceed ten lines. You can also force it: type \"/\" in the composer and select canvas, or hit the shortcut in the upper right of the input box. The back button in the toolbar holds your full version history. I've used it to recover a draft mangled by an overly aggressive edit request more times than I'd like to admit.",
+            },
+            {
+                type: "heading",
+                text: "Writing Shortcuts That Actually Change Your Workflow",
+            },
+            {
+                type: "paragraph",
+                text: "The shortcuts are where Canvas earns its keep. You can shift the reading level of the entire document in one click — useful when you write for your own comprehension level and then realize it needs to land with a different audience. Length controls expand or compress the whole piece without disrupting structure. The polish pass runs grammar, clarity, and consistency checks across the full document at once, replacing what used to be five separate prompt exchanges.",
+            },
+            {
+                type: "list",
+                heading: "Writing shortcuts in Canvas:",
+                items: [
+                    "Adjust length — expand or compress the document while preserving structure and meaning",
+                    "Change reading level — one click from simplified to graduate-level, matched to your audience",
+                    "Add final polish — grammar, clarity, and consistency check run across the full document at once",
+                    "Suggest edits — ChatGPT marks specific sections with inline suggestions you accept or reject individually",
+                    "Direct editing — click anywhere and type; your changes are preserved and ChatGPT responds to them contextually",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Coding and Live Preview",
+            },
+            {
+                type: "paragraph",
+                text: "The January 2025 update added HTML and React rendering — write a component and it renders live in the canvas panel. Interact with the preview, ask for changes, and they apply directly to the code. No separate editor, no dev server, no copy-pasting between environments. For building quick interfaces or prototyping anything visual, this collapses the tool count from three down to one.",
+            },
+            {
+                type: "diagram",
+                id: "canvas-comparison",
+            },
+            {
+                type: "list",
+                heading: "Coding shortcuts in Canvas:",
+                items: [
+                    "Review code — inline suggestions with explanations, like a code review from a colleague",
+                    "Add comments — auto-generates documentation throughout the file, targeted to non-obvious logic",
+                    "Add logs — inserts console.log / print statements for debugging at key logic branches",
+                    "Fix bugs — detects and rewrites problematic sections with a plain-English explanation of what was wrong",
+                    "Port to a language — translates your code to JavaScript, TypeScript, Python, Java, C++, or PHP",
+                    "Live preview (HTML/React) — renders your output directly in the canvas panel",
+                ],
+            },
+            {
+                type: "diagram",
+                id: "canvas-shortcuts",
+            },
+            {
+                type: "callout",
+                text: "The right question isn't whether Canvas is better than standard chat — it's whether your task is a conversation or a document. If you're asking a question, chat is fine. If you're getting something done, Canvas is the right environment.",
+            },
+            {
+                type: "heading",
+                text: "Where It Pays Off Most",
+            },
+            {
+                type: "list",
+                heading: "Use cases where Canvas makes a clear difference:",
+                items: [
+                    "Long-form writing: blog posts, proposals, reports — anything over 500 words you'll iterate on across multiple rounds",
+                    "Technical writing: API docs, README files, spec sheets where structure and tone both matter",
+                    "Code projects: building components, writing scripts, prototyping UI with live visual feedback",
+                    "Academic writing: essays and papers where adjusting reading level and running polish passes is part of the process",
+                    "Presentation outlines: structuring a talk where you need to reorganize sections without disrupting others",
+                ],
+            },
+            {
+                type: "paragraph",
+                text: "Canvas is available across all subscription tiers — Free, Plus, Pro, Team, Enterprise, and Edu — on web, Windows, and macOS.",
+            },
+            {
+                type: "heading",
+                text: "Getting Started",
+            },
+            {
+                type: "paragraph",
+                text: "Next time you get a ChatGPT response you're about to copy and paste somewhere to edit — stop. Ask it to open the document in Canvas instead. Work in it directly. Highlight the parts that need changing rather than re-describing the whole thing. Try the reading level and length shortcuts. See how it feels different from the back-and-forth chat loop. Most people who try it don't go back.",
+            },
+        ],
+    },
+    {
+        slug: "chatgpt-deep-research",
+        title: "ChatGPT Deep Research: How AI Can Do 30 Minutes of Research in Seconds",
+        date: "January 10, 2026",
+        readTime: "8 min read",
+        topics: ["Research", "AI Agents"],
+        platforms: ["ChatGPT"],
+        excerpt: "Deep Research isn't a smarter search. It's an autonomous agent that reads 50–200 sources, synthesizes them, and delivers a structured cited report — while you're doing something else.",
+        content: [
+            {
+                type: "paragraph",
+                text: "Thirty minutes of research, done in under five. Not because the AI is smarter than you — but because it doesn't get distracted, doesn't open fourteen tabs and forget which one had the relevant thing, and doesn't spend half its time on a source that turned out to be two years out of date. That's the actual value: it executes the grind part so you can focus on what to do with the findings.",
+            },
+            {
+                type: "paragraph",
+                text: "ChatGPT's Deep Research is an autonomous research agent. Give it a question, and it shows you a plan — the subtasks it's going to investigate — before doing anything. Once you approve, it goes. In the background, it reads 50 to 200 sources, synthesizes as it goes, and drops a structured cited report into your chat when it's done. The February 2026 update moved it onto a GPT-5.2 model and improved the output formatting meaningfully: better section structure, cleaner citations, and a progress sidebar that shows you what it's actually reading.",
+            },
+            {
+                type: "heading",
+                text: "How It Works",
+            },
+            {
+                type: "paragraph",
+                text: "The pipeline has five steps, and knowing them makes a real difference in how you prompt. It starts with decomposition — the model breaks your question into subtasks and shows them to you before starting. You can push back, narrow the scope, or add context. Most people skip this and just hit go. That's a mistake. Thirty seconds of adjustment at this step changes the quality of the final report more than anything else you can do.",
+            },
+            {
+                type: "diagram",
+                id: "deep-research-pipeline",
+            },
+            {
+                type: "paragraph",
+                text: "The output is a document, not a chat reply. It has a structured summary at the top, organized sections by subtopic, inline citations throughout, and a full reference list at the end. For a substantive question, expect 1,500–3,000 words, fully sourced.",
+            },
+            {
+                type: "heading",
+                text: "What It's Good For",
+            },
+            {
+                type: "paragraph",
+                text: "The pattern behind every strong Deep Research use case is the same: you need to understand a landscape, not just locate a fact. Competitive intelligence. Literature reviews. Regulatory tracking across multiple agencies. Understanding an unfamiliar industry before a meeting. Pre-call research on a company or executive. These would normally cost 1–3 hours of scattered tab-switching. Deep Research turns them into a 20-minute wait.",
+            },
+            {
+                type: "list",
+                heading: "Less obvious but equally useful:",
+                items: [
+                    "Fact-checking a draft you've already written — run it against current sources to find outdated or unsupported claims",
+                    "Building a knowledge base entry on a technical topic — get a structured overview with citations your team can extend",
+                    "Tracking what's changed in a field over the past year — useful before conferences, investor meetings, or strategic planning",
+                    "Understanding a contract's context — what's standard in this type of agreement, what terms are unusual",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Writing Prompts That Work",
+            },
+            {
+                type: "paragraph",
+                text: "Vague prompts produce vague reports. 'Research AI in healthcare' gives you a mile-wide overview with no depth anywhere. Deep Research performs best when you treat it like briefing a research analyst: what's the specific question, what's the goal, what's in scope, what should be excluded, and what format do you actually need.",
+            },
+            {
+                type: "callout",
+                text: "The best prompts answer four things upfront: What is the specific question? What is the goal of this research? What's in scope and what should be excluded? What format should the output take?",
+            },
+            {
+                type: "list",
+                heading: "A prompt structure that reliably works:",
+                items: [
+                    "Specific question: 'I want to understand how major U.S. health insurers are approaching AI-assisted claims processing in 2025.'",
+                    "Scope: 'Focus on publicly disclosed initiatives, regulatory filings, and analyst coverage. Skip speculative editorial pieces.'",
+                    "Format: 'Deliver a structured report with an executive summary, key findings per company, and a comparison table.'",
+                    "Context: 'I'm preparing for a pitch to a mid-sized regional insurer. I need to understand the competitive landscape they're navigating.'",
+                ],
+            },
+            {
+                type: "heading",
+                text: "How It Compares to Manual Research",
+            },
+            {
+                type: "diagram",
+                id: "deep-research-comparison",
+            },
+            {
+                type: "heading",
+                text: "The Honest Limitations",
+            },
+            {
+                type: "paragraph",
+                text: "Deep Research doesn't access paywalled content — academic journals, proprietary databases, subscription news are all out of reach. It occasionally hallucinates specifics when sources are thin. It can't run original analysis; everything is synthesis of what already exists publicly. And the monthly query limits are real: Plus and Team subscribers get 10 full-model queries per 30 days, Pro gets 125, and Free users get 5 lightweight queries.",
+            },
+            {
+                type: "list",
+                heading: "Limitations to keep in mind:",
+                items: [
+                    "No paywalled content — journals, databases, and subscription news are inaccessible regardless of your subscription tier",
+                    "Hallucination risk when sources are sparse — always cross-check surprising specific claims before acting on them",
+                    "Source quality varies — it doesn't always distinguish primary sources from secondary commentary; verify citations that matter",
+                    "Not for real-time lookups — reports take 5–30 minutes; build that into your workflow",
+                    "Monthly query caps — 10 full-model queries for Plus/Team, 125 for Pro, 5 lightweight for Free",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Getting Started",
+            },
+            {
+                type: "paragraph",
+                text: "Pick something you've been meaning to research but keep deferring because it'll take an hour you don't have. Write it as a specific brief rather than a vague question. Run it while you do something else. When the report arrives, use it to find the two or three threads worth going deeper on yourself — those become your next questions, and the process compounds from there.",
             },
         ],
     },

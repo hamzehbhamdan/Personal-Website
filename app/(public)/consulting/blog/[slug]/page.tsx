@@ -260,9 +260,272 @@ function DiagramPerplexity() {
     )
 }
 
+function DiagramDeepResearchPipeline() {
+    const steps = [
+        { num: "01", label: "Query Decomposition", detail: "Your prompt is broken into ordered subtasks — you review and adjust the plan before the agent starts" },
+        { num: "02", label: "Agentic Browsing", detail: "Autonomously visits 50–200 web sources, reading full pages rather than snippets" },
+        { num: "03", label: "Critical Synthesis", detail: "Filters low-credibility sources, cross-references facts, aggregates the strongest evidence" },
+        { num: "04", label: "Structured Output", detail: "Organizes findings into labeled sections with inline citations and a full reference list" },
+        { num: "05", label: "Iterative Refinement", detail: "Loops back to close gaps or resolve contradictions before delivering the final report" },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    Deep Research — how the pipeline works
+                </span>
+            </div>
+            <div className="divide-y divide-stone-100">
+                {steps.map((step) => (
+                    <div key={step.num} className="flex items-start gap-4 px-5 py-4">
+                        <div className="shrink-0 font-mono text-[9px] uppercase tracking-[0.2em] text-[#A51C30] pt-0.5">{step.num}</div>
+                        <div>
+                            <div className="text-xs font-bold text-stone-800">{step.label}</div>
+                            <div className="mt-0.5 text-[11px] leading-relaxed text-stone-500">{step.detail}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
+                <span className="font-mono text-[9px] text-stone-400">Output: structured cited report · 1,500–3,000 words · inline citations · reference list</span>
+            </div>
+        </div>
+    )
+}
+
+function DiagramDeepResearchComparison() {
+    const rows = [
+        { label: "Time to complete", traditional: "1–3 hours", deep: "5–30 minutes" },
+        { label: "Sources consulted", traditional: "5–15 (manual)", deep: "50–200 (automated)" },
+        { label: "Output format", traditional: "Notes / bookmarks", deep: "Structured cited report" },
+        { label: "Citation tracking", traditional: "Manual copy-paste", deep: "Automatic, inline" },
+        { label: "Cross-source synthesis", traditional: "Done by you", deep: "Done by the agent" },
+        { label: "Paywalled content", traditional: "With subscription", deep: "Not accessible" },
+        { label: "Hallucination risk", traditional: "None (primary)", deep: "Low — verify key claims" },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    Manual research vs. Deep Research
+                </span>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                    <thead>
+                        <tr className="border-b border-stone-100 bg-stone-50">
+                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 w-1/3"></th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Manual</th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-[#A51C30]">Deep Research</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-50">
+                        {rows.map((row) => (
+                            <tr key={row.label} className="hover:bg-stone-50/50">
+                                <td className="px-5 py-2.5 font-medium text-stone-700">{row.label}</td>
+                                <td className="px-4 py-2.5 text-stone-400">{row.traditional}</td>
+                                <td className="px-4 py-2.5 text-stone-800 font-semibold">{row.deep}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    )
+}
+
+function DiagramCanvasComparison() {
+    const rows = [
+        { label: "Output lives in", chat: "Chat bubble — disappears on next reply", canvas: "Persistent editable document panel" },
+        { label: "Making changes", chat: "Request a full regeneration", canvas: "Highlight a section, change just that part" },
+        { label: "Version history", chat: "None", canvas: "Auto-saved — restore any prior version" },
+        { label: "Code rendering", chat: "Text only", canvas: "Live HTML & React preview in-panel" },
+        { label: "Reading level", chat: "Re-prompt each time", canvas: "One-click adjust (K–Graduate)" },
+        { label: "Polish / grammar", chat: "Re-prompt each time", canvas: "One-click full-document pass" },
+        { label: "Best for", chat: "Questions, quick tasks", canvas: "Writing, coding, anything iterative" },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    Standard chat vs. Canvas
+                </span>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                    <thead>
+                        <tr className="border-b border-stone-100 bg-stone-50">
+                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 w-1/3"></th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Standard Chat</th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-[#A51C30]">Canvas</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-50">
+                        {rows.map((row) => (
+                            <tr key={row.label} className="hover:bg-stone-50/50">
+                                <td className="px-5 py-2.5 font-medium text-stone-700">{row.label}</td>
+                                <td className="px-4 py-2.5 text-stone-400">{row.chat}</td>
+                                <td className="px-4 py-2.5 text-stone-800 font-semibold">{row.canvas}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    )
+}
+
+function DiagramCanvasShortcuts() {
+    const writing = [
+        { name: "Adjust length", detail: "Expand or compress while preserving structure" },
+        { name: "Change reading level", detail: "Kindergarten → Graduate, one click" },
+        { name: "Add final polish", detail: "Grammar, clarity, and consistency — full doc" },
+        { name: "Suggest edits", detail: "Inline suggestions you accept or reject" },
+        { name: "Direct editing", detail: "Click anywhere and type; changes are preserved" },
+    ]
+    const coding = [
+        { name: "Review code", detail: "Inline suggestions with explanations" },
+        { name: "Add comments", detail: "Docs generated at non-obvious logic points" },
+        { name: "Add logs", detail: "Debug statements at key branches" },
+        { name: "Fix bugs", detail: "Rewrites problems with plain-English explanation" },
+        { name: "Port to language", detail: "JS, TS, Python, Java, C++, or PHP" },
+        { name: "Live preview", detail: "HTML & React renders in-panel instantly" },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    Canvas shortcuts — writing & coding
+                </span>
+            </div>
+            <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-2">
+                <div className="p-5">
+                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Writing</div>
+                    <div className="space-y-3">
+                        {writing.map((s) => (
+                            <div key={s.name}>
+                                <div className="text-[11px] font-semibold text-stone-800">{s.name}</div>
+                                <div className="text-[10px] text-stone-500">{s.detail}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="bg-[#A51C30]/[0.03] p-5">
+                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-[#A51C30]">Coding</div>
+                    <div className="space-y-3">
+                        {coding.map((s) => (
+                            <div key={s.name}>
+                                <div className="text-[11px] font-semibold text-stone-800">{s.name}</div>
+                                <div className="text-[10px] text-stone-500">{s.detail}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function DiagramAppsDirectory() {
+    const apps = [
+        {
+            name: "DoorDash",
+            category: "Food & Delivery",
+            what: "Browse restaurants, view menus, and place food orders without leaving ChatGPT",
+            example: "\"Order my usual from Chipotle\" → DoorDash surfaces, confirms, and places the order",
+        },
+        {
+            name: "Zillow",
+            category: "Real Estate",
+            what: "Search live property listings, filter by criteria, and save homes to your list",
+            example: "\"Show me 2BR apartments in Logan Square under $2k\" → live listings appear in chat",
+        },
+        {
+            name: "Khan Academy",
+            category: "Education",
+            what: "Access interactive lessons and practice problems directly inside a study conversation",
+            example: "\"Walk me through quadratic equations with practice problems\" → lesson + exercises load in chat",
+        },
+        {
+            name: "Apple Music",
+            category: "Music",
+            what: "Generate playlists, queue tracks, and get music recommendations that play immediately",
+            example: "\"Make me a focus playlist for deep work\" → playlist is created and ready to play",
+        },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    App Directory — launch apps and what they do
+                </span>
+            </div>
+            <div className="divide-y divide-stone-100">
+                {apps.map((app) => (
+                    <div key={app.name} className="px-5 py-4">
+                        <div className="mb-1 flex items-baseline gap-3">
+                            <span className="text-xs font-bold text-stone-900">{app.name}</span>
+                            <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-stone-400">{app.category}</span>
+                        </div>
+                        <p className="mb-1.5 text-[11px] text-stone-600">{app.what}</p>
+                        <p className="text-[10px] italic text-stone-400">{app.example}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function DiagramAppsInvoke() {
+    const steps = [
+        {
+            num: "01",
+            label: "Find it in the App Directory",
+            detail: "Tools menu → App Directory → browse by category (Featured, Lifestyle, Productivity, Education, Shopping)",
+        },
+        {
+            num: "02",
+            label: "Connect and authorize",
+            detail: "Click Connect → approve OAuth access → the app appears in your workspace. Takes about 10 seconds.",
+        },
+        {
+            num: "03",
+            label: "Invoke in any conversation",
+            detail: "Type @AppName to call it directly, or ChatGPT may suggest it automatically when the conversation context fits.",
+        },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    How to add and use an app
+                </span>
+            </div>
+            <div className="divide-y divide-stone-100">
+                {steps.map((step, i) => (
+                    <div key={step.num} className={i === 2 ? "bg-[#A51C30]/[0.03] px-5 py-5" : "px-5 py-5"}>
+                        <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#A51C30]">{step.num}</div>
+                        <div className="mb-1 text-sm font-bold text-stone-900">{step.label}</div>
+                        <div className="text-[11px] leading-relaxed text-stone-500">{step.detail}</div>
+                    </div>
+                ))}
+            </div>
+            <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
+                <span className="font-mono text-[9px] text-stone-400">Available on web, iOS, and Android · outside EEA/UK/Switzerland</span>
+            </div>
+        </div>
+    )
+}
+
 function renderDiagram(id: string, index: number) {
     if (id === "chatgpt-architecture") return <DiagramChatGPT key={index} />
     if (id === "perplexity-architecture") return <DiagramPerplexity key={index} />
+    if (id === "deep-research-pipeline") return <DiagramDeepResearchPipeline key={index} />
+    if (id === "deep-research-comparison") return <DiagramDeepResearchComparison key={index} />
+    if (id === "canvas-comparison") return <DiagramCanvasComparison key={index} />
+    if (id === "canvas-shortcuts") return <DiagramCanvasShortcuts key={index} />
+    if (id === "chatgpt-apps-directory") return <DiagramAppsDirectory key={index} />
+    if (id === "chatgpt-apps-invoke") return <DiagramAppsInvoke key={index} />
     return null
 }
 
@@ -357,12 +620,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 {/* Header */}
                 <header className="mb-12">
                     <div className="mb-5 flex flex-wrap gap-2">
-                        {post.tags.map((tag) => (
+                        {post.platforms.map((p) => (
                             <span
-                                key={tag}
+                                key={p}
+                                className="rounded-sm border border-[#A51C30]/20 bg-[#A51C30]/5 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-[#A51C30]/80"
+                            >
+                                {p}
+                            </span>
+                        ))}
+                        {post.topics.map((t) => (
+                            <span
+                                key={t}
                                 className="rounded-sm border border-stone-200 bg-stone-50 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500"
                             >
-                                {tag}
+                                {t}
                             </span>
                         ))}
                     </div>

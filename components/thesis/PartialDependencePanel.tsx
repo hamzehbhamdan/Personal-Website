@@ -65,34 +65,38 @@ function PDPCardView({ card, index }: { card: PDPCard; index: number }) {
             className="overflow-hidden"
           >
             <div className="border-t border-stone-100 p-4 space-y-3">
-              {/* Optional PDP plot image */}
-              {card.src && (
-                <div className="overflow-hidden rounded-sm border border-stone-200 bg-stone-50">
-                  {card.figureLabel && (
-                    <div className="border-b border-stone-100 px-3 py-1.5">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">
-                        {card.figureLabel}
-                      </span>
+              <div className={card.src ? "sm:flex sm:gap-4 sm:items-start" : ""}>
+                {/* Optional PDP plot image */}
+                {card.src && (
+                  <div className="mb-3 sm:mb-0 sm:w-72 sm:shrink-0 overflow-hidden rounded-sm border border-stone-200 bg-stone-50">
+                    {card.figureLabel && (
+                      <div className="border-b border-stone-100 px-3 py-1.5">
+                        <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">
+                          {card.figureLabel}
+                        </span>
+                      </div>
+                    )}
+                    <div className="relative aspect-[4/3] w-full">
+                      <Image
+                        src={`/figures/${card.src}`}
+                        alt={`Partial dependence plot: ${card.factor} → ${card.direction}`}
+                        fill
+                        className="object-contain p-2"
+                        unoptimized
+                        sizes="(max-width: 640px) 100vw, 224px"
+                      />
                     </div>
-                  )}
-                  <div className="relative aspect-[4/3] w-full">
-                    <Image
-                      src={`/figures/${card.src}`}
-                      alt={`Partial dependence plot: ${card.factor} → ${card.direction}`}
-                      fill
-                      className="object-contain p-2"
-                      unoptimized
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                  </div>
+                )}
+                <div className="space-y-3 min-w-0">
+                  <p className="text-sm leading-relaxed text-stone-600">{card.finding}</p>
+                  <div className="rounded-sm bg-stone-50 px-3 py-2.5">
+                    <p className="mb-0.5 font-mono text-[8px] uppercase tracking-wider text-stone-400">
+                      Economic Interpretation
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-stone-600">{card.economic}</p>
                   </div>
                 </div>
-              )}
-              <p className="text-sm leading-relaxed text-stone-600">{card.finding}</p>
-              <div className="rounded-sm bg-stone-50 px-3 py-2.5">
-                <p className="mb-0.5 font-mono text-[8px] uppercase tracking-wider text-stone-400">
-                  Economic Interpretation
-                </p>
-                <p className="text-[11px] leading-relaxed text-stone-600">{card.economic}</p>
               </div>
             </div>
           </motion.div>
