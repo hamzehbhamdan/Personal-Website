@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 2 — Fourier Drawing Machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f9f8f6; --bg-raised: #fff; --border: #e7e5e4;
+  --text: #1c1917; --faint: #a8a29e; --mid: #57534e;
+  --accent: #A51C30; --canvas-bg: #0f0e0d;
+  --mono: 'SF Mono','Cascadia Code','Fira Code',ui-monospace,monospace;
+  --serif: 'Playfair Display',Georgia,serif;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; -webkit-font-smoothing: antialiased; overflow: hidden; }
+#app { display: flex; flex-direction: column; height: 100%; }
+
+/* Phase label */
+.phase-label {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-bottom: 1px solid var(--border);
+  background: var(--bg); flex-shrink: 0;
+}
+.phase-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 10px; display: flex; align-items: center; justify-content: center;
+}
+.phase-title { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: var(--mid); }
+.phase-mode { margin-left: auto; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--faint); }
+
+/* Wait / Error state */
+.wait-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; padding: 24px;
+  text-align: center;
+}
+.wait-icon { color: var(--faint); opacity: .4; }
+.wait-title { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: var(--faint); }
+.wait-sub { font-size: 10px; color: var(--faint); line-height: 1.6; }
+
+/* Main layout */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.canvases { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; border-bottom: 1px solid var(--border); }
+.canvas-pane {
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+.canvas-pane:last-child { border-right: none; }
+.canvas-pane-label {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  padding: 5px 8px; font-size: 8px; text-transform: uppercase; letter-spacing: .15em;
+  color: rgba(255,255,255,.4); background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+}
+.canvas-pane canvas {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain; background: var(--canvas-bg);
+}
+
+/* For freehand/sample: single canvas */
+.canvases.single { grid-template-columns: 1fr; }
+.canvases.single .canvas-pane:first-child { border-right: none; }
+
+/* Controls bar */
+.controls {
+  flex-shrink: 0; padding: 10px 14px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.ctrl-group { display: flex; align-items: center; gap: 8px; }
+.ctrl-label { font-size: 8px; text-transform: uppercase; letter-spacing: .12em; color: var(--faint); white-space: nowrap; }
+.ctrl-val { font-size: 9px; color: var(--text); min-width: 24px; text-align: right; }
+input[type=range] {
+  -webkit-appearance: none; height: 2px; background: var(--border);
+  border-radius: 1px; width: 80px; cursor: pointer; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+}
+.mode-btns { display: flex; gap: 4px; }
+.mode-btn {
+  font-family: var(--mono); font-size: 8px; text-transform: uppercase; letter-spacing: .1em;
+  padding: 3px 8px; border: 1px solid var(--border); background: none; color: var(--faint);
+  cursor: pointer; transition: all .15s;
+}
+.mode-btn.active, .mode-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(165,28,48,.04); }
+.invert-check { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.invert-check input { cursor: pointer; accent-color: var(--accent); }
+
+/* Action bar */
+.actions { flex-shrink: 0; padding: 10px 14px; display: flex; align-items: center; gap: 10px; background: var(--bg); }
+.stat-info { font-size: 9px; color: var(--faint); flex: 1; }
+.stat-info span { color: var(--text); }
+.btn-use {
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .15em;
+  padding: 8px 18px; background: var(--accent); color: #fff; border: none; cursor: pointer;
+  transition: background .2s;
+}
+.btn-use:hover { background: #8a1526; }
+.btn-use:disabled { background: var(--border); color: var(--faint); cursor: not-allowed; }
+.done-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: .15em;
+  color: #22c55e; padding: 6px 12px; border: 1px solid #22c55e33; background: #22c55e0a;
+  opacity: 0; transition: opacity .3s;
+}
+.done-badge.show { opacity: 1; }
+.done-badge svg { width: 12px; height: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="phase-label">
+    <div class="phase-num">2</div>
+    <span class="phase-title">Find the outline</span>
+    <span class="phase-mode" id="phase-mode-label"></span>
+  </div>
+
+  <!-- Wait state (no phase 1 data) -->
+  <div class="wait-state" id="wait-state" style="display:none;">
+    <svg class="wait-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <div class="wait-title">Complete Phase 1 first</div>
+    <div class="wait-sub">Upload an image or draw a shape above,<br>then scroll back down here.</div>
+  </div>
+
+  <!-- Main content (shown when phase 1 data available) -->
+  <div class="main" id="main-content">
+    <!-- Canvases: mask + contour (for images), or just path preview (for freehand) -->
+    <div class="canvases" id="canvas-grid">
+      <div class="canvas-pane">
+        <div class="canvas-pane-label" id="left-label">B&amp;W mask</div>
+        <canvas id="mask-canvas"></canvas>
+      </div>
+      <div class="canvas-pane">
+        <div class="canvas-pane-label" id="right-label">Detected outline</div>
+        <canvas id="contour-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Controls (only for image mode) -->
+    <div class="controls" id="controls-bar">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Mode</span>
+        <div class="mode-btns">
+          <button class="mode-btn active" data-mode="auto">Auto</button>
+          <button class="mode-btn" data-mode="threshold">Threshold</button>
+          <button class="mode-btn" data-mode="edge">Edge</button>
+        </div>
+      </div>
+      <div class="ctrl-group" id="sensitivity-group">
+        <span class="ctrl-label">Sensitivity</span>
+        <input type="range" id="sensitivity-slider" min="1" max="100" value="50">
+        <span class="ctrl-val" id="sensitivity-val">50</span>
+      </div>
+      <div class="ctrl-group" id="detail-group">
+        <span class="ctrl-label">Detail</span>
+        <input type="range" id="detail-slider" min="1" max="100" value="50">
+        <span class="ctrl-val" id="detail-val">50</span>
+      </div>
+      <label class="ctrl-group invert-check" id="invert-group">
+        <input type="checkbox" id="invert-toggle">
+        <span class="ctrl-label">Invert</span>
+      </label>
+    </div>
+
+    <!-- Action bar -->
+    <div class="actions">
+      <div class="stat-info" id="stat-info">—</div>
+      <div class="done-badge" id="done-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Phase 2 complete — scroll down
+      </div>
+      <button class="btn-use" id="use-btn" disabled>Use this outline ↓</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="process-canvas" style="display:none;width:1px;height:1px;"></canvas>
+<script src="./image-processing.js"></script>
+<script>
+const INPUT_KEY = 'fdm_input';
+const CONTOUR_KEY = 'fdm_contour';
+
+let currentContour = null;
+let currentMode = 'auto';
+let processedImageData = null, procW = 0, procH = 0;
+let processTimer = null;
+
+const maskCanvas = document.getElementById('mask-canvas');
+const maskCtx = maskCanvas.getContext('2d');
+const contourCanvas = document.getElementById('contour-canvas');
+const contourCtx = contourCanvas.getContext('2d');
+const processCanvas = document.getElementById('process-canvas');
+const processCtx = processCanvas.getContext('2d', { willReadFrequently: true });
+
+const waitState = document.getElementById('wait-state');
+const mainContent = document.getElementById('main-content');
+const controlsBar = document.getElementById('controls-bar');
+const statInfo = document.getElementById('stat-info');
+const useBtn = document.getElementById('use-btn');
+const doneBadge = document.getElementById('done-badge');
+const canvasGrid = document.getElementById('canvas-grid');
+
+// ── Mode buttons ──
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    updateModeControls();
+    scheduleProcess();
+  });
+});
+
+function updateModeControls() {
+  const isAuto = currentMode === 'auto';
+  document.getElementById('sensitivity-group').style.display = isAuto ? 'none' : '';
+  document.getElementById('detail-group').style.display = isAuto ? 'none' : '';
+  document.getElementById('invert-group').style.display = isAuto ? 'none' : '';
+}
+updateModeControls();
+
+document.getElementById('sensitivity-slider').addEventListener('input', e => {
+  document.getElementById('sensitivity-val').textContent = e.target.value;
+  scheduleProcess();
+});
+document.getElementById('detail-slider').addEventListener('input', e => {
+  document.getElementById('detail-val').textContent = e.target.value;
+  scheduleProcess();
+});
+document.getElementById('invert-toggle').addEventListener('change', () => scheduleProcess());
+
+function scheduleProcess() {
+  clearTimeout(processTimer);
+  processTimer = setTimeout(runProcessing, 200);
+}
+
+// ── Processing ──
+function runProcessing() {
+  if (!processedImageData) return;
+  const opts = {
+    mode: currentMode,
+    sensitivity: parseInt(document.getElementById('sensitivity-slider').value),
+    detail: parseInt(document.getElementById('detail-slider').value),
+    invert: document.getElementById('invert-toggle').checked,
+  };
+  const result = ImageProcessor.process(processedImageData, procW, procH, opts);
+  renderMask(result.mask);
+  renderContour(result.finalContour);
+  currentContour = result.finalContour;
+  if (result.finalContour.length > 10) {
+    statInfo.innerHTML = `<span>${result.finalContour.length}</span> outline points via <span>${result.usedMode}</span>`;
+    useBtn.disabled = false;
+  } else {
+    statInfo.textContent = 'No clear outline found — try adjusting Mode or Sensitivity.';
+    useBtn.disabled = true;
+  }
+  doneBadge.classList.remove('show');
+}
+
+function renderMask(mask) {
+  maskCanvas.width = procW; maskCanvas.height = procH;
+  const imgData = maskCtx.createImageData(procW, procH);
+  for (let i = 0; i < procW * procH; i++) {
+    const v = mask[i] ? 255 : 0;
+    imgData.data[i*4] = v; imgData.data[i*4+1] = v;
+    imgData.data[i*4+2] = v; imgData.data[i*4+3] = 255;
+  }
+  maskCtx.putImageData(imgData, 0, 0);
+}
+
+function renderContour(contour) {
+  contourCanvas.width = procW; contourCanvas.height = procH;
+  contourCtx.fillStyle = '#0f0e0d';
+  contourCtx.fillRect(0, 0, procW, procH);
+  if (!contour.length) return;
+  // Center the contour in the canvas
+  const cx = procW / 2, cy = procH / 2;
+  const scale = Math.min(procW, procH) * 0.4 / Math.max(...contour.map(p => Math.abs(p.x)), ...contour.map(p => Math.abs(p.y)), 1);
+  contourCtx.beginPath();
+  contour.forEach((p, i) => {
+    const x = cx + p.x * scale, y = cy + p.y * scale;
+    i === 0 ? contourCtx.moveTo(x, y) : contourCtx.lineTo(x, y);
+  });
+  contourCtx.closePath();
+  contourCtx.strokeStyle = '#e7e5e4'; contourCtx.lineWidth = 1.5;
+  contourCtx.stroke();
+}
+
+function renderFreehandPath(points) {
+  // Single-canvas display for freehand/sample
+  canvasGrid.classList.add('single');
+  document.getElementById('left-label').textContent = 'Your outline';
+  document.getElementById('right-label').style.display = 'none';
+  canvasGrid.children[1].style.display = 'none';
+  controlsBar.style.display = 'none';
+
+  const W = 600, H = 400;
+  maskCanvas.width = W; maskCanvas.height = H;
+  maskCtx.fillStyle = '#0f0e0d'; maskCtx.fillRect(0, 0, W, H);
+
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const maxExt = Math.max(...xs.map(Math.abs), ...ys.map(Math.abs), 1);
+  const s = (Math.min(W, H) * 0.4) / maxExt;
+  const cx = W / 2, cy = H / 2;
+
+  maskCtx.beginPath();
+  points.forEach((p, i) => {
+    const x = cx + p.x * s, y = cy + p.y * s;
+    i === 0 ? maskCtx.moveTo(x, y) : maskCtx.lineTo(x, y);
+  });
+  maskCtx.closePath();
+  maskCtx.strokeStyle = '#e7e5e4'; maskCtx.lineWidth = 2; maskCtx.stroke();
+
+  statInfo.innerHTML = `<span>${points.length}</span> outline points — ready`;
+  useBtn.disabled = false;
+}
+
+// ── Use this outline ──
+useBtn.addEventListener('click', () => {
+  if (!currentContour || !currentContour.length) return;
+  localStorage.setItem(CONTOUR_KEY, JSON.stringify(currentContour));
+  doneBadge.classList.add('show');
+  useBtn.textContent = '✓ Outline saved';
+  useBtn.disabled = true;
+});
+
+// ── Load phase 1 data ──
+function init() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(INPUT_KEY) || 'null'); } catch(e) {}
+
+  if (!saved) {
+    waitState.style.display = '';
+    mainContent.style.display = 'none';
+    return;
+  }
+
+  waitState.style.display = 'none';
+  mainContent.style.display = '';
+  document.getElementById('phase-mode-label').textContent = saved.source;
+
+  if (saved.source === 'freehand' || saved.source === 'sample') {
+    // No image processing needed — just show the path
+    currentContour = saved.points;
+    renderFreehandPath(saved.points);
+    statInfo.innerHTML = `<span>${saved.points.length}</span> outline points — ready`;
+    useBtn.disabled = false;
+    // Also auto-save to contour key (freehand goes straight through)
+    localStorage.setItem(CONTOUR_KEY, JSON.stringify(saved.points));
+    doneBadge.classList.add('show');
+  } else if (saved.source === 'image') {
+    // Load image, run processing
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 400;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      procW = Math.round(img.width * scale);
+      procH = Math.round(img.height * scale);
+      processCanvas.width = procW; processCanvas.height = procH;
+      processCtx.drawImage(img, 0, 0, procW, procH);
+      processedImageData = processCtx.getImageData(0, 0, procW, procH);
+      runProcessing();
+    };
+    img.src = saved.imageDataURL;
+  }
+
+  // Check if contour already saved from a previous session
+  try {
+    const existing = JSON.parse(localStorage.getItem(CONTOUR_KEY) || 'null');
+    if (existing && existing.length) {
+      doneBadge.classList.add('show');
+    }
+  } catch(e) {}
+}
+
+// Poll for phase 1 data (in case user completes phase 1 after this loads)
+let pollInterval = null;
+function startPolling() {
+  pollInterval = setInterval(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(INPUT_KEY) || 'null');
+      if (saved) { clearInterval(pollInterval); init(); }
+    } catch(e) {}
+  }, 1000);
+}
+
+window.addEventListener('load', () => {
+  init();
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(INPUT_KEY) || 'null'); } catch(e) { return null; } })();
+  if (!saved) startPolling();
+});
+
+window.addEventListener('storage', e => {
+  if (e.key === INPUT_KEY) { clearInterval(pollInterval); init(); }
+});
+</script>
+</body>
+</html>

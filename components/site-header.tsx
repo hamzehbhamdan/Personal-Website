@@ -18,7 +18,8 @@ export function SiteHeader() {
         { href: "/projects", label: "Projects", active: pathname === "/projects" },
         { href: "/thesis", label: "Thesis", active: pathname === "/thesis" },
         { href: "/contact", label: "Contact", active: pathname === "/contact" },
-        { href: "/consulting/blog", label: "Blog", active: pathname.startsWith("/consulting/blog") },
+        { href: "/blog", label: "Blog", active: pathname.startsWith("/blog") },
+        { href: "/playground", label: "Playground", active: pathname.startsWith("/playground") },
     ]
 
     const isConsultingActive = pathname === "/consulting"

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fourier Drawing Machine — Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- Site header strip -->
+  <header class="page-header">
+    <a href="/" class="page-header-logo">HH<span>.</span></a>
+    <div class="page-header-sep"></div>
+    <span class="page-header-title">Playground / Fourier Drawing Machine</span>
+    <div class="page-header-actions">
+      <a href="/playground" class="page-header-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All Experiments
+      </a>
+      <a href="/blog/fourier-drawing-machine" class="page-header-blog-link">
+        Read the write-up
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <div id="app">
+    <!-- Upload -->
+    <section id="upload-section" class="active">
+      <div class="upload-container">
+        <div class="logo-mark">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Fourier Drawing Machine logo" role="img">
+            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+            <circle cx="24" cy="24" r="12" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+            <circle cx="24" cy="24" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="36" cy="24" r="2.5" fill="currentColor"/>
+            <line x1="24" y1="24" x2="36" y2="24" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="24" y1="24" x2="18" y2="14" stroke="currentColor" stroke-width="1.2" opacity="0.6"/>
+            <circle cx="18" cy="14" r="1.8" fill="currentColor" opacity="0.6"/>
+          </svg>
+        </div>
+        <h1>Fourier Drawing Machine</h1>
+        <p class="subtitle">Upload any image. Watch spinning circles reconstruct it.</p>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Upload an image">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span class="drop-text">Drop image here or click to browse</span>
+          <span class="drop-hint">PNG, JPG, SVG — works best with logos, icons, and silhouettes</span>
+          <input type="file" id="file-input" accept="image/*" hidden>
+        </div>
+
+        <!-- mode-select-btn kept hidden so app.js doesn't crash -->
+        <button id="mode-select-btn" style="display:none;" aria-hidden="true"></button>
+
+        <div class="input-mode-section">
+          <span class="sample-label">or draw your own:</span>
+          <button class="input-mode-btn input-mode-btn--primary" id="mode-draw-btn" title="Draw freehand on a blank canvas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+            <span>Freehand Draw</span>
+          </button>
+        </div>
+
+        <div class="sample-section">
+          <span class="sample-label">or try a sample:</span>
+          <div class="sample-buttons">
+            <button class="sample-btn" data-sample="star">Gear</button>
+            <button class="sample-btn" data-sample="heart">Heart</button>
+            <button class="sample-btn" data-sample="treble">Treble Clef</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preview / Adjust -->
+    <section id="preview-section">
+      <div class="preview-layout">
+        <div class="preview-sidebar">
+          <div class="sidebar-header">
+            <button id="preview-back-btn" class="icon-btn" aria-label="Go back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <h2 id="preview-title">Select &amp; Process</h2>
+          </div>
+
+          <p class="preview-hint" id="mode-info">Paint over the parts of the image you want drawn. Leave blank to use the entire image.</p>
+
+          <!-- Phase 1: Painting controls (only for select mode) -->
+          <div id="paint-controls" style="display:none;">
+            <div class="control-group">
+              <label class="control-label">Brush Size</label>
+              <div class="slider-row">
+                <input type="range" id="brush-size-slider" min="5" max="80" value="30">
+                <span id="brush-size-value" class="slider-value">30</span>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button id="clear-paint-btn" class="action-btn secondary">Clear</button>
+            </div>
+          </div>
+
+          <!-- Draw controls (only for freehand draw mode) -->
+          <div id="draw-controls" style="display:none;">
+            <div class="control-group">
+              <label class="control-label">Line Width</label>
+              <div class="slider-row">
+                <input type="range" id="draw-line-width" min="1" max="8" value="2">
+                <span id="draw-line-width-value" class="slider-value">2</span>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button id="clear-draw-btn" class="action-btn secondary">Clear</button>
+            </div>
+          </div>
+
+          <!-- Phase 2: Processing controls (shown after Process) -->
+          <div id="process-controls" style="display:none;">
+            <div class="control-group" style="margin-bottom: 8px;">
+              <label class="control-label">Extraction Mode</label>
+              <div class="mode-buttons">
+                <button class="mode-btn active" data-mode="auto">Auto</button>
+                <button class="mode-btn" data-mode="threshold">Threshold</button>
+                <button class="mode-btn" data-mode="flood">Flood Fill</button>
+              </div>
+            </div>
+
+            <div class="control-group" id="sensitivity-group">
+              <label class="control-label">Sensitivity</label>
+              <div class="slider-row">
+                <input type="range" id="sensitivity-slider" min="0" max="100" value="50">
+                <span id="sensitivity-value" class="slider-value">50</span>
+              </div>
+            </div>
+
+            <div class="control-group" id="detail-group">
+              <label class="control-label">Detail</label>
+              <div class="slider-row">
+                <input type="range" id="detail-slider" min="10" max="100" value="50">
+                <span id="detail-value" class="slider-value">50</span>
+              </div>
+            </div>
+
+            <div class="control-group" id="invert-group" style="padding-bottom: 8px;">
+              <div class="toggle-row">
+                <label class="toggle">
+                  <input type="checkbox" id="invert-toggle">
+                  <span class="toggle-switch"></span>
+                  <span>Invert</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="preview-stats">
+              <div class="stat"><span class="stat-label">Mode used</span><span id="mode-used" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Contours</span><span id="contour-count" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Points</span><span id="contour-length" class="stat-value">—</span></div>
+            </div>
+
+          </div>
+
+          <!-- repaint-btn kept hidden so app.js doesn't crash -->
+          <button id="repaint-btn" style="display:none;" aria-hidden="true"></button>
+
+          <button id="process-btn" class="primary-btn">Process</button>
+          <button id="run-fourier-btn" class="primary-btn" style="display:none;">Draw with Fourier</button>
+        </div>
+
+        <div class="preview-main">
+          <!-- Phase 1: Paint on the original image (select mode) -->
+          <div id="paint-area" class="editor-area" style="display:none;">
+            <div class="editor-canvas-wrap">
+              <span class="panel-label" id="paint-area-label">Paint the areas you want included</span>
+              <div class="paint-stack">
+                <canvas id="original-canvas"></canvas>
+                <canvas id="paint-overlay"></canvas>
+                <canvas id="paint-cursor"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Whole-image preview (whole mode) -->
+          <div id="whole-area" class="editor-area" style="display:none;">
+            <div class="editor-canvas-wrap">
+              <span class="panel-label">Image Preview</span>
+              <canvas id="whole-preview-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Freehand drawing canvas -->
+          <div id="draw-area" class="editor-area" style="display:none;">
+            <div class="editor-canvas-wrap">
+              <span class="panel-label" id="draw-status">Click on the canvas to start drawing</span>
+              <div class="draw-canvas-wrap">
+                <canvas id="draw-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phase 2: Show mask + extracted path -->
+          <div id="result-area" class="editor-area" style="display:none;">
+            <div class="editor-canvas-wrap">
+              <span class="panel-label">White = included · Black = excluded</span>
+              <canvas id="mask-canvas"></canvas>
+            </div>
+            <div class="path-preview">
+              <span class="panel-label">Extracted Path</span>
+              <canvas id="contour-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fourier Visualization -->
+    <section id="viz-section">
+      <div class="viz-layout">
+        <div class="viz-sidebar">
+          <div class="sidebar-header">
+            <button id="back-btn" class="icon-btn" aria-label="Back to outline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <h2>Controls</h2>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Fourier Terms</label>
+            <div class="slider-row">
+              <input type="range" id="terms-slider" min="1" max="300" value="80">
+              <span id="terms-value" class="slider-value">80</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Speed</label>
+            <div class="slider-row">
+              <input type="range" id="speed-slider" min="1" max="200" value="50">
+              <span id="speed-value" class="slider-value">1x</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Line Color</label>
+            <div class="color-row">
+              <input type="color" id="line-color" value="#ffffff">
+              <div class="color-presets">
+                <button class="color-preset active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+                <button class="color-preset" data-color="#A51C30" style="background:#A51C30" title="Crimson"></button>
+                <button class="color-preset" data-color="#5cffb1" style="background:#5cffb1" title="Green"></button>
+                <button class="color-preset" data-color="#ff8c5c" style="background:#ff8c5c" title="Orange"></button>
+                <button class="color-preset" data-color="#6c8cff" style="background:#6c8cff" title="Blue"></button>
+                <button class="color-preset" data-color="#ffd55c" style="background:#ffd55c" title="Gold"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Display</label>
+            <div class="toggle-row">
+              <label class="toggle">
+                <input type="checkbox" id="show-circles" checked>
+                <span class="toggle-switch"></span>
+                <span>Epicycles</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="show-radii" checked>
+                <span class="toggle-switch"></span>
+                <span>Radii</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="show-path" checked>
+                <span class="toggle-switch"></span>
+                <span>Drawing</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="show-original" checked>
+                <span class="toggle-switch"></span>
+                <span>Original</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="show-reference">
+                <span class="toggle-switch"></span>
+                <span>Reference Photo</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="btn-row">
+              <button id="play-btn" class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="play-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pause-icon"><line x1="6" y1="4" x2="6" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/></svg>
+              </button>
+              <button id="reset-btn" class="action-btn secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.34-11.24L1 10"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="stats-panel">
+            <div class="stat"><span class="stat-label">Points</span><span id="stat-points" class="stat-value">—</span></div>
+            <div class="stat"><span class="stat-label">Circles</span><span id="stat-circles" class="stat-value">—</span></div>
+            <div class="stat"><span class="stat-label">Progress</span><span id="stat-progress" class="stat-value">—</span></div>
+          </div>
+
+        </div>
+
+        <div class="viz-main">
+          <canvas id="fourier-canvas"></canvas>
+
+          <!-- Floating formula panel -->
+          <div class="fml-float" id="fml-float">
+            <!-- Panel (above trigger) -->
+            <div class="fml-panel" id="fml-panel" style="display:none;">
+              <!-- Header: title + LaTeX copy -->
+              <div class="fml-header">
+                <span class="fml-header-title">Fourier Formula</span>
+                <button class="fml-latex-btn" id="fml-latex-btn" onclick="copyFmlLatex()">Copy LaTeX</button>
+              </div>
+
+              <!-- Series formula -->
+              <div class="fml-formula-block">
+                <div class="fml-formula-row">
+                  <span class="fml-lhs">f(t)</span>
+                  <span class="fml-eq">=</span>
+                  <span class="fml-sigma-grp">
+                    <span class="fml-sigma-lim">∞</span>
+                    <span class="fml-sigma-big">Σ</span>
+                    <span class="fml-sigma-lim">n=−∞</span>
+                  </span>
+                  <span class="fml-cn-accent">c<sub>n</sub></span>
+                  <span class="fml-dot">·</span>
+                  <span class="fml-exp-part">e<sup>2πint/T</sup></span>
+                </div>
+                <!-- DFT -->
+                <div class="fml-sub-formula-row">
+                  <span class="fml-sub">c<sub>n</sub></span>
+                  <span class="fml-eq" style="font-size:10px;">=</span>
+                  <span class="fml-sub"><sup>1</sup>/<sub>N</sub></span>
+                  <span class="fml-sub" style="font-size:13px; color:rgba(255,255,255,.3)">Σ</span>
+                  <span class="fml-sub">z(k)·e<sup>−2πink/N</sup></span>
+                </div>
+              </div>
+
+              <!-- Computed terms (live) -->
+              <div class="fml-terms-section">
+                <button class="fml-expand-btn" id="fml-expand-btn" onclick="toggleFmlTerms()">
+                  + See all computed terms
+                </button>
+                <div id="fml-terms-wrap" style="display:none;">
+                  <div class="formula-approx">f(t) ≈ <span class="formula-approx-note">(sorted by amplitude)</span></div>
+                  <div id="formula-terms-live"></div>
+                </div>
+              </div>
+
+              <!-- Symbol key -->
+              <div class="fml-key">
+                <div class="fml-key-row">
+                  <span class="fml-key-sym">c<sub>n</sub></span>
+                  <span class="fml-key-def">radius = |c<sub>n</sub>|, starting angle = ∠c<sub>n</sub></span>
+                </div>
+                <div class="fml-key-row">
+                  <span class="fml-key-sym">e<sup>2πint/T</sup></span>
+                  <span class="fml-key-def">unit circle, n revolutions per period</span>
+                </div>
+                <div class="fml-key-row">
+                  <span class="fml-key-sym">n</span>
+                  <span class="fml-key-def">harmonic: 0 = offset, ±1 = fundamental</span>
+                </div>
+                <div class="fml-key-row">
+                  <span class="fml-key-sym">z(k)</span>
+                  <span class="fml-key-def">x(k) + i·y(k) — path point as complex number</span>
+                </div>
+              </div>
+
+              <a href="/blog/fourier-drawing-machine" class="fml-blog-link">
+                Read the full write-up
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+            </div>
+
+            <!-- Trigger button -->
+            <button class="fml-trigger" id="fml-trigger" onclick="toggleFml()" title="Show formula">Σ</button>
+          </div>
+        </div>
+        <div class="ref-panel" style="display:none;">
+          <span class="panel-label">Reference</span>
+          <canvas id="ref-canvas"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <canvas id="process-canvas" style="display:none;"></canvas>
+
+  <script src="./image-processing.js"></script>
+  <script src="./app.js"></script>
+  <script>
+    // ── Floating formula panel ──
+    let fmlOpen = false;
+    function toggleFml() {
+      fmlOpen = !fmlOpen;
+      const panel = document.getElementById('fml-panel');
+      const trigger = document.getElementById('fml-trigger');
+      panel.style.display = fmlOpen ? 'flex' : 'none';
+      panel.style.flexDirection = 'column';
+      trigger.classList.toggle('active', fmlOpen);
+      if (fmlOpen && typeof window.updateFormulaLive === 'function') window.updateFormulaLive();
+    }
+
+    // ── Computed terms expand/collapse ──
+    let fmlTermsOpen = false;
+    function toggleFmlTerms() {
+      fmlTermsOpen = !fmlTermsOpen;
+      const wrap = document.getElementById('fml-terms-wrap');
+      const btn = document.getElementById('fml-expand-btn');
+      wrap.style.display = fmlTermsOpen ? 'block' : 'none';
+      btn.textContent = fmlTermsOpen ? '− Collapse computed terms' : '+ See all computed terms';
+      if (fmlTermsOpen && typeof window.updateFormulaLive === 'function') window.updateFormulaLive();
+    }
+
+    // ── Copy LaTeX ──
+    function copyFmlLatex() {
+      const coeffs = window._fourierCoeffs || [];
+      const n = window._numTerms || 0;
+      const active = Math.min(n, coeffs.length);
+      const MAX = 12;
+
+      // General formula
+      let latex = 'f(t) = \\sum_{n=-\\infty}^{\\infty} c_n \\cdot e^{\\,2\\pi i n t / T}\n\n';
+      latex += 'c_n = \\frac{1}{N} \\sum_{k=0}^{N-1} z(k) \\cdot e^{-2\\pi i n k / N}\n\n';
+
+      if (active > 0) {
+        latex += '% Computed approximation (top circles by amplitude):\n';
+        latex += 'f(t) \\approx ';
+        const shown = Math.min(active, MAX);
+        for (let i = 0; i < shown; i++) {
+          const c = coeffs[i];
+          const freq = c.freq;
+          const amp = c.amp.toFixed(4);
+          if (i > 0) latex += '\n  + ';
+          if (freq === 0) {
+            latex += amp;
+          } else {
+            const sign = freq < 0 ? '-' : '';
+            const absF = Math.abs(freq);
+            const coeff = absF === 1 ? '' : String(absF * 2);
+            latex += `${amp} \\cdot e^{${sign}${coeff}\\pi i t / T}`;
+          }
+        }
+        if (active > MAX) latex += `\n  + \\cdots \\quad \\text{(${active - MAX} more terms)}`;
+      }
+
+      navigator.clipboard.writeText(latex).then(() => {
+        const btn = document.getElementById('fml-latex-btn');
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy LaTeX'; btn.classList.remove('copied'); }, 2200);
+      }).catch(() => {
+        alert('Copy failed — clipboard not available in this context.');
+      });
+    }
+  </script>
+</body>
+</html>

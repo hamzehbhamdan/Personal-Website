@@ -458,7 +458,7 @@ export default function ConsultingPage() {
                             >
                                 <div>
                                     <div className="mb-3 flex flex-wrap gap-1.5">
-                                        {post.tags.slice(0, 2).map((tag) => (
+                                        {post.topics.slice(0, 2).map((tag) => (
                                             <span
                                                 key={tag}
                                                 className="rounded-sm bg-stone-100 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-stone-500"

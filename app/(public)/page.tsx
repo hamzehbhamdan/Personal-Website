@@ -4,8 +4,9 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Building2, Code2 } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, Code2, ExternalLink } from "lucide-react";
 import { projects, experience, education, personalInfo } from "@/lib/data";
+import { playgroundProjects } from "@/lib/playground";
 import { HeroMotion } from "@/components/hero-motion";
 
 const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" };
@@ -206,13 +207,72 @@ export default function Home() {
                 </div>
             </EditorialSection>
 
-            {/* 04 — Consulting CTA (dark) */}
+            <Divider />
+
+            {/* 04 — Playground */}
+            <EditorialSection className="w-full py-12 md:py-20">
+                <div className="mx-auto max-w-5xl px-6 space-y-10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">
+                                04 — Playground
+                            </p>
+                            <div className="hidden sm:block h-px w-12 bg-stone-200" />
+                        </div>
+                        <Link
+                            href="/playground"
+                            className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-700 transition-colors flex items-center gap-1.5 shrink-0"
+                        >
+                            All Experiments <ArrowRight className="h-3 w-3" />
+                        </Link>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {playgroundProjects.map((project, i) => (
+                            <a
+                                key={i}
+                                href={project.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex flex-col border border-stone-200 bg-white p-5 hover:border-stone-400 transition-all space-y-3"
+                            >
+                                <div className="flex flex-wrap gap-1.5">
+                                    {project.tags.map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400"
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <h3
+                                    className="text-[15px] font-medium text-stone-900 leading-snug group-hover:text-[#A51C30] transition-colors"
+                                    style={serif}
+                                >
+                                    {project.title}
+                                </h3>
+                                <p className="text-[12px] text-stone-400 leading-relaxed line-clamp-3 flex-1">
+                                    {project.description}
+                                </p>
+                                <div className="flex items-center gap-1.5 pt-2 border-t border-stone-100">
+                                    <ExternalLink className="h-3 w-3 text-stone-300 group-hover:text-[#A51C30] transition-colors" />
+                                    <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 group-hover:text-[#A51C30] transition-colors">
+                                        Launch Demo
+                                    </span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            </EditorialSection>
+
+            {/* 05 — Consulting CTA (dark) */}
             <section className="w-full bg-stone-900 py-12 md:py-20">
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="grid md:grid-cols-[1fr_auto] gap-12 items-start">
                         <div className="space-y-6">
                             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-500">
-                                04 — AI Consulting
+                                05 — AI Consulting
                             </p>
                             <h2
                                 className="text-3xl sm:text-4xl md:text-5xl text-white leading-tight"

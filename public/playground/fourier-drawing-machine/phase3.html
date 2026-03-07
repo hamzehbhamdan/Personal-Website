@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 3 — Fourier Drawing Machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f9f8f6; --bg-raised: #fff; --border: #e7e5e4;
+  --text: #1c1917; --faint: #a8a29e; --mid: #57534e;
+  --accent: #A51C30; --canvas-bg: #0f0e0d;
+  --mono: 'SF Mono','Cascadia Code','Fira Code',ui-monospace,monospace;
+  --serif: 'Playfair Display',Georgia,serif;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--canvas-bg); color: var(--text); font-family: var(--mono); font-size: 13px; -webkit-font-smoothing: antialiased; overflow: hidden; }
+#app { display: flex; flex-direction: column; height: 100%; }
+
+/* Phase label */
+.phase-label {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(15,14,13,.9); flex-shrink: 0; backdrop-filter: blur(8px);
+  position: relative; z-index: 10;
+}
+.phase-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 10px; display: flex; align-items: center; justify-content: center;
+}
+.phase-title { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: rgba(255,255,255,.5); }
+
+/* Wait state */
+.wait-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center;
+  background: var(--canvas-bg);
+}
+.wait-icon { color: rgba(255,255,255,.15); }
+.wait-title { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: rgba(255,255,255,.3); }
+.wait-sub { font-size: 10px; color: rgba(255,255,255,.2); line-height: 1.6; }
+
+/* Canvas area */
+.viz { flex: 1; position: relative; overflow: hidden; }
+#fourier-canvas { display: block; width: 100%; height: 100%; }
+
+/* Controls overlay (bottom of canvas) */
+.controls-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+  padding: 10px 14px; background: rgba(15,14,13,.75); backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+}
+.ctrl-group { display: flex; align-items: center; gap: 7px; }
+.ctrl-label { font-size: 8px; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,.35); white-space: nowrap; }
+.ctrl-val { font-size: 9px; color: rgba(255,255,255,.7); min-width: 28px; text-align: right; }
+input[type=range] {
+  -webkit-appearance: none; height: 2px; background: rgba(255,255,255,.15);
+  border-radius: 1px; width: 80px; cursor: pointer; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+}
+.btn-ctrl {
+  font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .12em;
+  padding: 4px 10px; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.55); cursor: pointer; transition: all .15s;
+}
+.btn-ctrl:hover { border-color: rgba(255,255,255,.35); color: rgba(255,255,255,.85); }
+.stat-chips { margin-left: auto; display: flex; gap: 8px; }
+.stat-chip { font-size: 8px; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.3); }
+.stat-chip span { color: rgba(255,255,255,.6); }
+
+/* Formula panel (right sidebar overlay) */
+.formula-panel {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 10;
+  width: 220px; display: flex; flex-direction: column;
+  background: rgba(15,14,13,.88); backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255,255,255,.07);
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.formula-panel.open { transform: translateX(0); }
+.formula-toggle-btn {
+  position: absolute; right: 220px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 64px; display: flex; align-items: center; justify-content: center;
+  background: rgba(15,14,13,.88); border: 1px solid rgba(255,255,255,.07);
+  border-right: none; cursor: pointer; color: rgba(255,255,255,.4);
+  font-family: var(--mono); font-size: 9px; writing-mode: vertical-rl; text-orientation: mixed;
+  letter-spacing: .1em; text-transform: uppercase;
+  transition: color .2s; z-index: 11;
+}
+.formula-panel.open .formula-toggle-btn { right: 100%; }
+.formula-toggle-btn:hover { color: rgba(255,255,255,.8); }
+
+.formula-inner { flex: 1; overflow-y: auto; padding: 14px 14px 60px; }
+.formula-section-title {
+  font-size: 8px; text-transform: uppercase; letter-spacing: .18em;
+  color: rgba(255,255,255,.3); margin-bottom: 10px;
+}
+.formula-main-expr {
+  font-family: var(--serif); font-size: 13px; color: rgba(255,255,255,.85);
+  margin-bottom: 12px; line-height: 1.6;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px;
+}
+.formula-main-expr sup { font-size: 8px; }
+.f-sigma { font-size: 18px; margin: 0 2px; }
+.f-accent { color: rgba(165,140,255,.9); }
+.formula-divider { height: 1px; background: rgba(255,255,255,.07); margin: 12px 0; }
+.terms-title {
+  font-size: 8px; text-transform: uppercase; letter-spacing: .15em;
+  color: rgba(255,255,255,.3); margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.terms-title span { color: rgba(255,255,255,.5); }
+.term-row {
+  display: flex; align-items: baseline; gap: 5px; padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05); font-size: 9px;
+}
+.term-plus { color: rgba(255,255,255,.2); width: 8px; text-align: center; flex-shrink: 0; }
+.term-expr { color: rgba(165,140,255,.8); font-family: var(--mono); flex-shrink: 0; }
+.term-expr sup { font-size: 7px; }
+.term-info { color: rgba(255,255,255,.25); font-size: 8px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.terms-more { font-size: 8px; color: rgba(255,255,255,.2); padding: 6px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="phase-label">
+    <div class="phase-num">3</div>
+    <span class="phase-title">The Fourier reconstruction</span>
+  </div>
+
+  <!-- Wait state -->
+  <div class="wait-state" id="wait-state">
+    <svg class="wait-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <div class="wait-title">Complete Phases 1 &amp; 2 first</div>
+    <div class="wait-sub">Draw a shape and lock in an outline above,<br>then scroll back down here.</div>
+  </div>
+
+  <!-- Viz area -->
+  <div class="viz" id="viz" style="display:none;">
+    <canvas id="fourier-canvas"></canvas>
+
+    <!-- Formula side panel -->
+    <div class="formula-panel" id="formula-panel">
+      <button class="formula-toggle-btn" id="formula-toggle-btn" onclick="toggleFormula()">Formula</button>
+      <div class="formula-inner">
+        <div class="formula-section-title">The series</div>
+        <div class="formula-main-expr">
+          f(t) = <span class="f-sigma f-accent">Σ</span>
+          <span class="f-accent">c</span><sub class="f-accent">n</sub>
+          · e<sup>2πint/T</sup>
+        </div>
+        <div class="formula-divider"></div>
+        <div class="terms-title">
+          Top circles <span id="terms-count-label">—</span>
+        </div>
+        <div id="live-terms"></div>
+      </div>
+    </div>
+
+    <!-- Controls overlay -->
+    <div class="controls-overlay">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Circles</span>
+        <input type="range" id="terms-slider" min="1" max="200" value="80">
+        <span class="ctrl-val" id="terms-val">80</span>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Speed</span>
+        <input type="range" id="speed-slider" min="1" max="200" value="50">
+        <span class="ctrl-val" id="speed-val">1.0×</span>
+      </div>
+      <button class="btn-ctrl" id="play-btn">Pause</button>
+      <button class="btn-ctrl" id="restart-btn">Restart</button>
+      <div class="stat-chips">
+        <div class="stat-chip">Progress <span id="stat-progress">0%</span></div>
+        <div class="stat-chip">Points <span id="stat-pts">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONTOUR_KEY = 'fdm_contour';
+
+// ── State ──
+let contourPoints = [], fourierCoeffs = [];
+let drawnPath = [], time = 0;
+let isPlaying = true, isPaused = false, pauseStart = 0;
+let numTerms = 80, speedMultiplier = 1;
+let animFrameId = null;
+let canvasScale = 1;
+const PAUSE_DURATION = 1200;
+
+const waitState = document.getElementById('wait-state');
+const vizEl = document.getElementById('viz');
+const canvas = document.getElementById('fourier-canvas');
+const ctx = canvas.getContext('2d');
+
+// ── DFT ──
+function computeDFT(points) {
+  const N = points.length, coeffs = [], half = Math.floor(N / 2);
+  for (let n = -half; n <= half; n++) {
+    let re = 0, im = 0;
+    for (let k = 0; k < N; k++) {
+      const angle = (-2 * Math.PI * n * k) / N;
+      re += points[k].x * Math.cos(angle) - points[k].y * Math.sin(angle);
+      im += points[k].x * Math.sin(angle) + points[k].y * Math.cos(angle);
+    }
+    re /= N; im /= N;
+    coeffs.push({ freq: n, re, im, amp: Math.sqrt(re*re + im*im), phase: Math.atan2(im, re) });
+  }
+  return coeffs.sort((a, b) => b.amp - a.amp);
+}
+
+// ── Setup canvas ──
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  // Recompute scale
+  const maxR = contourPoints.reduce((m, p) => Math.max(m, Math.sqrt(p.x*p.x + p.y*p.y)), 0);
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  canvasScale = maxR > 0 ? Math.min(W, H) * 0.38 / maxR : 1;
+}
+
+// ── Animation loop ──
+function startAnimation() {
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  (function loop() {
+    if (isPlaying) update();
+    render();
+    animFrameId = requestAnimationFrame(loop);
+  })();
+}
+
+function update() {
+  if (isPaused) {
+    if (performance.now() - pauseStart >= PAUSE_DURATION) {
+      isPaused = false; time = 0; drawnPath = [];
+    }
+    return;
+  }
+  const dt = (2 * Math.PI) / contourPoints.length;
+  time += dt * speedMultiplier;
+  drawnPath.push(epicycleEndpoint(time));
+  if (time >= 2 * Math.PI) {
+    isPaused = true; pauseStart = performance.now();
+    document.getElementById('stat-progress').textContent = '100%';
+    return;
+  }
+  document.getElementById('stat-progress').textContent = (time / (2 * Math.PI) * 100).toFixed(0) + '%';
+}
+
+function epicycleEndpoint(t) {
+  let x = 0, y = 0;
+  const n = Math.min(numTerms, fourierCoeffs.length);
+  for (let i = 0; i < n; i++) {
+    const c = fourierCoeffs[i];
+    x += c.amp * Math.cos(c.freq * t + c.phase);
+    y += c.amp * Math.sin(c.freq * t + c.phase);
+  }
+  return { x, y };
+}
+
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  const cx = W / 2, cy = H / 2;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); ctx.translate(cx, cy);
+
+  // Ghost outline
+  if (contourPoints.length > 1) {
+    ctx.beginPath();
+    contourPoints.forEach((p, i) => {
+      const x = p.x * canvasScale, y = p.y * canvasScale;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(108,140,255,.1)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // Epicycles
+  const n = Math.min(numTerms, fourierCoeffs.length);
+  let x = 0, y = 0;
+  for (let i = 0; i < n; i++) {
+    const c = fourierCoeffs[i];
+    const radius = c.amp * canvasScale;
+    const angle = c.freq * time + c.phase;
+    const nx = x + radius * Math.cos(angle), ny = y + radius * Math.sin(angle);
+    if (radius > 0.4) {
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(108,140,255,${Math.max(0.03, 0.18 - i * 0.003)})`; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx, ny);
+      ctx.strokeStyle = `rgba(255,140,92,${Math.max(0.07, 0.3 - i * 0.005)})`; ctx.lineWidth = 0.7; ctx.stroke();
+    }
+    x = nx; y = ny;
+  }
+
+  // Tip dot
+  ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff8c5c'; ctx.fill();
+
+  // Traced path
+  if (drawnPath.length > 1) {
+    ctx.beginPath();
+    drawnPath.forEach((p, i) => {
+      const px = p.x * canvasScale, py = p.y * canvasScale;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    });
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 5; ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ── Controls ──
+document.getElementById('terms-slider').addEventListener('input', e => {
+  numTerms = parseInt(e.target.value);
+  document.getElementById('terms-val').textContent = numTerms;
+  drawnPath = []; time = 0; isPaused = false;
+  updateFormula();
+});
+document.getElementById('speed-slider').addEventListener('input', e => {
+  speedMultiplier = parseInt(e.target.value) / 50;
+  document.getElementById('speed-val').textContent = speedMultiplier.toFixed(1) + '×';
+});
+document.getElementById('play-btn').addEventListener('click', () => {
+  isPlaying = !isPlaying;
+  document.getElementById('play-btn').textContent = isPlaying ? 'Pause' : 'Play';
+});
+document.getElementById('restart-btn').addEventListener('click', () => {
+  drawnPath = []; time = 0; isPaused = false; isPlaying = true;
+  document.getElementById('play-btn').textContent = 'Pause';
+});
+
+// ── Formula panel ──
+let formulaOpen = false;
+function toggleFormula() {
+  formulaOpen = !formulaOpen;
+  document.getElementById('formula-panel').classList.toggle('open', formulaOpen);
+  document.getElementById('formula-toggle-btn').style.right = formulaOpen ? '100%' : '';
+  if (formulaOpen) updateFormula();
+}
+
+function updateFormula() {
+  const container = document.getElementById('live-terms');
+  const countLabel = document.getElementById('terms-count-label');
+  if (!fourierCoeffs.length) return;
+  const n = Math.min(numTerms, fourierCoeffs.length);
+  const MAX = 10;
+  const shown = Math.min(n, MAX);
+  countLabel.textContent = `${n} active`;
+
+  function buildExp(freq) {
+    if (freq === 0) return '';
+    const sign = freq < 0 ? '−' : '';
+    return `·e<sup>${sign}${Math.abs(freq)*2}πit/T</sup>`;
+  }
+
+  let html = '';
+  for (let i = 0; i < shown; i++) {
+    const c = fourierCoeffs[i];
+    const freq = c.freq;
+    const amp = c.amp.toFixed(3);
+    const phasePi = (c.phase / Math.PI).toFixed(2) + 'π';
+    const dir = freq === 0 ? 'offset' : freq > 0 ? `${Math.abs(freq)}× ↺` : `${Math.abs(freq)}× ↻`;
+    const freqLabel = freq === 0 ? 'n=0' : freq > 0 ? `n=+${freq}` : `n=${freq}`;
+    html += `<div class="term-row">
+      <span class="term-plus">${i === 0 ? '' : '+'}</span>
+      <span class="term-expr">${amp}${buildExp(freq)}</span>
+      <span class="term-info">${freqLabel} · ${dir} · ∠${phasePi}</span>
+    </div>`;
+  }
+  if (n > MAX) html += `<div class="terms-more">+ ${n - MAX} more circles</div>`;
+  container.innerHTML = html;
+}
+
+// ── Load contour ──
+function startWithContour(contour) {
+  contourPoints = contour;
+  fourierCoeffs = computeDFT(contour);
+  const adaptiveTerms = Math.min(Math.max(80, Math.round(contour.length * 0.4)), fourierCoeffs.length);
+  numTerms = adaptiveTerms;
+  document.getElementById('terms-slider').max = fourierCoeffs.length;
+  document.getElementById('terms-slider').value = numTerms;
+  document.getElementById('terms-val').textContent = numTerms;
+  document.getElementById('stat-pts').textContent = contour.length;
+  waitState.style.display = 'none';
+  vizEl.style.display = '';
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    startAnimation();
+  });
+}
+
+function init() {
+  let contour = null;
+  try { contour = JSON.parse(localStorage.getItem(CONTOUR_KEY) || 'null'); } catch(e) {}
+  if (contour && contour.length > 10) {
+    startWithContour(contour);
+  }
+}
+
+// Poll for contour (in case phase 2 completes after this loads)
+let pollInterval = null;
+function startPolling() {
+  pollInterval = setInterval(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem(CONTOUR_KEY) || 'null');
+      if (c && c.length > 10) { clearInterval(pollInterval); startWithContour(c); }
+    } catch(e) {}
+  }, 1200);
+}
+
+window.addEventListener('load', () => {
+  init();
+  const existing = (() => { try { return JSON.parse(localStorage.getItem(CONTOUR_KEY) || 'null'); } catch(e) { return null; } })();
+  if (!existing || existing.length <= 10) startPolling();
+});
+
+window.addEventListener('storage', e => {
+  if (e.key === CONTOUR_KEY) { clearInterval(pollInterval); init(); }
+});
+
+window.addEventListener('resize', () => {
+  if (contourPoints.length) resizeCanvas();
+});
+</script>
+</body>
+</html>
