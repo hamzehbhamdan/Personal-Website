@@ -15,18 +15,18 @@ interface TermRow {
 }
 
 const fourierTerms: TermRow[] = [
-    { n: "0",   coefficient: "c₀",  exponent: null,         description: "stationary offset — shifts the center of the drawing" },
-    { n: "+1",  coefficient: "c₁",  exponent: "2πit/T",     description: "1 revolution per period, counter-clockwise ↺" },
-    { n: "−1",  coefficient: "c₋₁", exponent: "−2πit/T",   description: "1 revolution per period, clockwise ↻" },
-    { n: "+2",  coefficient: "c₂",  exponent: "4πit/T",     description: "2 revolutions per period, counter-clockwise ↺" },
-    { n: "−2",  coefficient: "c₋₂", exponent: "−4πit/T",   description: "2 revolutions per period, clockwise ↻" },
-    { n: "+3",  coefficient: "c₃",  exponent: "6πit/T",     description: "3 revolutions per period, counter-clockwise ↺" },
-    { n: "−3",  coefficient: "c₋₃", exponent: "−6πit/T",   description: "3 revolutions per period, clockwise ↻" },
-    { n: "+4",  coefficient: "c₄",  exponent: "8πit/T",     description: "4 revolutions per period, counter-clockwise ↺" },
-    { n: "−4",  coefficient: "c₋₄", exponent: "−8πit/T",   description: "4 revolutions per period, clockwise ↻" },
-    { n: "+5",  coefficient: "c₅",  exponent: "10πit/T",    description: "5 revolutions per period, counter-clockwise ↺" },
-    { n: "−5",  coefficient: "c₋₅", exponent: "−10πit/T",  description: "5 revolutions per period, clockwise ↻" },
-    { n: "±N",  coefficient: "cₙ",  exponent: "2πint/T",    description: "N revolutions — captures the finest detail in the path", isEllipsis: true },
+    { n: "0", coefficient: "c₀", exponent: null, description: "stationary offset — shifts the center of the drawing" },
+    { n: "+1", coefficient: "c₁", exponent: "2πit/T", description: "1 revolution per period, counter-clockwise ↺" },
+    { n: "−1", coefficient: "c₋₁", exponent: "−2πit/T", description: "1 revolution per period, clockwise ↻" },
+    { n: "+2", coefficient: "c₂", exponent: "4πit/T", description: "2 revolutions per period, counter-clockwise ↺" },
+    { n: "−2", coefficient: "c₋₂", exponent: "−4πit/T", description: "2 revolutions per period, clockwise ↻" },
+    { n: "+3", coefficient: "c₃", exponent: "6πit/T", description: "3 revolutions per period, counter-clockwise ↺" },
+    { n: "−3", coefficient: "c₋₃", exponent: "−6πit/T", description: "3 revolutions per period, clockwise ↻" },
+    { n: "+4", coefficient: "c₄", exponent: "8πit/T", description: "4 revolutions per period, counter-clockwise ↺" },
+    { n: "−4", coefficient: "c₋₄", exponent: "−8πit/T", description: "4 revolutions per period, clockwise ↻" },
+    { n: "+5", coefficient: "c₅", exponent: "10πit/T", description: "5 revolutions per period, counter-clockwise ↺" },
+    { n: "−5", coefficient: "c₋₅", exponent: "−10πit/T", description: "5 revolutions per period, clockwise ↻" },
+    { n: "±N", coefficient: "cₙ", exponent: "2πint/T", description: "N revolutions — captures the finest detail in the path", isEllipsis: true },
 ]
 
 // ── Interpretation key rows ──────────────────────────────────────────────────
@@ -89,7 +89,7 @@ const dftInterpretation = [
 
 // ── Fourier Series Formula ────────────────────────────────────────────────────
 
-export function FourierSeriesFormula({ defaultExpanded = true }: { defaultExpanded?: boolean } = {}) {
+export function FourierSeriesFormula({ defaultExpanded = false }: { defaultExpanded?: boolean } = {}) {
     const [expanded, setExpanded] = useState(defaultExpanded)
 
     return (
@@ -248,7 +248,7 @@ export function FourierSeriesFormula({ defaultExpanded = true }: { defaultExpand
 
 // ── DFT Coefficients Formula ──────────────────────────────────────────────────
 
-export function DFTCoefficientsFormula({ defaultExpanded = true }: { defaultExpanded?: boolean } = {}) {
+export function DFTCoefficientsFormula({ defaultExpanded = false }: { defaultExpanded?: boolean } = {}) {
     const [expanded, setExpanded] = useState(defaultExpanded)
 
     return (
