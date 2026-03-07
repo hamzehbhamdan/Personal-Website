@@ -95,11 +95,11 @@ export function FourierSeriesFormula({ defaultExpanded = false }: { defaultExpan
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+            <div className="flex items-center justify-between gap-2 border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400 leading-relaxed">
                     Fourier Series — complex exponential form
                 </span>
-                <span className="font-mono text-[8px] text-stone-300">f(t) = Σ cₙ·e^(2πint/T)</span>
+                <span className="font-mono text-[8px] text-stone-300 shrink-0">f(t) = Σ cₙ·e^(…)</span>
             </div>
 
             {/* Main formula display */}
@@ -179,7 +179,7 @@ export function FourierSeriesFormula({ defaultExpanded = false }: { defaultExpan
                                     </span>
 
                                     {/* The term itself */}
-                                    <span className="w-56 shrink-0 font-mono text-[11px] text-stone-800" style={serif}>
+                                    <span className="w-28 sm:w-56 shrink-0 font-mono text-[11px] text-stone-800" style={serif}>
                                         {term.isEllipsis ? (
                                             <span className="text-stone-400">···</span>
                                         ) : (
@@ -254,11 +254,11 @@ export function DFTCoefficientsFormula({ defaultExpanded = false }: { defaultExp
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+            <div className="flex items-center justify-between gap-2 border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400 leading-relaxed">
                     Discrete Fourier Transform — computing the coefficients
                 </span>
-                <span className="font-mono text-[8px] text-stone-300">cₙ = (1/N) Σ z(k)·e^(−2πink/N)</span>
+                <span className="font-mono text-[8px] text-stone-300 shrink-0">DFT</span>
             </div>
 
             {/* Main formula display */}

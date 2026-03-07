@@ -63,6 +63,12 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .canvases.single { grid-template-columns: 1fr; }
 .canvases.single .canvas-pane:first-child { border-right: none; }
 
+@media (max-width: 480px) {
+  .canvases { grid-template-columns: 1fr; grid-auto-rows: 1fr; }
+  .canvas-pane { border-right: none !important; border-bottom: 1px solid var(--border); }
+  .canvas-pane:last-child { border-bottom: none; }
+}
+
 /* Controls bar */
 .controls {
   flex-shrink: 0; padding: 10px 14px;
