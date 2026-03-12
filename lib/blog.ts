@@ -711,7 +711,7 @@ export const blogPosts: BlogPost[] = [
     },
 
     // ── Projects ─────────────────────────────────────────────────────────────
-    {
+    /* {
         slug: "mcp-injection-lab",
         title: "MCP Injection Lab: 28 Pages That Try to Hijack Your AI Agent",
         date: "2025",
@@ -905,7 +905,7 @@ export const blogPosts: BlogPost[] = [
                 ],
             },
         ],
-    },
+    }, */
 ]
 
 export function getBlogPost(slug: string): BlogPost | undefined {

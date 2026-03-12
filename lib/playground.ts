@@ -20,14 +20,14 @@ export const playgroundProjects: PlaygroundProject[] = [
         date: "2025",
         blogSlug: "fourier-drawing-machine",
     },
-    {
-        slug: "mcp-injection-lab",
-        title: "MCP Injection Lab",
-        description:
-            "28 realistic-looking web pages — blog posts, product reviews, job listings, API docs, RSS feeds — each containing hidden prompt injection payloads. Send your AI agent to browse them and see if it gets manipulated.",
-        tags: ["Security", "AI", "Research"],
-        url: "/playground/mcp-injection-lab/index.html",
-        date: "2025",
-        blogSlug: "mcp-injection-lab",
-    },
+    // {
+    //     slug: "mcp-injection-lab",
+    //     title: "MCP Injection Lab",
+    //     description:
+    //         "28 realistic-looking web pages — blog posts, product reviews, job listings, API docs, RSS feeds — each containing hidden prompt injection payloads. Send your AI agent to browse them and see if it gets manipulated.",
+    //     tags: ["Security", "AI", "Research"],
+    //     url: "/playground/mcp-injection-lab/index.html",
+    //     date: "2025",
+    //     blogSlug: "mcp-injection-lab",
+    // },
 ];
