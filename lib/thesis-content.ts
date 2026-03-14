@@ -10,7 +10,7 @@ export const THESIS_META = {
   type: "Senior Thesis",
   date: "May 2025",
   advisor: "Advisor: Prof. Emil Siriwardane",
-  pdfUrl: "/thesis.pdf", // Place your thesis PDF in /public/thesis.pdf
+  pdfUrl: "/files/Senior_Thesis.pdf",
   email: "hamzeh@alumni.harvard.edu",
   linkedin: "https://linkedin.com/in/hamzehhamdan",
   colophon: "Written in Python. Analysis performed using Ridge, Lasso, SpAM, and Kernel Regression. Data sourced from the JKP Global Factors Dataset and Finaeon. Site built with Next.js, Tailwind CSS, and Framer Motion.",
