@@ -20,7 +20,7 @@ export const education = {
     thesis: {
         title: "Cross-Market Signals: Economic Spillovers Across Markets",
         description: "This thesis investigates the interconnectedness of the U.S. and Chinese stock markets, analyzing how macroeconomic factors from one country affect the equity returns of the other. Using statistical and machine learning models on the Jensen, Kelly, and Pedersen Global Factors dataset, the study finds strong spillover effects from the U.S. to China, but minimal effects in the reverse direction.",
-        link: "files/Senior_Thesis.pdf"
+        link: "/files/Senior_Thesis.pdf"
     },
     courses: {
         math: [
@@ -55,7 +55,6 @@ export const experience = [
         description: "Building AI infrastructure to support business operations across the organization.",
         details: [
             "Designing and implementing AI infrastructure to enable widespread adoption across all business functions.",
-            "Developing agentic AI systems to automate internal workflows and enhance operational efficiency.",
             "Building analytics and monitoring frameworks to track AI usage, performance, and compliance requirements.",
             "Evaluating and assessing vendor AI solutions to inform strategic technology decisions."
         ]
