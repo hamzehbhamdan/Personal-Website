@@ -56,7 +56,6 @@ export const experience = [
         details: [
             "Design and build internal AI systems that enable teams across the firm to use large language models in business workflows.",
             "Built an AI governance system that monitors model outputs and supports review of flagged responses.",
-            "Developed internal AI tools used by advisors and analysts, including a GPT builder and domain-specific AI utilities.",
             "Built analytics dashboards to measure AI adoption and usage across teams.",
             "Collaborate with data, cybersecurity, and IT teams to design safe and scalable approaches for deploying AI tools internally.",
             "Serve as one of the firm's OpenAI platform administrator, managing access, usage policies, and platform configuration."
