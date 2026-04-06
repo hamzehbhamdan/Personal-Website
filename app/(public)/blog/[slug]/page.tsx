@@ -1,7 +1,7 @@
 
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Clock, Calendar, ExternalLink } from "lucide-react"
+import { ArrowLeft, Clock, Calendar, ExternalLink, FolderOpen, FileText, SlidersHorizontal, Layers, Zap, RefreshCw } from "lucide-react"
 import { getBlogPost, blogPosts, type ContentBlock, type Category } from "@/lib/blog"
 import { FourierSeriesFormula, DFTCoefficientsFormula } from "./formula-block"
 
@@ -447,6 +447,233 @@ function DiagramAppsInvoke() {
     )
 }
 
+function DiagramCoworkVsChat() {
+    const chatSteps = [
+        { label: "You type a prompt", sub: "Ask it to organize files, build a report, draft an email" },
+        { label: "Claude responds in chat", sub: "Explains what to do, gives you a draft or a plan" },
+        { label: "You leave the chat", sub: "Open Excel, Finder, your email client, your browser…" },
+        { label: "You do the work yourself", sub: "Copy-paste, click through apps, format the output" },
+    ]
+    const coworkSteps = [
+        { label: "You describe the outcome", sub: "\"Organize my project folder and rename files consistently\"" },
+        { label: "Cowork shows a plan", sub: "You review the steps before anything runs" },
+        { label: "It executes autonomously", sub: "Reads files, opens apps, navigates, builds the output" },
+        { label: "Finished work delivered", sub: "A real file on your machine. Not a chat reply." },
+    ]
+    const access = ["Local files", "Desktop apps", "Browser", "Email", "Integrations"]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="border-b border-stone-100 px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Regular Claude chat vs. Cowork</span>
+            </div>
+            <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-2">
+                {/* Left — Chat */}
+                <div className="p-5">
+                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">01</div>
+                    <div className="mb-4 text-xs font-bold text-stone-700">Regular Claude Chat</div>
+                    <div className="space-y-1.5">
+                        {chatSteps.map((s, i) => (
+                            <div key={i}>
+                                <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
+                                    <div className="text-[10px] font-semibold text-stone-700">{s.label}</div>
+                                    <div className="text-[9px] text-stone-400">{s.sub}</div>
+                                </div>
+                                {i < chatSteps.length - 1 && (
+                                    <div className="py-1 text-center text-sm font-bold text-stone-400">↓</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 rounded-sm bg-stone-100 px-3 py-2">
+                        <div className="text-[9px] font-semibold text-stone-500">Output</div>
+                        <div className="text-[9px] text-stone-400">Text in a chat bubble. You still do the work.</div>
+                    </div>
+                </div>
+
+                {/* Right — Cowork */}
+                <div className="bg-[#A51C30]/[0.03] p-5">
+                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-[#A51C30]">02</div>
+                    <div className="mb-4 text-xs font-bold text-stone-700">Claude Cowork</div>
+                    <div className="space-y-1.5">
+                        {coworkSteps.map((s, i) => (
+                            <div key={i}>
+                                <div className="rounded-sm border border-[#A51C30]/20 bg-white/80 px-3 py-2">
+                                    <div className="text-[10px] font-semibold text-stone-700">{s.label}</div>
+                                    <div className="text-[9px] text-stone-400">{s.sub}</div>
+                                </div>
+                                {i === 1 && (
+                                    <div className="my-1.5 rounded-sm border border-[#A51C30]/10 bg-white/60 px-3 py-1.5">
+                                        <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.1em] text-[#A51C30]/70">Has access to</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {access.map((a) => (
+                                                <span key={a} className="rounded-sm bg-[#A51C30]/8 px-1.5 py-0.5 font-mono text-[8px] text-[#A51C30]/80">{a}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {i < coworkSteps.length - 1 && (
+                                    <div className="py-1 text-center text-sm font-bold text-[#A51C30]/40">↓</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 rounded-sm bg-[#A51C30]/10 px-3 py-2">
+                        <div className="text-[9px] font-semibold text-[#A51C30]">Output</div>
+                        <div className="text-[9px] text-[#A51C30]/70">A finished file on your machine. Work is done.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function DiagramCoworkProjects() {
+    const sessions = [
+        {
+            label: "Session 1",
+            highlight: false,
+            context: [
+                { icon: <FolderOpen size={10} />, text: "Files uploaded" },
+                { icon: <FileText size={10} />, text: "First brief set" },
+            ],
+            output: "Draft v1 — correct but generic",
+            outputNote: "Starts from scratch",
+        },
+        {
+            label: "Session 2",
+            highlight: false,
+            context: [
+                { icon: <FolderOpen size={10} />, text: "Files still there" },
+                { icon: <SlidersHorizontal size={10} />, text: "Format prefs remembered" },
+                { icon: <FileText size={10} />, text: "Prior draft on file" },
+            ],
+            output: "Draft v2 — applies your style",
+            outputNote: "No re-uploading",
+        },
+        {
+            label: "Session 3+",
+            highlight: true,
+            context: [
+                { icon: <FolderOpen size={10} />, text: "All files" },
+                { icon: <SlidersHorizontal size={10} />, text: "All instructions" },
+                { icon: <FileText size={10} />, text: "Full work history" },
+                { icon: <Layers size={10} />, text: "Accumulated context" },
+            ],
+            output: "Best output yet",
+            outputNote: "Zero setup. Zero re-explaining.",
+        },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="flex items-center gap-2.5 border-b border-stone-100 px-5 py-3.5">
+                <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-stone-100">
+                    <Layers size={12} className="text-stone-500" />
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Projects — context that compounds</span>
+            </div>
+            <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-3">
+                {sessions.map((s) => (
+                    <div key={s.label} className={`flex flex-col p-5 ${s.highlight ? "bg-[#A51C30]/[0.03]" : ""}`}>
+                        <div className={`mb-3 font-mono text-[8px] uppercase tracking-[0.2em] ${s.highlight ? "text-[#A51C30]" : "text-stone-400"}`}>{s.label}</div>
+
+                        {/* Context stack */}
+                        <div className={`mb-4 flex-1 rounded-sm border p-3 ${s.highlight ? "border-[#A51C30]/20 bg-white/60" : "border-stone-200 bg-stone-50"}`}>
+                            <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.1em] text-stone-400">Loaded context</div>
+                            <div className="space-y-1.5">
+                                {s.context.map((c, i) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm ${s.highlight ? "bg-[#A51C30]/10 text-[#A51C30]" : "bg-stone-200 text-stone-500"}`}>
+                                            {c.icon}
+                                        </div>
+                                        <span className="text-[10px] text-stone-600">{c.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Output */}
+                        <div className={`rounded-sm px-3 py-2 ${s.highlight ? "bg-[#A51C30]/10" : "bg-stone-100"}`}>
+                            <div className={`text-[10px] font-semibold ${s.highlight ? "text-[#A51C30]" : "text-stone-700"}`}>{s.output}</div>
+                            <div className={`mt-0.5 font-mono text-[8px] ${s.highlight ? "text-[#A51C30]/70" : "text-stone-400"}`}>{s.outputNote}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
+                <span className="font-mono text-[9px] text-stone-400">One setup · instructions persist · files stay loaded · context never resets</span>
+            </div>
+        </div>
+    )
+}
+
+function DiagramCoworkScheduledTasks() {
+    const loop = [
+        { icon: <SlidersHorizontal size={13} />, label: "You set it once", sub: "Describe the task and schedule" },
+        { icon: <Clock size={13} />, label: "Schedule triggers", sub: "Mon 8 am, last of month…" },
+        { icon: <Zap size={13} />, label: "Cowork executes", sub: "Reads files, builds output" },
+        { icon: <FileText size={13} />, label: "Output delivered", sub: "File, email, or report ready" },
+    ]
+    const tasks = [
+        { time: "MON  8 AM", task: "Pull last week's data from Drive, generate report, drop in shared folder" },
+        { time: "LAST OF MONTH", task: "Read receipts folder, build expense spreadsheet, email to finance" },
+        { time: "DAILY  7 AM", task: "Triage flagged emails, draft prioritized reply suggestions" },
+        { time: "EVERY SUNDAY", task: "Scan competitor sites for changes, deliver change summary" },
+    ]
+    return (
+        <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
+            <div className="flex items-center gap-2.5 border-b border-stone-100 px-5 py-3.5">
+                <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#A51C30]/10">
+                    <RefreshCw size={12} className="text-[#A51C30]" />
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Scheduled Tasks — work that runs without you</span>
+            </div>
+
+            {/* Loop flow */}
+            <div className="border-b border-stone-100 px-4 py-5">
+                <div className="grid grid-cols-4 items-center gap-1.5">
+                    {loop.map((step, i) => (
+                        <div key={i} className="flex items-center gap-1.5">
+                            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-sm border border-stone-200 bg-stone-50 px-2 py-2.5 text-center">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-500">
+                                    {step.icon}
+                                </div>
+                                <div className="text-[10px] font-semibold leading-tight text-stone-800">{step.label}</div>
+                                <div className="text-[9px] leading-tight text-stone-400">{step.sub}</div>
+                            </div>
+                            {i < loop.length - 1 ? (
+                                <span className="shrink-0 font-bold text-stone-300">→</span>
+                            ) : (
+                                <div className="flex shrink-0 items-center gap-0.5">
+                                    <span className="font-bold text-stone-300">→</span>
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[#A51C30]/20 bg-[#A51C30]/5">
+                                        <RefreshCw size={10} className="text-[#A51C30]" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Task examples */}
+            <div className="divide-y divide-stone-50">
+                {tasks.map((t) => (
+                    <div key={t.time} className="flex items-start gap-4 px-5 py-3.5">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Zap size={11} className="text-[#A51C30]/60" />
+                            <span className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#A51C30]/80 w-24">{t.time}</span>
+                        </div>
+                        <span className="text-[11px] leading-relaxed text-stone-600">{t.task}</span>
+                    </div>
+                ))}
+            </div>
+            <div className="border-t border-stone-100 bg-[#A51C30]/[0.03] px-5 py-3">
+                <span className="font-mono text-[9px] text-[#A51C30]/70">Set once · runs indefinitely · pauses only when your input is genuinely needed</span>
+            </div>
+        </div>
+    )
+}
+
 function renderDiagram(id: string, index: number) {
     if (id === "chatgpt-architecture") return <DiagramChatGPT key={index} />
     if (id === "perplexity-architecture") return <DiagramPerplexity key={index} />
@@ -456,6 +683,9 @@ function renderDiagram(id: string, index: number) {
     if (id === "canvas-shortcuts") return <DiagramCanvasShortcuts key={index} />
     if (id === "chatgpt-apps-directory") return <DiagramAppsDirectory key={index} />
     if (id === "chatgpt-apps-invoke") return <DiagramAppsInvoke key={index} />
+    if (id === "cowork-vs-chat") return <DiagramCoworkVsChat key={index} />
+    if (id === "cowork-projects") return <DiagramCoworkProjects key={index} />
+    if (id === "cowork-scheduled-tasks") return <DiagramCoworkScheduledTasks key={index} />
     return null
 }
 

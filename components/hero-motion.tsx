@@ -132,9 +132,6 @@ export function HeroMotion() {
                                 priority
                             />
                         </div>
-                        <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-300 text-right">
-                            Chicago, IL · 2026
-                        </p>
                     </motion.div>
                 </div>
             </div>

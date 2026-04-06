@@ -140,6 +140,209 @@ export const blogPosts: BlogPost[] = [
 
     // ── AI ────────────────────────────────────────────────────────────────────
     {
+        slug: "claude-cowork",
+        title: "Claude Cowork: The AI That Doesn't Just Answer — It Actually Does the Work",
+        date: "April 6, 2026",
+        readTime: "9 min read",
+        category: "AI",
+        topics: ["AI Agents", "Productivity", "Automation"],
+        platforms: ["Claude"],
+        excerpt:
+            "Most AI tools tell you what to do. Cowork does it. Give Claude a goal, step away, and come back to finished work — organized files, synthesized reports, completed spreadsheets, drafted emails. This is what agentic AI looks like when it's built for the rest of us.",
+        content: [
+            {
+                type: "paragraph",
+                text: "There's a pattern that shows up constantly with AI tools. You describe a task, the AI explains how to do it, and then you go do it yourself. Ask it to organize your files, and it tells you a folder structure. Ask it to build a competitor comparison, and it writes you a summary — but you still have to open Excel, build the table, fill it in, and format it. The AI is a very good advisor. But you're still doing the work.",
+            },
+            {
+                type: "paragraph",
+                text: "Claude Cowork is built to close that gap. It's Anthropic's agentic desktop application, launched in January 2026, that takes goals stated in plain language and executes them — autonomously, across your real files, real folders, and real desktop applications. You describe what you want done. Cowork figures out the steps, does the work, and delivers the finished output. The category shift is from AI as advisor to AI as executor.",
+            },
+            {
+                type: "heading",
+                text: "What \"Agentic\" Actually Means",
+            },
+            {
+                type: "paragraph",
+                text: "You've probably seen the word 'agentic' used a lot lately. It's worth pinning down what it means in practice, because it changes how useful a tool is. A regular AI conversation is reactive — you prompt, it responds, you prompt again. Every step requires you. An agentic AI is proactive — you give it a goal, it breaks the goal into steps on its own, executes each step in sequence, handles what comes up along the way, and delivers a finished result.",
+            },
+            {
+                type: "paragraph",
+                text: "For everyday knowledge work, this distinction matters enormously. Converting a folder of receipts into a formatted expense report isn't one step — it's a dozen. Reading each file, extracting amounts and dates, categorizing by type, calculating totals, building the spreadsheet, formatting it. A reactive AI helps you do this step by step. An agentic AI does all of it after a single instruction.",
+            },
+            {
+                type: "callout",
+                text: "The right mental model for Cowork isn't a smarter chatbot. It's a capable junior colleague who can take a clearly described task, run with it, and come back with finished work — asking only when something genuinely requires your judgment.",
+            },
+            {
+                type: "heading",
+                text: "How Cowork Works",
+            },
+            {
+                type: "paragraph",
+                text: "Cowork is a desktop application — currently Mac, with Windows rolling out to Pro and Max subscribers in April 2026. It runs Claude locally with direct access to your file system and desktop applications. Unlike cloud-only AI tools that can only see what you explicitly upload, Cowork can read your actual files, navigate your real folder structure, open and operate applications, and write outputs directly back to your machine.",
+            },
+            {
+                type: "paragraph",
+                text: "When you give it a task, it shows you a plan before doing anything — a breakdown of the steps it intends to take. You can adjust this before approving. Once you do, it works through the plan step by step, showing you progress in real time. For any action that's hard to reverse — permanently deleting a file, sending an email, overwriting a document — it pauses and asks explicitly before proceeding.",
+            },
+            {
+                type: "list",
+                heading: "What Cowork can directly access and operate:",
+                items: [
+                    "Your local file system — read, create, move, organize, and rename files and folders",
+                    "Desktop applications — open programs, interact with interfaces, fill in fields, and click through workflows",
+                    "Documents and spreadsheets — read, edit, and generate .docx, .xlsx, .csv, and .pdf files",
+                    "Email — draft, compose, and send emails via your connected mail client",
+                    "Browser — navigate websites, pull information, and interact with web-based tools",
+                ],
+            },
+            {
+                type: "diagram",
+                id: "cowork-vs-chat",
+            },
+            {
+                type: "heading",
+                text: "Real Use Cases Worth Knowing About",
+            },
+            {
+                type: "paragraph",
+                text: "The clearest way to understand what Cowork is good for is to look at specific workflows people are actually running through it — not hypothetical capability lists. The pattern across all of them: the task has multiple steps, involves real files or applications, and the value is in the finished output, not the answer to a question.",
+            },
+            {
+                type: "paragraph",
+                text: "File organization is one of the most common entry points. Give Cowork a folder of hundreds of unsorted files — contracts, invoices, meeting notes, project docs — and describe how you want them organized. It reads each file's actual content (not just the filename) to decide where it belongs, moves files into the right structure, and renames them consistently. What would take 2–3 hours of manual sorting takes a single instruction and a few minutes of background work.",
+            },
+            {
+                type: "paragraph",
+                text: "Expense reporting is another high-leverage one. Drop a folder of receipt images and PDFs — mixed formats, different vendors, different dates. Cowork reads each one, extracts amount, date, vendor, and category, then generates a formatted spreadsheet with totals and subtotals by category. Ready for submission without a single manual data entry.",
+            },
+            {
+                type: "paragraph",
+                text: "Competitive research to finished deliverable is where analysts and consultants get the most time back. Give it a list of competitors and a brief on what you need. It browses their websites, pulls product pages, pricing, and positioning language, then synthesizes findings into a structured comparison document. Not a chat reply — an actual file. Multi-hour landscape reviews cut to under 30 minutes.",
+            },
+            {
+                type: "paragraph",
+                text: "Meeting intelligence is the quiet daily unlock. Paste in a raw transcript or rough notes and Cowork extracts themes, decisions, open questions, and action items with owners, then drafts the follow-up email to all attendees. Useful for anyone who leaves a meeting and immediately loses half of what was decided.",
+            },
+            {
+                type: "list",
+                heading: "Other high-value workflows people are running:",
+                items: [
+                    "Contract review triage — read a batch of contracts, flag non-standard clauses and missing fields, output a one-line summary per document",
+                    "Pre-meeting briefing — given a company name and attendee list, research background, recent news, and open questions into a one-page brief before you sit down",
+                    "Invoice reconciliation — match a batch of invoices against a master ledger, flag any discrepancies, generate a clean reconciliation report",
+                    "Presentation first draft — using a project brief and brand guidelines, draft a structured slide outline in the established format, ready for you to refine",
+                    "Weekly status reports — pull task lists from Notion or Drive, summarize progress by owner, format and deliver on a schedule without manual triggering",
+                ],
+            },
+            {
+                type: "callout",
+                text: "The right filter for whether a task belongs in Cowork: would you normally need to open multiple apps, spend more than 30 minutes, and produce an output file at the end? That's the Cowork pattern. Single-question lookups and quick drafts still belong in regular Claude chat.",
+            },
+            {
+                type: "heading",
+                text: "Projects: Memory That Persists Across Sessions",
+            },
+            {
+                type: "paragraph",
+                text: "One of Cowork's most underused features is Projects — persistent workspaces that maintain context across every session you run inside them. Most AI tools start fresh every time. Cowork Projects remember what you've already built, what instructions you've set, and what files are relevant — so you never have to re-explain yourself.",
+            },
+            {
+                type: "paragraph",
+                text: "Set up a Project for a recurring workflow — weekly reporting, client account management, ongoing research — and it accumulates context over time. The AI's understanding of your work gets sharper the more you use it. Deliverables improve because context compounds. Instructions you give once keep applying. Files you upload once stay available.",
+            },
+            {
+                type: "diagram",
+                id: "cowork-projects",
+            },
+            {
+                type: "heading",
+                text: "Scheduled Tasks: Work That Happens Without You",
+            },
+            {
+                type: "paragraph",
+                text: "Cowork also supports Scheduled Tasks — automation that runs on a defined schedule without you needing to trigger it. Set a task to run every Monday morning, the first of every month, or at any interval, and it executes in the background while you're doing something else entirely.",
+            },
+            {
+                type: "paragraph",
+                text: "This closes the last gap between an AI tool and an actual automated workflow. Scheduled tasks are where knowledge work automation gets genuinely powerful: weekly reports generated and ready in your inbox before you sit down, monthly data pulls organized before your planning meeting, recurring file maintenance done in the background without you ever thinking about it.",
+            },
+            {
+                type: "diagram",
+                id: "cowork-scheduled-tasks",
+            },
+            {
+                type: "heading",
+                text: "Who Cowork Is Actually For",
+            },
+            {
+                type: "paragraph",
+                text: "Cowork was deliberately designed for knowledge workers whose output is documents, data, and decisions — not code. The announcement explicitly positioned it as 'Claude Code power for knowledge work.' If you've heard of Claude Code (the developer tool) and thought it wasn't relevant to you because you don't write software, Cowork is the equivalent for your type of work.",
+            },
+            {
+                type: "list",
+                heading: "The roles where it shows up most clearly:",
+                items: [
+                    "Analysts and researchers — anyone who regularly pulls data from multiple sources, synthesizes it, and produces a structured output",
+                    "Operations and project managers — people whose work involves organizing information, coordinating across systems, and generating recurring reports",
+                    "Legal and finance professionals — roles where document processing, data extraction, and formatted deliverables are constant",
+                    "Executives and assistants — anyone who needs research, briefings, and summaries prepared before meetings",
+                    "Consultants — professionals who regularly produce client-facing deliverables from raw inputs on a project basis",
+                ],
+            },
+            {
+                type: "paragraph",
+                text: "The common thread: work that involves a lot of 'assembly' — gathering pieces from multiple places, combining them into a finished format, and delivering them somewhere. This is exactly the work that's tedious for skilled people but hard to automate with traditional tools.",
+            },
+            {
+                type: "heading",
+                text: "What Cowork Can't Do",
+            },
+            {
+                type: "paragraph",
+                text: "Being honest about limits matters more than selling the upside. Cowork is capable, but it's not magic — and understanding where it struggles helps you use it better.",
+            },
+            {
+                type: "list",
+                items: [
+                    "It can't replace judgment calls — Cowork executes clearly defined tasks well; it doesn't decide what should be done. Strategy, prioritization, and nuanced decisions still require you",
+                    "Complex multi-app workflows sometimes need clarification mid-task — if your instructions are ambiguous, it will pause and ask rather than guess wrong",
+                    "It works best with clear, specific instructions — 'organize my project folder' with no additional context produces worse results than a specific description of how you want it organized",
+                    "Currently Mac-only for desktop control at general availability — Windows is rolling out through early 2026",
+                    "Some tasks require connected integrations — for scheduled tasks that pull from Google Drive or send via Gmail, those integrations need to be set up first",
+                ],
+            },
+            {
+                type: "heading",
+                text: "How to Actually Get Started",
+            },
+            {
+                type: "paragraph",
+                text: "The single best way to understand what Cowork can do for you is to give it a complete, end-to-end task that you currently do manually. Not a quick lookup — a real workflow that takes you 30–60 minutes and involves multiple files or steps. Describe the finished output you want in plain language. Let it show you the plan. Approve it. Watch what it does.",
+            },
+            {
+                type: "paragraph",
+                text: "The first time a task you'd normally spend an hour on arrives in your folder ready to go — in the time it took you to make coffee — the value becomes self-evident. That's the moment the shift clicks from understanding Cowork conceptually to actually changing how you work.",
+            },
+            {
+                type: "list",
+                heading: "A good first task checklist:",
+                items: [
+                    "Choose something you do regularly — not a one-off, but a recurring workflow where the improvement compounds",
+                    "Make it multi-step — single-question tasks work fine in regular Claude chat; save Cowork for work that has stages",
+                    "Describe the output you want, not the process — 'I want a formatted report with these sections' is better than 'read these files then put the data in a table'",
+                    "Start with a folder or set of files you already have — so you can see it operate on real content from day one",
+                    "After the first run, refine: what did it miss, what could the output format be cleaner on? That feedback becomes the standing instruction in your Project",
+                ],
+            },
+            {
+                type: "paragraph",
+                text: "Cowork is available on Pro and Max subscription tiers, with Team and Enterprise plans supporting multi-user access and shared Projects. The desktop application downloads from claude.ai on supported plans.",
+            },
+        ],
+    },
+    {
         slug: "chatgpt-apps",
         title: "ChatGPT Apps: When Your AI Can Actually Do Things, Not Just Tell You About Them",
         date: "March 6, 2026",
