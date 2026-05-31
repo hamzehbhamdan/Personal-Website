@@ -343,6 +343,201 @@ export const blogPosts: BlogPost[] = [
         ],
     },
     {
+        slug: "claude-design",
+        title: "Claude Design: Anthropic's AI That Turns a Text Prompt Into a Working Prototype",
+        date: "April 24, 2026",
+        readTime: "9 min read",
+        category: "AI",
+        topics: ["Design", "Prototyping", "Productivity"],
+        platforms: ["Claude"],
+        excerpt:
+            "Claude Design launched April 17, 2026 — a standalone tool that generates designs, interactive prototypes, pitch decks, and marketing collateral from plain language. No design tool experience required. Your brand system is applied automatically. The output is code, not a Figma file.",
+        content: [
+            {
+                type: "paragraph",
+                text: "For most people working in product, marketing, or consulting, there's a permanent gap between having an idea and being able to show it to someone. You know what you want the pitch deck to say. You know roughly what the landing page should look like. But turning that into something you can actually put in front of a stakeholder means either learning Figma, waiting on a designer, or producing something embarrassing in PowerPoint. Claude Design was built to close that gap.",
+            },
+            {
+                type: "paragraph",
+                text: "Launched April 17, 2026 by Anthropic Labs, Claude Design is a standalone visual creation tool that generates designs, interactive prototypes, pitch decks, one-pagers, and marketing collateral from a text prompt. It's powered by Claude Opus 4.7 and uses Canva's Design Engine for rendering. The output isn't a design file — it's live HTML, CSS, and JavaScript, which means it renders in a browser, can be handed directly to a developer, and in many cases can be shipped as-is.",
+            },
+            {
+                type: "heading",
+                text: "How It Works",
+            },
+            {
+                type: "paragraph",
+                text: "Claude Design lives at claude.ai/design. When you create a project, it can read your codebase and existing design files to extract your brand system — colors, typography, component patterns — and apply them automatically to everything it generates. You never have to paste in your brand guidelines or describe your color palette. It already knows.",
+            },
+            {
+                type: "paragraph",
+                text: "The workflow is conversational. You describe what you want in the chat interface, Claude Opus 4.7 generates a working design on the canvas, and you refine through follow-up prompts for broad changes or inline comments for component-level details. Sliders for spacing, color, and layout give you fine-grained control without touching code. When you're done, you export in whatever format you need — Canva, PDF, PPTX, HTML, ZIP — or hand off the entire bundle directly to Claude Code for implementation.",
+            },
+            {
+                type: "list",
+                heading: "What you can give it as input:",
+                items: [
+                    "Text prompts — describe what you want in plain language",
+                    "Uploaded images or documents — DOCX, PPTX, XLSX files as source material",
+                    "Website captures — point it at a URL and it reads the existing design",
+                    "Codebase integration — connects to your repo to auto-apply your existing design system",
+                ],
+            },
+            {
+                type: "callout",
+                text: "The key difference from tools like Figma: Claude Design doesn't produce editable vector files. It produces working code. That's a trade-off — you lose the component-library polish of a professional design workflow, but you gain something that a developer can actually use on day one without additional handoff work.",
+            },
+            {
+                type: "heading",
+                text: "Use Case 1: Pitch Decks From a Brief",
+            },
+            {
+                type: "paragraph",
+                text: "The pitch deck use case is where Claude Design delivers the most immediate time savings. The typical workflow is painful: you write the story in a doc, someone converts it into slides with inconsistent formatting, you iterate on both simultaneously, you eventually give up on design and just ship something barely presentable. Claude Design collapses this.",
+            },
+            {
+                type: "paragraph",
+                text: "Give it a brief — the company, the ask, the key points you need to land — and it produces a complete on-brand slide deck. Not a template with placeholder text but an actual structured deck with your narrative, your data, your brand colors and typography. The semantic prompt capability means you can say things like 'make this feel more trustworthy' and it adjusts typefaces, spacing, and visual weight rather than asking you to specify which properties to change.",
+            },
+            {
+                type: "list",
+                heading: "What this replaces in practice:",
+                items: [
+                    "Laying out slides manually in PowerPoint or Keynote after writing the script",
+                    "Going back and forth with a designer on formatting after the content is done",
+                    "Re-applying brand colors and fonts every time you start a new deck",
+                    "Exporting to PPTX for stakeholders who need an editable file",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Use Case 2: Landing Pages and Marketing Collateral",
+            },
+            {
+                type: "paragraph",
+                text: "Marketing teams and solo founders spend a disproportionate amount of time on assets that don't need to be perfect — campaign landing pages, event one-pagers, feature announcement pages, product comparison sheets. These need to be on-brand and clear, but they don't need to go through a design review cycle. Claude Design handles the entire category.",
+            },
+            {
+                type: "paragraph",
+                text: "Because the output is HTML and CSS, a landing page generated in Claude Design is a landing page you can actually deploy. Not a mockup that needs to be rebuilt — the thing itself. For teams running campaigns that need new pages frequently, this removes the design and development bottleneck entirely. Describe the offer, the audience, the call to action; Claude Design produces a responsive, styled page ready to push.",
+            },
+            {
+                type: "callout",
+                text: "Claude Design is particularly strong on brand-constrained work — landing pages with specific color requirements, responsive layouts, and vibrant styling. If your brand system is connected, everything it generates looks like it came from your design team, not from a generic AI tool.",
+            },
+            {
+                type: "heading",
+                text: "Use Case 3: Product Wireframes and Mockups",
+            },
+            {
+                type: "paragraph",
+                text: "For product teams, the earliest-stage work is often the most time-consuming to communicate visually. You have a product idea, a flow you want to validate, a feature you need sign-off on — but producing even rough wireframes takes time and requires someone who knows the design tool. Claude Design removes the tool barrier entirely.",
+            },
+            {
+                type: "paragraph",
+                text: "Describe the screen you want — the components, the layout, the user action — and Claude Design produces a working mockup. Because it reads your codebase's existing component patterns, the mockup uses the same UI elements as your real product, making it easier for engineers to estimate work and for stakeholders to understand what's being proposed without having to mentally translate from a wireframe.",
+            },
+            {
+                type: "list",
+                heading: "Product team workflows where this fits:",
+                items: [
+                    "Early concept validation — show stakeholders a working visual before a spec is written",
+                    "User research — generate multiple layout directions quickly for preference testing",
+                    "Design exploration — iterate through 4–5 directions in an hour instead of a week",
+                    "Developer briefing — hand off a coded mockup instead of a Figma link, reducing ambiguity about implementation",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Use Case 4: Interactive Prototypes for User Testing",
+            },
+            {
+                type: "paragraph",
+                text: "Because Claude Design outputs live code rather than static designs, the prototypes it creates can actually be interactive. Buttons work. Navigation flows work. Forms respond to input. This makes it directly useful for user testing in a way that most AI design tools aren't — you can hand a Claude Design prototype to a real user and watch them use it without needing to wire up Figma interactions or build a throwaway frontend.",
+            },
+            {
+                type: "paragraph",
+                text: "The Claude Code handoff makes this even more useful. Once a prototype has survived a round of user testing and is worth investing in, you export the full design bundle to Claude Code for implementation. The prototype becomes the specification. The code that came out of Claude Design is the starting point for the real build, not a separate artifact that gets discarded.",
+            },
+            {
+                type: "heading",
+                text: "Use Case 5: Design Explorations and Rapid Iteration",
+            },
+            {
+                type: "paragraph",
+                text: "One of the less obvious high-value uses is exploration — generating multiple distinct directions quickly to find which one is worth refining. A designer working solo might produce two or three directions in a day. Claude Design can produce five or six in an hour, each fully styled, each ready to put in front of stakeholders or users for a reaction.",
+            },
+            {
+                type: "paragraph",
+                text: "The conversational refinement loop makes iteration fast in a way that menu-driven tools aren't. 'Make this feel more minimal' or 'shift this toward a B2B audience' produces immediate results without navigating property panels. For design exploration specifically — where the goal is divergence before convergence — this speed of iteration changes what's possible in the time you have.",
+            },
+            {
+                type: "list",
+                heading: "Prompts that work well for exploration:",
+                items: [
+                    "Tone adjustments — 'more enterprise,' 'more consumer,' 'more playful,' 'more trustworthy'",
+                    "Audience shifts — 'reframe this for developers' or 'make this land with a non-technical executive'",
+                    "Layout variants — 'try a version where the CTA is above the fold' or 'show me a one-column layout'",
+                    "Style directions — 'try a dark mode version' or 'reduce the visual complexity by 50%'",
+                ],
+            },
+            {
+                type: "heading",
+                text: "The Claude Code Handoff: Where Design Becomes Product",
+            },
+            {
+                type: "paragraph",
+                text: "The most distinctive capability in Claude Design's workflow is the direct handoff to Claude Code. When a design is ready to build, you export a complete bundle — the HTML, CSS, component structure, and asset references — and Claude Code picks it up as a development brief. It doesn't need to be re-specified. The design is the spec.",
+            },
+            {
+                type: "paragraph",
+                text: "For solo founders and small teams without dedicated design and engineering functions, this closes the entire product-making loop inside Anthropic's toolchain. Concept → prototype in Claude Design → user test → refine → hand off to Claude Code → ship. What used to require a designer, a developer, and multiple handoff cycles can now happen with one person who knows what they want to build.",
+            },
+            {
+                type: "heading",
+                text: "How It Compares to Other Tools",
+            },
+            {
+                type: "paragraph",
+                text: "Claude Design occupies a different position than the other tools it's most often compared to. Against Figma, it wins on speed and accessibility — no learning curve, no component library setup, no export-to-handoff workflow — but loses on component libraries, vector editing, precise design systems, and professional team collaboration. Figma remains the right tool for production design work at scale. Claude Design is the right tool for getting to something visual fast, without a design background.",
+            },
+            {
+                type: "paragraph",
+                text: "Against Canva, the comparison is closer for decks and one-pagers. Claude Design produces code-based output instead of design files, which is better for web assets and worse for print. Against Google Stitch — Google's competing AI design tool — Claude Design excels at brand-constrained work and responsive layouts, while Stitch has stronger multi-screen interactive prototyping. Both launched within weeks of each other in April 2026, and the capabilities are close enough that the right choice depends mostly on what you're building.",
+            },
+            {
+                type: "list",
+                heading: "The honest comparison:",
+                items: [
+                    "vs. Figma — Claude Design wins on speed and zero learning curve; Figma wins on production-grade design systems, component libraries, and vector editing",
+                    "vs. Canva — comparable output for decks and one-pagers; Claude Design outputs code (better for web), Canva outputs design files (better for print and editing)",
+                    "vs. Google Stitch — Claude Design stronger on brand-constrained work and responsive layouts; Stitch stronger on multi-screen interactive prototyping",
+                    "vs. starting from scratch in code — Claude Design wins every time for visual work; saves hours per design iteration",
+                ],
+            },
+            {
+                type: "heading",
+                text: "Availability and Access",
+            },
+            {
+                type: "paragraph",
+                text: "Claude Design is currently in research preview, rolling out to Pro, Max, Team, and Enterprise subscribers at claude.ai/design. It's included with existing subscriptions, with additional usage available through optional paid add-ons. Given it launched April 17, 2026 — a week ago at this writing — the feature set will expand quickly and some rough edges are expected.",
+            },
+            {
+                type: "heading",
+                text: "Getting Started",
+            },
+            {
+                type: "paragraph",
+                text: "The fastest way to understand what Claude Design can do for you is to take something you'd normally spend 30–60 minutes on in another tool and describe it in plain language. A deck you need for next week. A landing page you've been putting off. A mockup for a feature you want sign-off on. Give it the context it needs — who the audience is, what you're trying to communicate, what the output format should be — and watch what comes back on the first try.",
+            },
+            {
+                type: "paragraph",
+                text: "The first time you prompt 'make this feel more trustworthy' and see the typography and spacing shift to match, or paste in a PPTX and get an on-brand web version back in seconds, the value clicks into place. It's not that Claude Design is better than Figma for design work. It's that it makes visual output accessible to everyone who's been blocked on the design step — which, for most of what gets built, is most people.",
+            },
+        ],
+    },
+    {
         slug: "chatgpt-apps",
         title: "ChatGPT Apps: When Your AI Can Actually Do Things, Not Just Tell You About Them",
         date: "March 6, 2026",
