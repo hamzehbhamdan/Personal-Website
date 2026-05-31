@@ -102,7 +102,7 @@ function ChapterRow() {
 const serviceTabs = [
     {
         id: "training", tab: "AI Training", number: "01",
-        price: "$200 / hr", priceNote: "per session",
+        price: "$350 / hr", priceNote: "per session",
         headline: "From Curious to Capable",
         body: "Hands-on sessions tailored to your background and goals. We start where you are and build real, lasting proficiency — not just familiarity. Every session is customized; nothing is off-the-shelf.",
         reveals: "After a few sessions, you'll have a growing library of use cases that actually work for you, sharper judgment about when AI helps (and when it doesn't), and workflows you'll keep using long after we're done.",
