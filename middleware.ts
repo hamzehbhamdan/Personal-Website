@@ -64,24 +64,15 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Authenticated Routes Protection
-    // Only protect /dashboard and specific API routes
+    // Page protection only.
+    // NOTE: middleware does NOT run on /api (see matcher). API routes authenticate via requireUser().
     const isDashboard = request.nextUrl.pathname.startsWith("/dashboard") || subdomain === "my";
-    const isProtectedApi = request.nextUrl.pathname.startsWith("/api/vector") || request.nextUrl.pathname.startsWith("/api/briefing");
-
-    if (isDashboard || isProtectedApi) {
+    if (isDashboard) {
         if (!user) {
-            if (isProtectedApi) {
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            }
             return NextResponse.redirect(new URL("/login", request.url));
         }
-
         const allowedEmail = process.env.ALLOWED_EMAIL;
         if (allowedEmail && user.email !== allowedEmail) {
-            if (isProtectedApi) {
-                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-            }
             const url = new URL("/login", request.url);
             url.searchParams.set("error", "Unauthorized account");
             return NextResponse.redirect(url);
