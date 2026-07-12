@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { requireUser } from "@/lib/supabase-server";
+import { ownsStore } from "@/lib/vector-store-ownership";
 import OpenAI from "openai";
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +10,9 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
+    const gate = await requireUser(req);
+    if (!gate.ok) return gate.response;
+    const supabase = gate.supabase;
     try {
         const formData = await req.formData();
         const file = formData.get("file") as File | null;
@@ -19,6 +23,13 @@ export async function POST(req: Request) {
         let contentToEmbed = "";
 
         if (file) {
+            const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
+            const ALLOWED = ["text/plain", "text/markdown", "application/pdf", "image/png", "image/jpeg"];
+            if (file.size > MAX_BYTES) return NextResponse.json({ error: "File too large" }, { status: 413 });
+            const head = Buffer.from(await file.slice(0, 16).arrayBuffer());
+            const sniff = sniffMime(head);
+            if (!sniff || !ALLOWED.includes(sniff)) return NextResponse.json({ error: "Unsupported file type" }, { status: 415 });
+
             const fileType = file.type;
             const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -73,18 +84,22 @@ export async function POST(req: Request) {
 
         const embedding = embeddingResponse.data[0].embedding;
 
-        // Store in Supabase
+        // Store in Supabase (RLS-scoped to the authed user)
         const { data, error } = await supabase.from("documents").insert({
             content: contentToEmbed,
             metadata,
             embedding,
+            user_id: gate.userId,
         });
 
-        if (error) throw error;
+        if (error) {
+            console.warn("vector: ingest document insert failed");
+            return NextResponse.json({ error: "Server error" }, { status: 500 });
+        }
 
         // OpenAI Cluster Sync
         const activeStoreId = formData.get("activeStoreId") as string | null;
-        if (activeStoreId && file) {
+        if (activeStoreId && file && (await ownsStore(supabase, gate.userId, activeStoreId))) {
             try {
                 const openaiFile = await openai.files.create({
                     file: file,
@@ -97,16 +112,23 @@ export async function POST(req: Request) {
                         file_id: openaiFile.id,
                     });
                 }
-                console.log(`Synced file ${openaiFile.id} to cluster ${activeStoreId}`);
             } catch (syncError) {
-                console.error("OpenAI Cluster Sync Error:", syncError);
+                console.warn("vector: ingest cluster sync failed");
                 // We don't fail the whole request since Supabase succeeded
             }
         }
 
         return NextResponse.json({ success: true, data, type: metadata.type });
     } catch (error: any) {
-        console.error("Vector Ingest Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.warn("vector: ingest failed");
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
+}
+
+function sniffMime(head: Buffer): string | null {
+    if (head.slice(0, 5).toString("latin1") === "%PDF-") return "application/pdf";
+    if (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) return "image/png";
+    if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
+    if (head.every((b) => b === 0x09 || b === 0x0a || b === 0x0d || (b >= 0x20 && b < 0x7f) || b >= 0x80)) return "text/plain";
+    return null;
 }

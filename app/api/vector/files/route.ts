@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { supabase } from "@/lib/supabase";
+import { requireUser } from "@/lib/supabase-server";
+import { ownsStore } from "@/lib/vector-store-ownership";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,13 +10,20 @@ const openai = new OpenAI({
 });
 
 export async function GET(req: Request) {
+    const gate = await requireUser(req);
+    if (!gate.ok) return gate.response;
+    const supabase = gate.supabase;
+    const userId = gate.userId;
     try {
         const { searchParams } = new URL(req.url);
         const storeId = searchParams.get("storeId");
         if (!storeId) return NextResponse.json({ error: "Store ID required" }, { status: 400 });
 
+        // Verify the caller owns this store before touching OpenAI.
+        if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
         const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) return NextResponse.json({ error: "OpenAI Vector Stores API not available." }, { status: 500 });
+        if (!vsAPI) return NextResponse.json({ error: "Server error" }, { status: 500 });
 
         // 1. Get files linked to the vector store
         const filesList = await vsAPI.files.list(storeId);
@@ -39,12 +47,16 @@ export async function GET(req: Request) {
 
         return NextResponse.json(enrichedFiles);
     } catch (error: any) {
-        console.error("Error fetching store files:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.warn("vector: files GET failed");
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }
 
 export async function DELETE(req: Request) {
+    const gate = await requireUser(req);
+    if (!gate.ok) return gate.response;
+    const supabase = gate.supabase;
+    const userId = gate.userId;
     try {
         const { searchParams } = new URL(req.url);
         const storeId = searchParams.get("storeId");
@@ -52,21 +64,27 @@ export async function DELETE(req: Request) {
 
         if (!storeId || !fileId) return NextResponse.json({ error: "Store ID and File ID required" }, { status: 400 });
 
+        // Verify the caller owns this store before touching OpenAI.
+        if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
         const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
         if (!vsAPI) {
-            return NextResponse.json({ error: "OpenAI Vector Stores API not available." }, { status: 500 });
+            return NextResponse.json({ error: "Server error" }, { status: 500 });
         }
 
         await vsAPI.files.del(storeId, fileId);
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error("Error deleting file:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.warn("vector: files DELETE failed");
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }
 
 export async function POST(req: Request) {
-    console.log("API: POST /api/vector/files called");
+    const gate = await requireUser(req);
+    if (!gate.ok) return gate.response;
+    const supabase = gate.supabase;
+    const userId = gate.userId;
     try {
         const formData = await req.formData();
         const files = formData.getAll("file") as File[];
@@ -76,10 +94,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Files and Store ID required" }, { status: 400 });
         }
 
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) return NextResponse.json({ error: "OpenAI API not available." }, { status: 500 });
+        // Verify the caller owns this store before touching OpenAI.
+        if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        console.log(`API: Processing ${files.length} uploads for store ${storeId}...`);
+        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
+        if (!vsAPI) return NextResponse.json({ error: "Server error" }, { status: 500 });
 
         const uploadedFiles: any[] = [];
 
@@ -101,10 +120,9 @@ export async function POST(req: Request) {
             uploadedFiles.push({ ...vsFile, filename: file.name, bytes: openaiFile.bytes, status: 'uploaded' });
         }));
 
-        console.log("API: All files processed successfully");
         return NextResponse.json({ success: true, count: uploadedFiles.length, files: uploadedFiles });
     } catch (error: any) {
-        console.error("Error uploading files:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.warn("vector: files POST failed");
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }
