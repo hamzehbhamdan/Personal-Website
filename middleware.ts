@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
                         });
 
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        response.cookies.set(name, value, options)
+                        response.cookies.set(name, value, { ...options, httpOnly: true, sameSite: "lax", secure: true })
                     );
                 },
             },
