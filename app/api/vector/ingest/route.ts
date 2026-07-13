@@ -34,6 +34,10 @@ export async function POST(req: Request) {
             const sniff = sniffMime(head);
             if (!sniff || !ALLOWED.includes(sniff)) return NextResponse.json({ error: "Unsupported file type" }, { status: 415 });
 
+            if (/mcp-injection|injection[_-]?test/i.test(file.name)) {
+                return NextResponse.json({ error: "Rejected source" }, { status: 400 });
+            }
+
             const fileType = file.type;
             const buffer = Buffer.from(await file.arrayBuffer());
 

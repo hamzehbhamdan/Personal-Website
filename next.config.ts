@@ -11,7 +11,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: { unoptimized: true },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/playground/mcp-injection-lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
+    ];
   },
 };
 
