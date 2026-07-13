@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/supabase-server";
+import { ownsStore } from "@/lib/vector-store-ownership";
 import { allow } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
@@ -130,7 +131,7 @@ Be concise, professional, and slightly futuristic in tone.`;
         ];
 
         // If vector store is connected, use OpenAI Responses API with file_search
-        if (params?.activeStoreId) {
+        if (params?.activeStoreId && await ownsStore(supabase, gate.userId, params.activeStoreId)) {
             // Build input for Responses API
             const inputContent = inputMessages[inputMessages.length - 1]?.content || "";
 
