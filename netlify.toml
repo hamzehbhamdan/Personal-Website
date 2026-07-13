@@ -4,7 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Allow keys that are safe to be public
+  # Keys safe to expose to the browser (NEXT_PUBLIC_*) — omitted by KEY, not path,
+  # so the scanner still inspects build output for accidental server-secret inlining.
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,ALLOWED_EMAIL"
-  # Omit the build output directories from scanning
-  SECRETS_SCAN_OMIT_PATHS = ".next,.netlify,public"
+  # Only omit static public assets (incl. public/playground/ injection-lab corpus, which
+  # would otherwise trip false positives). Do NOT omit .next — let the scanner watch the
+  # build output so a server-secret bundle leak is caught.
+  SECRETS_SCAN_OMIT_PATHS = "public"
