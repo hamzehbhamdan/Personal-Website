@@ -1,298 +1,274 @@
--- Ensure default user exists for demo purposes
-INSERT INTO auth.users (id, email)
-VALUES ('00000000-0000-0000-0000-000000000000', 'demo@example.com')
-ON CONFLICT (id) DO NOTHING;
+-- =============================================================
+-- schema.sql — SECURE bootstrap for a FRESH Supabase project.
+--
+-- Run this in the Supabase SQL editor on a new project. It is idempotent (safe to
+-- re-run) and creates every table with STRICT per-owner RLS from the start:
+--   * every row is scoped to its owner via  USING (auth.uid() = user_id)
+--     WITH CHECK (auth.uid() = user_id)  — reads AND writes are gated.
+--   * the `documents` corpus has an owner column + RLS.
+--   * match_documents is SECURITY INVOKER, owner-filtered, search_path-pinned,
+--     and EXECUTE is revoked from anon/public.
+-- There is NO demo/seed principal and NO nil-UUID backdoor. With only the public
+-- anon key, auth.uid() is null, so every table returns zero rows and the RPC is
+-- not executable.
+--
+-- Prereq: create your login user first (Supabase Auth -> Users -> Add user, using
+-- your ALLOWED_EMAIL). All tables start empty; rows you create are scoped to your
+-- auth.uid() automatically.
+-- =============================================================
 
--- Profiles table to store user settings
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  background TEXT,
-  font TEXT DEFAULT 'var(--font-geist-sans)',
-  widgets JSONB DEFAULT '["clock", "focus"]'::jsonb,
-  glass_opacity INTEGER DEFAULT 20,
-  glass_blur INTEGER DEFAULT 16,
-  theme TEXT DEFAULT 'glass',
-  primary_color TEXT DEFAULT '#ffffff',
-  theme_mode TEXT DEFAULT 'dark',
-  recent_backgrounds TEXT[] DEFAULT '{}'::text[]
+-- pgvector (for documents.embedding + match_documents).
+create extension if not exists vector;
+
+-- ---------------------------------------------------------------
+-- profiles — user settings, keyed by the auth user id.
+-- ---------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  updated_at timestamptz default timezone('utc', now()) not null,
+  background text,
+  font text default 'var(--font-geist-sans)',
+  widgets jsonb default '["clock", "focus"]'::jsonb,
+  glass_opacity integer default 20,
+  glass_blur integer default 16,
+  theme text default 'glass',
+  primary_color text default '#ffffff',
+  theme_mode text default 'dark',
+  recent_backgrounds text[] default '{}'::text[]
 );
+alter table public.profiles enable row level security;
+drop policy if exists "owner_all_profiles" on public.profiles;
+create policy "owner_all_profiles" on public.profiles for all
+  using (auth.uid() = id) with check (auth.uid() = id);
 
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- Policies
-DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
-CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-
--- Projects table
-CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  color TEXT DEFAULT '#ffffff',
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+-- ---------------------------------------------------------------
+-- projects
+-- ---------------------------------------------------------------
+create table if not exists public.projects (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamptz default timezone('utc', now()) not null,
+  name text not null,
+  color text default '#ffffff',
+  user_id uuid not null references auth.users(id) on delete cascade
 );
+alter table public.projects enable row level security;
+drop policy if exists "owner_all_projects" on public.projects;
+create policy "owner_all_projects" on public.projects for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-
--- Allow access to demo user ('0000...') for development
-DROP POLICY IF EXISTS "Enable all for projects" ON public.projects;
-DROP POLICY IF EXISTS "Users can see own projects" ON public.projects;
-DROP POLICY IF EXISTS "Users can create own projects" ON public.projects;
-DROP POLICY IF EXISTS "Users can update own projects" ON public.projects;
-
-CREATE POLICY "Enable all for projects" ON public.projects
-  FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Tasks table
-CREATE TABLE IF NOT EXISTS public.tasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT DEFAULT 'todo',
-  priority TEXT DEFAULT 'medium',
-  urgency TEXT DEFAULT 'medium',
-  importance TEXT DEFAULT 'medium',
-  time_spent INTEGER DEFAULT 0, -- in minutes
-  due_date TIMESTAMP WITH TIME ZONE,
-  custom_fields JSONB DEFAULT '[]'::jsonb,
-  project_id UUID REFERENCES public.projects(id)
+-- ---------------------------------------------------------------
+-- tasks
+-- ---------------------------------------------------------------
+create table if not exists public.tasks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  created_at timestamptz default timezone('utc', now()) not null,
+  title text not null,
+  description text,
+  status text default 'todo',
+  priority text default 'medium',
+  urgency text default 'medium',
+  importance text default 'medium',
+  time_spent integer default 0,               -- minutes
+  timer_started_at timestamptz default null,
+  due_date timestamptz,
+  custom_fields jsonb default '[]'::jsonb,
+  project_id uuid references public.projects(id)
 );
+alter table public.tasks enable row level security;
+drop policy if exists "owner_all_tasks" on public.tasks;
+create policy "owner_all_tasks" on public.tasks for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Ensure columns exist (migration for existing tables)
-ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS urgency TEXT DEFAULT 'medium';
-ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS importance TEXT DEFAULT 'medium';
-ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS time_spent INTEGER DEFAULT 0;
-ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS timer_started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
-
-ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Enable all for tasks" ON public.tasks;
-DROP POLICY IF EXISTS "Users can manage own tasks" ON public.tasks;
-
-CREATE POLICY "Enable all for tasks" ON public.tasks FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Subtasks table
-CREATE TABLE IF NOT EXISTS public.subtasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  task_id UUID REFERENCES public.tasks ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  completed BOOLEAN DEFAULT false
+-- ---------------------------------------------------------------
+-- subtasks — no user_id; ownership flows through the parent task.
+-- ---------------------------------------------------------------
+create table if not exists public.subtasks (
+  id uuid default gen_random_uuid() primary key,
+  task_id uuid references public.tasks on delete cascade not null,
+  title text not null,
+  completed boolean default false
 );
+alter table public.subtasks enable row level security;
+drop policy if exists "owner_all_subtasks" on public.subtasks;
+create policy "owner_all_subtasks" on public.subtasks for all
+  using (exists (select 1 from public.tasks t where t.id = subtasks.task_id and t.user_id = auth.uid()))
+  with check (exists (select 1 from public.tasks t where t.id = subtasks.task_id and t.user_id = auth.uid()));
 
-ALTER TABLE public.subtasks ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Enable all for subtasks" ON public.subtasks;
-DROP POLICY IF EXISTS "Users can manage subtasks of own tasks" ON public.subtasks;
-
-CREATE POLICY "Enable all for subtasks" ON public.subtasks 
-FOR ALL USING (
-  EXISTS (
-    SELECT 1 FROM public.tasks 
-    WHERE tasks.id = subtasks.task_id 
-    AND (tasks.user_id = auth.uid() OR tasks.user_id = '00000000-0000-0000-0000-000000000000')
-  )
+-- ---------------------------------------------------------------
+-- contacts
+-- ---------------------------------------------------------------
+create table if not exists public.contacts (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  created_at timestamptz default timezone('utc', now()) not null,
+  name text not null,
+  email text,
+  avatar_color text,
+  status text default 'New',
+  company text,
+  role text,
+  phone text,
+  last_talked timestamptz,
+  last_interaction_summary text,
+  frequency integer default 30,               -- days between contacts
+  tags text[] default '{}'::text[],
+  custom_fields jsonb default '[]'::jsonb,
+  nickname text
 );
+alter table public.contacts enable row level security;
+drop policy if exists "owner_all_contacts" on public.contacts;
+create policy "owner_all_contacts" on public.contacts for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Contacts table
-CREATE TABLE IF NOT EXISTS public.contacts (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  email TEXT,
-  avatar_color TEXT,
-  status TEXT DEFAULT 'New',
-  company TEXT,
-  role TEXT,
-  phone TEXT,
-  last_talked TIMESTAMP WITH TIME ZONE,
-  last_interaction_summary TEXT, -- Notes from last chat
-  frequency INTEGER DEFAULT 30, -- Days between contacts
-  tags TEXT[] DEFAULT '{}'::text[],
-  custom_fields JSONB DEFAULT '[]'::jsonb
+-- ---------------------------------------------------------------
+-- contact_connections
+-- ---------------------------------------------------------------
+create table if not exists public.contact_connections (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  contact_a uuid references public.contacts(id) on delete cascade not null,
+  contact_b uuid references public.contacts(id) on delete cascade not null,
+  connection_type text default 'direct',
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz default timezone('utc', now()) not null,
+  unique(contact_a, contact_b)
 );
+alter table public.contact_connections enable row level security;
+drop policy if exists "owner_all_contact_connections" on public.contact_connections;
+create policy "owner_all_contact_connections" on public.contact_connections for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Ensure columns exist (migration for existing tables)
--- Core fields
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS email TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS phone TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS company TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS role TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'New';
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users ON DELETE CASCADE;
-
--- Metadata fields
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS last_talked TIMESTAMP WITH TIME ZONE;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS last_interaction_summary TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS frequency INTEGER DEFAULT 30;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS avatar_color TEXT;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'::text[];
-ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS nickname TEXT;
-
--- Reload Supabase Schema Cache
-NOTIFY pgrst, 'reload config';
-
-CREATE TABLE IF NOT EXISTS public.contact_connections (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  contact_a UUID REFERENCES public.contacts(id) ON DELETE CASCADE NOT NULL,
-  contact_b UUID REFERENCES public.contacts(id) ON DELETE CASCADE NOT NULL,
-  connection_type TEXT DEFAULT 'direct',
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE(contact_a, contact_b)
+-- ---------------------------------------------------------------
+-- documents — Second Brain corpus. Owned + RLS from creation.
+-- ---------------------------------------------------------------
+create table if not exists public.documents (
+  id bigserial primary key,
+  content text not null,
+  metadata jsonb,
+  embedding vector(1536),
+  user_id uuid not null references auth.users(id) on delete cascade
 );
+alter table public.documents enable row level security;
+drop policy if exists "owner_all_documents" on public.documents;
+create policy "owner_all_documents" on public.documents for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.contact_connections ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Enable all for connections" ON public.contact_connections;
-DROP POLICY IF EXISTS "Users can manage own contact connections" ON public.contact_connections;
-
-CREATE POLICY "Enable all for connections" ON public.contact_connections FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
-ALTER TABLE public.contacts ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Enable all for contacts" ON public.contacts;
-DROP POLICY IF EXISTS "Users can manage own contacts" ON public.contacts;
-
-CREATE POLICY "Enable all for contacts" ON public.contacts FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Documents for Vector Search (already partially handled by ingest route, but here for completeness)
-CREATE EXTENSION IF NOT EXISTS vector;
-
-CREATE TABLE IF NOT EXISTS public.documents (
-  id BIGSERIAL PRIMARY KEY,
-  content TEXT NOT NULL,
-  metadata JSONB,
-  embedding VECTOR(1536)
-);
-
--- Vector similarity search function
-DROP FUNCTION IF EXISTS match_documents(vector, double precision, int);
-
-CREATE OR REPLACE FUNCTION match_documents (
-  query_embedding VECTOR(1536),
-  match_threshold FLOAT,
-  match_count INT
-)
-RETURNS TABLE (
-  id BIGINT,
-  content TEXT,
-  metadata JSONB,
-  similarity FLOAT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    documents.id,
-    documents.content,
-    documents.metadata,
-    1 - (documents.embedding <=> query_embedding) AS similarity
-  FROM documents
- WHERE 1 - (documents.embedding <=> query_embedding) > match_threshold
-  ORDER BY similarity DESC
-  LIMIT match_count;
-END;
+-- match_documents — owner-filtered similarity search. SECURITY INVOKER so RLS
+-- applies as the caller; search_path pinned to trusted schemas (pgvector's `<=>`
+-- lives in public/extensions); EXECUTE revoked from anon/public.
+create or replace function public.match_documents(
+  query_embedding vector(1536), match_threshold float, match_count int
+) returns table (id bigint, content text, metadata jsonb, similarity float)
+language sql stable security invoker set search_path = public, extensions
+as $$
+  select d.id, d.content, d.metadata, 1 - (d.embedding <=> query_embedding) as similarity
+  from public.documents d
+  where d.user_id = auth.uid()
+    and 1 - (d.embedding <=> query_embedding) > match_threshold
+  order by similarity desc
+  limit match_count;
 $$;
--- Notes table for scratchpad
-CREATE TABLE IF NOT EXISTS public.notes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  content TEXT DEFAULT '',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+revoke all on function public.match_documents(vector, double precision, int) from public, anon;
+grant execute on function public.match_documents(vector, double precision, int) to authenticated;
+
+-- ---------------------------------------------------------------
+-- notes
+-- ---------------------------------------------------------------
+create table if not exists public.notes (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  content text default '',
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
 );
+alter table public.notes enable row level security;
+drop policy if exists "owner_all_notes" on public.notes;
+create policy "owner_all_notes" on public.notes for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own notes" ON public.notes;
-CREATE POLICY "Users can manage own notes" ON public.notes FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Focus sessions table
-CREATE TABLE IF NOT EXISTS public.focus_sessions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  duration INTEGER NOT NULL, -- in seconds
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- ---------------------------------------------------------------
+-- focus_sessions
+-- ---------------------------------------------------------------
+create table if not exists public.focus_sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  duration integer not null,                  -- seconds
+  created_at timestamptz default timezone('utc', now()) not null
 );
+alter table public.focus_sessions enable row level security;
+drop policy if exists "owner_all_focus_sessions" on public.focus_sessions;
+create policy "owner_all_focus_sessions" on public.focus_sessions for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.focus_sessions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own focus sessions" ON public.focus_sessions;
-CREATE POLICY "Users can manage own focus sessions" ON public.focus_sessions FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Neural chats table for memory persistence
-CREATE TABLE IF NOT EXISTS public.neural_chats (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  title TEXT DEFAULT 'Untitled Transmission',
-  messages JSONB DEFAULT '[]'::jsonb,
-  is_pinned BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- ---------------------------------------------------------------
+-- neural_chats — AI transcripts.
+-- ---------------------------------------------------------------
+create table if not exists public.neural_chats (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  title text default 'Untitled Transmission',
+  messages jsonb default '[]'::jsonb,
+  is_pinned boolean default false,
+  created_at timestamptz default timezone('utc', now()) not null,
+  updated_at timestamptz default timezone('utc', now()) not null
 );
+alter table public.neural_chats enable row level security;
+drop policy if exists "owner_all_neural_chats" on public.neural_chats;
+create policy "owner_all_neural_chats" on public.neural_chats for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.neural_chats ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own neural chats" ON public.neural_chats;
-CREATE POLICY "Users can manage own neural chats" ON public.neural_chats FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- User-linked Vector Stores
-CREATE TABLE IF NOT EXISTS public.user_vector_stores (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  vector_store_id TEXT NOT NULL, -- The OpenAI vector store ID (vs_...)
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE(user_id, vector_store_id)
+-- ---------------------------------------------------------------
+-- user_vector_stores — maps the owner to their OpenAI vector store ids.
+-- ---------------------------------------------------------------
+create table if not exists public.user_vector_stores (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  vector_store_id text not null,              -- OpenAI vector store id (vs_...)
+  created_at timestamptz default timezone('utc', now()) not null,
+  unique(user_id, vector_store_id)
 );
+alter table public.user_vector_stores enable row level security;
+drop policy if exists "owner_all_user_vector_stores" on public.user_vector_stores;
+create policy "owner_all_user_vector_stores" on public.user_vector_stores for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.user_vector_stores ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own vector stores" ON public.user_vector_stores;
-CREATE POLICY "Users can manage own vector stores" ON public.user_vector_stores FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
-
--- Sprints table for time-bound task tracking
-CREATE TABLE IF NOT EXISTS public.sprints (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  goal TEXT,
-  start_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  status TEXT DEFAULT 'planning', -- planning, active, completed
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- ---------------------------------------------------------------
+-- sprints
+-- ---------------------------------------------------------------
+create table if not exists public.sprints (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  name text not null,
+  goal text,
+  start_date timestamptz not null,
+  end_date timestamptz not null,
+  status text default 'planning',             -- planning, active, completed
+  created_at timestamptz default timezone('utc', now()) not null
 );
+alter table public.sprints enable row level security;
+drop policy if exists "owner_all_sprints" on public.sprints;
+create policy "owner_all_sprints" on public.sprints for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-ALTER TABLE public.sprints ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own sprints" ON public.sprints;
-CREATE POLICY "Users can manage own sprints" ON public.sprints FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
+-- tasks.sprint_id (added after sprints exists).
+alter table public.tasks add column if not exists sprint_id uuid references public.sprints(id) on delete set null;
 
--- Add sprint_id column to tasks table
-ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES public.sprints(id) ON DELETE SET NULL;
-
--- Calendar events table
-CREATE TABLE IF NOT EXISTS public.calendar_events (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-  location TEXT,
-  color TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- ---------------------------------------------------------------
+-- calendar_events
+-- ---------------------------------------------------------------
+create table if not exists public.calendar_events (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  title text not null,
+  description text,
+  start_time timestamptz not null,
+  end_time timestamptz not null,
+  location text,
+  color text,
+  created_at timestamptz default timezone('utc', now()) not null
 );
-
-ALTER TABLE public.calendar_events ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can manage own events" ON public.calendar_events;
-CREATE POLICY "Users can manage own events" ON public.calendar_events FOR ALL USING (auth.uid() = user_id OR user_id = '00000000-0000-0000-0000-000000000000');
+alter table public.calendar_events enable row level security;
+drop policy if exists "owner_all_calendar_events" on public.calendar_events;
+create policy "owner_all_calendar_events" on public.calendar_events for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
