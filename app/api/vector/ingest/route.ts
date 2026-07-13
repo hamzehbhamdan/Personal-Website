@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
+import { allow } from "@/lib/rate-limit";
 import OpenAI from "openai";
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,9 @@ export async function POST(req: Request) {
     const gate = await requireUser(req);
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
+    if (!allow(`${gate.userId}:ingest`, 10, 60_000)) {
+        return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+    }
     try {
         const formData = await req.formData();
         const file = formData.get("file") as File | null;

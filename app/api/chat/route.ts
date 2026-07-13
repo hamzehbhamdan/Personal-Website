@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/supabase-server";
+import { allow } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,6 +68,9 @@ export async function POST(req: Request) {
     const gate = await requireUser(req);
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
+    if (!allow(`${gate.userId}:chat`, 30, 60_000)) {
+        return Response.json({ error: "Rate limited" }, { status: 429 });
+    }
     try {
         const { messages: inputMessages, params } = await req.json();
 
