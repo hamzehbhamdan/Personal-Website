@@ -17,4 +17,13 @@ describe("token crypto", () => {
     const c = encryptToken("secret").replace(/.$/, (ch) => (ch === "A" ? "B" : "A"));
     expect(() => decryptToken(c)).toThrow();
   });
+  it("rejects an unsupported version", () => {
+    const c = encryptToken("x").replace(/^v1:/, "v2:");
+    expect(() => decryptToken(c)).toThrow();
+  });
+  it("rejects a truncated auth tag", () => {
+    const [v, iv, , ct] = encryptToken("secret").split(":");
+    const shortTag = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]).toString("base64"); // 8 bytes ≠ 16
+    expect(() => decryptToken(`${v}:${iv}:${shortTag}:${ct}`)).toThrow();
+  });
 });
