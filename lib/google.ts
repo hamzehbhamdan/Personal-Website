@@ -34,24 +34,30 @@ export async function exchangeCode(code: string): Promise<{ refresh_token?: stri
 }
 
 export async function storeRefreshToken(supabase: SupabaseClient, userId: string, refresh: string, scope?: string) {
-  await supabase.from("google_tokens").upsert({
+  const { error } = await supabase.from("google_tokens").upsert({
     user_id: userId, enc_refresh: encryptToken(refresh), scope: scope ?? null, updated_at: new Date().toISOString(),
   });
+  if (error) throw new Error("token storage failed");
 }
 
 /** Mint a short-lived access token from the stored (encrypted) refresh token. Returns null if not connected. */
 export async function getGoogleAccessToken(supabase: SupabaseClient, userId: string): Promise<string | null> {
   const { data } = await supabase.from("google_tokens").select("enc_refresh").eq("user_id", userId).maybeSingle();
   if (!data?.enc_refresh) return null;
-  const refresh = decryptToken(data.enc_refresh);
-  const r = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: process.env.GCAL_CLIENT_ID!, client_secret: process.env.GCAL_CLIENT_SECRET!,
-      refresh_token: refresh, grant_type: "refresh_token",
-    }),
-  });
-  if (!r.ok) { console.warn("google: refresh failed"); return null; } // refresh-failure path
-  const j = await r.json();
-  return j.access_token ?? null;
+  try {
+    const refresh = decryptToken(data.enc_refresh);
+    const r = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.GCAL_CLIENT_ID!, client_secret: process.env.GCAL_CLIENT_SECRET!,
+        refresh_token: refresh, grant_type: "refresh_token",
+      }),
+    });
+    if (!r.ok) { console.warn("google: refresh failed"); return null; } // refresh-failure path
+    const j = await r.json();
+    return j.access_token ?? null;
+  } catch {
+    console.warn("google: token mint failed");
+    return null;
+  }
 }

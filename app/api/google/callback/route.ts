@@ -11,7 +11,8 @@ export async function GET(req: Request) {
   if (!code || state !== gate.userId) return NextResponse.redirect(new URL("/dashboard?google=error", req.url));
   try {
     const tok = await exchangeCode(code);
-    if (tok.refresh_token) await storeRefreshToken(gate.supabase, gate.userId, tok.refresh_token, tok.scope);
+    if (!tok.refresh_token) return NextResponse.redirect(new URL("/dashboard?google=error", req.url));
+    await storeRefreshToken(gate.supabase, gate.userId, tok.refresh_token, tok.scope);
     return NextResponse.redirect(new URL("/dashboard?google=connected", req.url));
   } catch {
     return NextResponse.redirect(new URL("/dashboard?google=error", req.url));
