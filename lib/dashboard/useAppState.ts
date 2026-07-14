@@ -15,6 +15,10 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach", seed
     return () => { alive = false; };
   }, [app]);
 
+  // v1 trade-off: a mutation made within the 500ms debounce window immediately before
+  // unmount is dropped rather than flushed; flush-on-unmount is a later (B/C) concern.
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
   const persist = useCallback((next: T) => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
