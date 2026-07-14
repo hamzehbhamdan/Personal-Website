@@ -292,3 +292,16 @@ drop policy if exists "state_update" on public.app_state;
 create policy "state_update" on public.app_state for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 drop policy if exists "state_delete" on public.app_state;
 create policy "state_delete" on public.app_state for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------
+-- google_tokens — encrypted Google OAuth refresh token at rest.
+-- ---------------------------------------------------------------
+create table if not exists public.google_tokens (
+  user_id       uuid primary key references auth.users(id) on delete cascade,
+  enc_refresh   text not null,   -- AES-GCM ciphertext (never plaintext, never to client)
+  scope         text,
+  updated_at    timestamptz not null default now()
+);
+alter table public.google_tokens enable row level security;
+drop policy if exists "gt_owner" on public.google_tokens;
+create policy "gt_owner" on public.google_tokens for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
