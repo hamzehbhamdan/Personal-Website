@@ -8,19 +8,23 @@ const serif = { fontFamily: "var(--font-playfair), Georgia, serif" };
 export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const [crm, setCrm] = useState<any>({});
   const [coach, setCoach] = useState<any>({});
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     fetch("/api/state?app=lifeCRM").then((r) => r.json()).then((j) => setCrm(j.data ?? {})).catch(() => {});
     fetch("/api/state?app=execCoach").then((r) => r.json()).then((j) => setCoach(j.data ?? {})).catch(() => {});
   }, []);
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
 
   const contacts = Array.isArray(crm.contacts) ? crm.contacts.length : 0;
   const goals = Array.isArray(coach.goals) ? coach.goals.length : 0;
-  const now = new Date();
-  const meta = now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase();
+  const meta = now ? now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase() : "";
+  const greeting = now ? `Good ${now.getHours() < 12 ? "morning" : now.getHours() < 18 ? "afternoon" : "evening"}, Hamzeh.` : "Hello, Hamzeh.";
 
   return (
     <div className="p-7 md:p-8 max-w-3xl">
-      <ViewHeader meta={meta} title={`Good ${now.getHours() < 12 ? "morning" : now.getHours() < 18 ? "afternoon" : "evening"}, Hamzeh.`} />
+      <ViewHeader meta={meta} title={greeting} />
       <SectionHeader index="01" label="Momentum" />
       <div className="flex gap-9 mb-8">
         <button onClick={() => onNavigate("people")} className="text-left">
