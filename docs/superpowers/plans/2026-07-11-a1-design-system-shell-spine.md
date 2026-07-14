@@ -8,7 +8,44 @@
 
 **Tech Stack:** Next.js 16 (App Router) · TypeScript · Supabase (`@supabase/ssr`) · Tailwind v4 · Framer Motion · `@anthropic-ai/sdk` (Claude) · `zod` · Node `crypto` (AES-256-GCM) · Vitest.
 
-**Depends on:** `2026-07-11-a0-security-hardening.md` must land first (this plan assumes `lib/supabase-server.ts` `requireUser()`, strict RLS, and `lib/rate-limit.ts` exist). Source spec: `docs/superpowers/specs/2026-07-11-my-dashboard-redesign-design.md` (§3, §4, §5.2–5.8). People (B) and Coach (C) plans follow this one.
+**Depends on:** `2026-07-11-a0-security-hardening.md` (DONE — executed + deployed to production 2026-07-13). Source spec: `docs/superpowers/specs/2026-07-11-my-dashboard-redesign-design.md` (§3, §4, §5.2–5.8). People (B) and Coach (C) plans follow this one.
+
+---
+
+## ⚠️ Reconciliation with A0 (as-built, 2026-07-13) — READ THIS FIRST
+
+A0 was executed and **deployed to production** on a **fresh Supabase project**. Several of its choices change this plan's assumptions. Do not start A1 without absorbing this.
+
+**A0 spine that already exists — build on it, do NOT recreate:**
+- `lib/auth.ts` → `gateResult(user, allowedEmail)` (pure allow-list, fail-closed incl. whitespace-only email).
+- `lib/supabase-server.ts` → `createServerSupabase()` (cookie-bound, **HttpOnly** cookies) + `requireUser(req?)` (validates the JWT via `getUser()`, enforces `ALLOWED_EMAIL`, same-origin check on non-GET/HEAD). Every A1 route uses this gate.
+- `lib/rate-limit.ts` → `allow(key, limit, windowMs)`; `lib/vector-store-ownership.ts` → `ownsStore()` (used by the Brain's vector routes + `/api/chat` file_search).
+- Baseline security headers already in `next.config.ts` (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS) + a `noindex` header on `/playground/mcp-injection-lab/*`. **CSP is still deferred to A1 → new Task 18.**
+- Vitest is set up with a `@/` path alias and a `test.env` block (dummy `OPENAI_API_KEY` + `NEXT_PUBLIC_SUPABASE_*`) so route modules import under test. New A1 tests inherit this — don't re-add the alias/env.
+- Next.js is **16.2.10** (not 16.1.4). Next 16.2 deprecates the `middleware.ts` file convention in favour of `proxy.ts` — an eventual rename (still works with a build warning; low priority, fold into any middleware task).
+
+**Fresh Supabase project — `supabase/migrations/` no longer exists.** The old project was unrecoverable (free-tier 90-day pause), so A0 stood up a NEW project (ref `naznvfdhizdpteslyqpm`) and **deleted the migrations directory**; `supabase/schema.sql` is now the single, idempotent, **secure** bootstrap (13 legacy tables, strict per-owner RLS with `USING`+`WITH CHECK`, secure `documents`/`match_documents`, no demo user, no nil-UUID; each policy is `drop policy if exists … ; create policy …` so it's re-runnable). Consequences:
+- **Task 4 (`0002_app_state.sql`) and Task 8 (`0003_google_tokens.sql`) should be APPENDED TO `supabase/schema.sql`** (same idempotent style: `create table if not exists`, `enable row level security`, `drop policy if exists` before each `create policy`) — there is no `migrations/` dir to add files to. Hamzeh runs the appended block in the Supabase SQL editor.
+- The 13 legacy relational tables (contacts, tasks, projects, notes, focus_sessions, neural_chats, sprints, calendar_events, subtasks, contact_connections) are **superseded** by the `app_state` JSONB model for People/Coach — they go unused once B/C land (empty + RLS-secured = harmless; drop in a later cleanup if desired). **Brain KEEPS** `documents` + `user_vector_stores` + `match_documents` + `/api/chat`.
+
+**HttpOnly cookies change the client auth model (affects the shell):** the session cookie is now **HttpOnly**, so the *browser* Supabase client (`lib/supabase-browser.ts`) can no longer read or clear the session. All authed work is **server-side**:
+- **Sign-out must be a server action/route** that clears the cookie server-side. `createSupabaseBrowserClient().auth.signOut()` in Task 12's Shell will NOT work (JS can't touch an HttpOnly cookie) — replace it with a `signout` server action mirroring `app/login/actions.ts`, called by the Rail.
+- Data reads already go through server routes (`/api/state`, etc.) that read the cookie server-side via `requireUser` — those work; `fetch` sends the cookie same-origin. Keep client components fetching `/api/*`, never the browser Supabase client for authed reads.
+
+**Google LOGIN is a NEW requirement (from the deploy chat) — distinct from the Google *connector*.** Hamzeh wants "Continue with Google" **plus** email/password on the login page. Do not conflate the two Google OAuth flows:
+- **Login** = Supabase Auth's Google provider: `supabase.auth.signInWithOAuth({provider:'google', options:{redirectTo:<origin>/auth/callback}})` → Google → `https://<ref>.supabase.co/auth/v1/callback` → the app's `app/auth/callback/route.ts` calls `exchangeCodeForSession` (sets the HttpOnly session). Config lives in **Supabase → Authentication → Providers → Google** (set up during the deploy chat). → new **Task 16**.
+- **Connector** = a *separate* OAuth client for Calendar/Gmail data access (Tasks 8–10 here), redirect `https://my.hamzehhamdan.com/api/google/callback`, storing an encrypted refresh token. Unchanged.
+- `ALLOWED_EMAIL` + strict RLS gate both — a non-matching Google account gets a session but is bounced by middleware/`requireUser` (Task 16 should also sign such a user out for a clean UX).
+
+**Marketing site / GitHub Pages (task chip `task_3d7f3463`).** The Pages build for `hamzehhamdan.com` has been failing since ~Jan 31 (a dynamic `/consulting/opengraph-image` route is incompatible with `output: export`), so the marketing site is a stale January snapshot. Fixing it naively would publish `/dashboard` **unauthenticated** on the Pages host (no middleware there). → new **Task 17**: fix the export AND exclude `/dashboard`, `/login`, `/auth`, `/api` from it.
+
+**Env baseline (already set in `.env` + Netlify from A0):** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (fresh project), `ALLOWED_EMAIL`, `OPENAI_API_KEY` (rolled), `GCAL_CLIENT_SECRET`. **No `service_role`/secret key is used — keep it that way.** P1 below adds the rest; also confirm `GCAL_CLIENT_ID` is set (Task 9 uses it).
+
+**Minor A0 lessons for A1:**
+- Local `next build` needs the runtime env set — module-level `new OpenAI()` / `new Anthropic()` throw without a key. Either export dummies when building locally (`OPENAI_API_KEY=x ANTHROPIC_API_KEY=x NEXT_PUBLIC_SUPABASE_URL=… NEXT_PUBLIC_SUPABASE_ANON_KEY=… npm run build`) or construct those clients lazily inside the handler.
+- Task 15's secret grep: raw `grep "sk-"` false-positives on Tailwind `mask-*` classes — grep for canary secret *values* (build with distinctive dummies) instead of the `sk-` pattern.
+- Netlify's secret scanner now inspects `.next` (A0 narrowed `SECRETS_SCAN_OMIT_PATHS` to `public`). If a build fails on secret scanning, it's flagging a real inlined secret — investigate, don't just re-omit.
+- Dev-only `vitest`/`vite` carry a known critical/high advisory (test-runner only, never shipped). A deliberate Vitest 2→3 migration clears `npm run audit:ci`; optional.
 
 ---
 
@@ -17,8 +54,10 @@
 - [ ] **P1. Add env vars** (server-only; **not** `NEXT_PUBLIC_`) locally and in Netlify:
   - `ANTHROPIC_API_KEY` — from console.anthropic.com.
   - `TOKEN_ENC_KEY` — a 32-byte key, base64. Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
-  - `GOOGLE_OAUTH_REDIRECT` — `https://my.hamzehhamdan.com/api/google/callback` (and a localhost variant for dev).
-- [ ] **P2. Google Cloud console:** on the existing OAuth client, add the redirect URI above and add scopes `https://www.googleapis.com/auth/calendar.readonly`, `https://www.googleapis.com/auth/gmail.metadata`, `https://www.googleapis.com/auth/gmail.compose`. Keep the app in "testing" with your account as the sole test user. (Gmail scopes are used by People/B; requesting them now avoids a second consent.)
+  - `GOOGLE_OAUTH_REDIRECT` — `https://my.hamzehhamdan.com/api/google/callback` (and a localhost variant for dev). *(This is the **connector** redirect — distinct from the Supabase-Auth login callback; see the reconciliation section.)*
+  - `GCAL_CLIENT_ID` — the connector OAuth client id (Task 9 uses it alongside the already-set `GCAL_CLIENT_SECRET`). Not secret, but keep it out of `NEXT_PUBLIC_`.
+- [ ] **P2. Google Cloud console (connector OAuth client):** on the existing OAuth client, add the connector redirect URI above and add scopes `https://www.googleapis.com/auth/calendar.readonly`, `https://www.googleapis.com/auth/gmail.metadata`, `https://www.googleapis.com/auth/gmail.compose`. Keep the app in "testing" with your account as the sole test user. (Gmail scopes are used by People/B; requesting them now avoids a second consent.)
+- [ ] **P3. Google LOGIN provider (already configured in the deploy chat — verify):** Supabase → Authentication → Providers → **Google** is enabled with a Google OAuth client, and that client has `https://<ref>.supabase.co/auth/v1/callback` as an Authorized redirect URI in Google Cloud. This is a **separate** concern from P2's connector client. Used by Task 16.
 
 ---
 
@@ -31,9 +70,10 @@
 - `lib/dashboard/useAppState.ts` — client sync hook.
 - `lib/google.ts` — OAuth + access-token minting.
 - `app/api/state/route.ts`, `app/api/ai/route.ts`, `app/api/google/connect/route.ts`, `app/api/google/callback/route.ts`, `app/api/calendar/events/route.ts`.
-- `supabase/migrations/0002_app_state.sql`, `supabase/migrations/0003_google_tokens.sql`.
-- Rewrites `components/dashboard/Shell.tsx`; adds `components/dashboard/HomeView.tsx`; restyles `components/dashboard/CommandPalette.tsx`.
-- Adds `--crimson` tokens to `app/globals.css`.
+- `app/auth/callback/route.ts` (Supabase-Auth OAuth code exchange for Google **login**, Task 16).
+- **`app_state` + `google_tokens` tables appended to `supabase/schema.sql`** (NOT `supabase/migrations/…` — that dir was removed in A0; see reconciliation).
+- Rewrites `components/dashboard/Shell.tsx`; adds `components/dashboard/HomeView.tsx`; restyles `components/dashboard/CommandPalette.tsx`; adds a `signout` server action + updates `app/login/page.tsx` (Google-login button, Task 16).
+- Adds `--crimson` tokens to `app/globals.css`; adds a **CSP** to `next.config.ts` (Task 18).
 
 ---
 
@@ -353,12 +393,14 @@ git commit -m "feat(ui): editorial dashboard primitives (rail, cards, segmented,
 
 ---
 
-## Task 4: `app_state` table (OPS-run migration)
+## Task 4: `app_state` table (OPS-run SQL)
+
+> **A0 note:** there is no `supabase/migrations/` dir (removed in A0). **Append this block to `supabase/schema.sql`** instead, and make it idempotent to match that file's style — `create table if not exists` (already), and `drop policy if exists "…" ; create policy "…"` for each of the four policies below. Hamzeh runs the appended block in the Supabase SQL editor.
 
 **Files:**
-- Create: `supabase/migrations/0002_app_state.sql`
+- Modify: `supabase/schema.sql` (append the `app_state` table + policies)
 
-- [ ] **Step 1: Write it**
+- [ ] **Step 1: Write it** (idempotent — add `drop policy if exists` before each `create policy`)
 
 ```sql
 create table if not exists public.app_state (
@@ -380,7 +422,7 @@ create policy "state_delete" on public.app_state for delete using (auth.uid() = 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/0002_app_state.sql
+git add supabase/schema.sql
 git commit -m "feat(db): app_state jsonb table with strict RLS"
 ```
 
@@ -391,7 +433,7 @@ git commit -m "feat(db): app_state jsonb table with strict RLS"
 **Files:**
 - Create: `lib/dashboard/state-schema.ts`, `test/state-schema.test.ts`, `app/api/state/route.ts`
 
-- [ ] **Step 1: Install zod.** `npm install zod`
+- [ ] **Step 1: (skip) zod is already a dependency** (`zod@^4.3.6` in package.json). No install needed — and note the validators below are hand-rolled and don't import zod, so no package changes are committed in this task.
 
 - [ ] **Step 2: Failing test — `test/state-schema.test.ts`**
 
@@ -476,7 +518,7 @@ export async function PUT(req: Request) {
 
 ```bash
 npm test && npx tsc --noEmit
-git add lib/dashboard/state-schema.ts test/state-schema.test.ts app/api/state/route.ts package.json package-lock.json
+git add lib/dashboard/state-schema.ts test/state-schema.test.ts app/api/state/route.ts
 git commit -m "feat(api): /api/state with validated per-user jsonb documents"
 ```
 
@@ -607,12 +649,14 @@ git commit -m "feat(sec): AES-256-GCM token encryption (versioned, random IV, AE
 
 ---
 
-## Task 8: `google_tokens` table (OPS-run migration)
+## Task 8: `google_tokens` table (OPS-run SQL)
+
+> **A0 note:** as with Task 4 — **append to `supabase/schema.sql`** (no `migrations/` dir), idempotent (`drop policy if exists` before `create policy`).
 
 **Files:**
-- Create: `supabase/migrations/0003_google_tokens.sql`
+- Modify: `supabase/schema.sql` (append the `google_tokens` table + policy)
 
-- [ ] **Step 1: Write it**
+- [ ] **Step 1: Write it** (idempotent)
 
 ```sql
 create table if not exists public.google_tokens (
@@ -630,7 +674,7 @@ create policy "gt_owner" on public.google_tokens for all using (auth.uid() = use
 - [ ] **Step 3: Commit**
 
 ```bash
-git add supabase/migrations/0003_google_tokens.sql
+git add supabase/schema.sql
 git commit -m "feat(db): encrypted google_tokens table with RLS"
 ```
 
@@ -890,8 +934,11 @@ git commit -m "feat(ai): /api/ai text route on Claude (validated, rate-limited, 
 
 ## Task 12: DashboardShell (rail + view switching + command palette)
 
+> **A0 note — sign-out must be server-side.** The Step-1 code below calls `createSupabaseBrowserClient().auth.signOut()`, which is a **no-op under A0's HttpOnly cookies** (JS can't clear an HttpOnly cookie → the user stays logged in). Replace it with a **`signout` server action** (a `"use server"` fn that builds `createServerSupabase()`, calls `supabase.auth.signOut()` to clear the cookie server-side, then `redirect("/login")`), and have the Rail's sign-out button submit that action. Do not use the browser client for sign-out.
+
 **Files:**
 - Rewrite: `components/dashboard/Shell.tsx`
+- Create: `app/dashboard/actions.ts` (or `app/login/actions.ts`) — `signout` server action
 - Modify: `components/dashboard/CommandPalette.tsx` (restyle to tokens — keep its logic)
 
 - [ ] **Step 1: Rewrite `components/dashboard/Shell.tsx`**
@@ -902,7 +949,7 @@ import { useState, useCallback } from "react";
 import { Toaster } from "sonner";
 import { Rail, type ViewKey } from "./ui";
 import { HomeView } from "./HomeView";
-import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { signout } from "@/app/dashboard/actions"; // A0: server action — HttpOnly cookies can't be cleared from JS
 
 function Placeholder({ name }: { name: string }) {
   return <div className="p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">{name} — coming in the next milestone</div>;
@@ -911,10 +958,9 @@ function Placeholder({ name }: { name: string }) {
 export function DashboardShell() {
   const [view, setView] = useState<ViewKey>("home");
   const [cmdOpen, setCmdOpen] = useState(false);
-  const signOut = useCallback(async () => {
-    await createSupabaseBrowserClient().auth.signOut();
-    window.location.href = "/login";
-  }, []);
+  // Sign-out runs server-side (HttpOnly cookie can't be cleared from JS) — invoke the
+  // `signout` server action (app/dashboard/actions.ts: createServerSupabase().auth.signOut() → redirect("/login")).
+  const signOut = useCallback(() => { void signout(); }, []);
 
   return (
     <div className="flex h-screen w-full bg-[#f9f8f6]">
@@ -1053,10 +1099,58 @@ git commit --allow-empty -m "chore: A1 shell + spine verified (state, calendar, 
 
 ---
 
+## Task 16: Login page — email/password + "Continue with Google" (NEW, from the deploy chat)
+
+Add Google login alongside the existing email/password form. This is Supabase-Auth OAuth (login), NOT the calendar/Gmail connector (Tasks 8–10). *Outline only — implementer writes the code following A0's server-side-auth pattern.*
+
+**Files:**
+- Modify: `app/login/page.tsx` (add a "Continue with Google" button; keep the `<form action={login}>` email/password form).
+- Create: `app/auth/callback/route.ts` (GET) — the Supabase-Auth OAuth code-exchange handler.
+- (Optional) a small `"use client"` handler for the Google button.
+
+- [ ] **Step 1: Google button.** On click, call the browser client's `supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: \`${location.origin}/auth/callback\` } })`. (This only *initiates* the redirect to Google — it doesn't need to read the HttpOnly session, and @supabase/ssr stores the PKCE verifier in a cookie the server reads at the callback, so it's compatible with the HttpOnly model.)
+- [ ] **Step 2: `app/auth/callback/route.ts`.** Read `?code`, `const supabase = await createServerSupabase(); const { error } = await supabase.auth.exchangeCodeForSession(code)` (this sets the HttpOnly session cookie via A0's `setAll`). On success redirect to `/dashboard`; on error redirect to `/login?message=...` (the as-built `app/login/page.tsx` renders the `?message` param, not `?error` — use `message`, or update the page to render `error`).
+- [ ] **Step 2b: Middleware carve-out for `/auth` (REQUIRED — or Google login breaks).** The callback runs while still UNAUTHENTICATED (the session is only set *by* the exchange). But as-built `middleware.ts` gates every path on the `my.` subdomain (`isDashboard = pathname.startsWith("/dashboard") || subdomain === "my"`) and its `config.matcher` does NOT exclude `/auth` — so `my.hamzehhamdan.com/auth/callback` gets redirected to `/login` before `exchangeCodeForSession` can run. Fix: let `/auth` through unauthenticated — either add `/auth` to the matcher exclusion, or short-circuit before the gate with `if (request.nextUrl.pathname.startsWith("/auth")) return response;`. Verify the callback resolves while logged out.
+- [ ] **Step 3: Enforce `ALLOWED_EMAIL` cleanly.** After `exchangeCodeForSession`, check the signed-in user's email against `process.env.ALLOWED_EMAIL` (reuse `gateResult`); if it doesn't match, `supabase.auth.signOut()` and redirect to `/login?message=Unauthorized account`. (Middleware + `requireUser` already block non-matching users from data, but signing out here avoids a confusing half-logged-in state.)
+- [ ] **Step 4: Verify** (preview + prod): email/password still works; "Continue with Google" logs you in and lands on `/dashboard` with an HttpOnly session; a non-`ALLOWED_EMAIL` Google account is bounced to `/login`. Prereq P3 (Supabase Google provider) must be configured.
+- [ ] **Step 5: Commit** — `feat(auth): add Google login (Supabase Auth) alongside email/password`.
+
+---
+
+## Task 17: Restore the marketing site (GitHub Pages) without leaking the dashboard (NEW — task chip `task_3d7f3463`)
+
+`hamzehhamdan.com` (GitHub Pages, separate from the Netlify-hosted `my.`) has been failing to build since ~Jan 31 and serves a stale snapshot. Fix it AND make sure the static export cannot publish the authenticated surface.
+
+**Files:**
+- Modify: `.github/workflows/deploy.yml` and/or `next.config.ts` (export config); the `/consulting` OG-image route as needed.
+
+- [ ] **Step 1: Reproduce the failure.** `actions/configure-pages@…` injects `output: "export"`; the build fails on a dynamic route — `Error: export const dynamic="force-static"/revalidate not configured on route "/consulting/opengraph-image…"`. The four `app/api/*` route handlers (`force-dynamic`) are the same incompatibility class.
+- [ ] **Step 2: Make the marketing surface exportable.** Configure the `/consulting` opengraph-image route to be static (or remove it from the export), and ensure the export doesn't try to emit the dynamic API routes.
+- [ ] **Step 3: SECURITY — exclude the authenticated surface from the export.** The Pages host runs NO middleware, so an exported `/dashboard` would be a plain unauthenticated static page. Exclude `/dashboard`, `/login`, `/auth`, and `/api` from `./out` (e.g. route-group split, `generateStaticParams` gating, or a post-build prune), AND add a CI assertion that **fails the Pages job if `out/dashboard` exists**.
+- [ ] **Step 4: Verify.** Pages build green; `hamzehhamdan.com` republishes current marketing content; `curl https://hamzehhamdan.com/dashboard` does NOT serve a dashboard; the CI guard fails if `/dashboard` ever leaks in.
+- [ ] **Step 5: Commit** — `fix(deploy): restore Pages marketing build; exclude dashboard/auth/api from static export`.
+
+---
+
+## Task 18: Content-Security-Policy (deferred from A0 Task 10)
+
+A0 shipped the other security headers but left CSP for A1, once the shell's real asset/script origins are known.
+
+**Files:**
+- Modify: `next.config.ts` (add `Content-Security-Policy` to the headers block).
+
+- [ ] **Step 1: Inventory the origins the shell actually uses.** self; inline styles (the primitives in Task 3 use many `style={…}` attributes → `style-src` needs `'unsafe-inline'` unless refactored); the Supabase project URL (browser client / auth) in `connect-src`; `https://accounts.google.com` for the Google-login redirect (navigation/`form-action`); Plausible analytics domain if the spec's analytics land (`script-src`/`connect-src`); `data:`/`blob:` for avatars/images as needed; `frame-ancestors 'none'` (matches X-Frame-Options: DENY).
+- [ ] **Step 2: Add it report-only first.** Ship `Content-Security-Policy-Report-Only` on `/:path*`, load the live dashboard + login + Google OAuth + Brain, and confirm zero violations in the console.
+- [ ] **Step 3: Enforce.** Switch to `Content-Security-Policy`. Re-verify the full app (dashboard, `⌘K`, login both methods, calendar connect, AI) works with no CSP breakage.
+- [ ] **Step 4: Commit** — `feat(sec): content-security-policy for the dashboard shell`.
+
+---
+
 ## Self-review notes (author)
 
 - **Spec coverage:** §3 design system → Tasks 1–3; §4 shell/home/command-palette/mobile → Tasks 12–14; §5.2 `/api/state` + JSONB → Tasks 4–6; §5.4 per-route auth + rate limit + origin → reused from A0's `requireUser` + `lib/rate-limit`; §5.5 encrypted Google tokens + server OAuth + one connector → Tasks 7–10; AI on Claude → Task 11; §5.8 no-sensitive-localStorage + minimal egress + no-side-effect AI → Tasks 6 & 11 (contract documented). Gmail `search`/`draft` routes and the draft-confirmation UX land in **B (People)** on this same token spine; Brain restyle lands with its view.
 - **Type consistency:** `ViewKey` defined once in `Rail.tsx`, imported everywhere; `requireUser` result shape matches A0; `useAppState` app names match the `app_state` CHECK constraint and `/api/state` validator.
 - **Testable seams:** ring geometry, state validator, token crypto, and AI request validator are pure + unit-tested; the spine is exercised end-to-end in Task 15; presentational components are preview-verified.
-- **Deferred deliberately:** CSP header (needs the shell's final asset origins — added here once known, tracked in A0 Task 10 note); relational normalization (JSONB is sufficient); Gmail routes (B).
+- **CSP** is now an explicit deliverable → **Task 18** (was "deferred" in A0 Task 10). Gmail `search`/`draft` routes + the draft-confirmation UX still land in **B (People)** on this token spine; relational normalization stays out (JSONB app_state is sufficient).
+- **A0 reconciliation (2026-07-13):** this plan was updated after A0 shipped — see the "⚠️ Reconciliation with A0" section at the top. Key deltas: the security spine (`requireUser`/`gateResult`/`rate-limit`/`ownsStore`) + headers + vitest setup already exist; `supabase/migrations/` is gone so app_state/google_tokens append to `supabase/schema.sql`; HttpOnly cookies force server-side sign-out (Task 12); Google **login** added (Task 16, distinct from the connector); marketing-site/Pages fix added (Task 17); Next is 16.2.10.
 ```
