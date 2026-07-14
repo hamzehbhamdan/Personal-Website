@@ -20,6 +20,10 @@
     --color-border: hsl(var(--border));
     --color-input: hsl(var(--input));
     --color-ring: hsl(var(--ring));
+    --color-crimson: hsl(var(--crimson));
+    --color-crimson-tint: hsl(var(--crimson-tint));
+    --color-rail: hsl(var(--rail));
+    --color-hairline: hsl(var(--hairline));
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -48,6 +52,10 @@
         --input: 0 0% 89.8%;
         --ring: 0 0% 3.9%;
         --radius: 0.5rem;
+        --crimson: 350 71% 38%;            /* #A51C30 */
+        --crimson-tint: 351 60% 96%;       /* #faf0f1 */
+        --rail: 40 33% 97%;                /* #f9f8f6 warm off-white */
+        --hairline: 20 12% 92%;            /* #f0eeea inner rows */
     }
 
     .dark {
