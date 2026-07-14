@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Toaster } from "sonner";
 import { Rail, type ViewKey } from "./ui";
 import { HomeView } from "./HomeView";
@@ -16,6 +16,19 @@ export function DashboardShell() {
   // Sign-out runs server-side (HttpOnly cookie can't be cleared from JS) — invoke the
   // `signout` server action (app/dashboard/actions.ts: createServerSupabase().auth.signOut() → redirect("/login")).
   const signOut = useCallback(() => { void signout(); }, []);
+
+  // A1 review fix: wire the physical ⌘K / Ctrl+K shortcut to open the command palette
+  // (previously only the Rail's "⌘K Command" button opened it).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="flex h-screen w-full bg-[#f9f8f6]">
