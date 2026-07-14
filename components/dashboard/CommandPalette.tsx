@@ -211,6 +211,8 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
         }
     }, [selectedIndex]);
 
+    const mono = { fontFamily: "var(--font-geist-mono), monospace" };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -220,17 +222,17 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-[rgba(40,35,22,0.45)]"
                     />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                        className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-2xl bg-white border border-stone-200 rounded-[14px] shadow-2xl overflow-hidden"
                     >
-                        <div className="p-6 border-b border-white/5 flex items-center gap-4">
-                            <Search className="text-white/20" size={20} />
+                        <div className="p-6 border-b border-stone-200 flex items-center gap-4">
+                            <Search className="text-stone-300" size={20} />
                             <input
                                 ref={inputRef}
                                 value={query}
@@ -239,19 +241,19 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
                                     setSelectedIndex(0);
                                 }}
                                 placeholder="Execute command or search OS..."
-                                className="bg-transparent flex-1 outline-none text-lg font-medium text-white placeholder:text-white/10"
+                                className="bg-transparent flex-1 outline-none text-lg font-medium text-stone-900 placeholder:text-stone-300"
                             />
-                            {isLoading && <Clock className="animate-spin text-primary" size={16} />}
-                            <div className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg border border-white/10">
-                                <Command size={12} className="text-white/40" />
-                                <span className="text-[10px] font-bold text-white/40">K</span>
+                            {isLoading && <Clock className="animate-spin text-[#A51C30]" size={16} />}
+                            <div className="flex items-center gap-1 px-2 py-1 bg-stone-50 rounded-lg border border-stone-200">
+                                <Command size={12} className="text-stone-400" />
+                                <span className="font-mono text-[10px] font-medium text-stone-400" style={mono}>K</span>
                             </div>
                         </div>
 
                         <div ref={scrollContainerRef} className="max-h-[450px] overflow-y-auto custom-scrollbar p-2">
                             {!query && recentlyViewed.length > 0 && (
                                 <div className="mb-4">
-                                    <div className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white/20">Recently Viewed</div>
+                                    <div className="px-4 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-stone-400" style={mono}>Recently Viewed</div>
                                     {recentlyViewed.map((item, idx) => (
                                         <button
                                             key={`recent-${item.id}`}
@@ -259,10 +261,10 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
                                                 onAction(item.id, item.type);
                                                 onClose();
                                             }}
-                                            className="w-full flex items-center gap-4 px-4 py-2 rounded-xl text-white/40 hover:bg-white/5 hover:text-white transition-all text-left"
+                                            className="w-full flex items-center gap-4 px-4 py-2 rounded-lg text-stone-500 hover:bg-stone-50 hover:text-stone-900 transition-all text-left"
                                         >
-                                            <item.icon size={14} className="opacity-40" />
-                                            <span className="text-xs font-bold">{item.label}</span>
+                                            <item.icon size={14} className="text-stone-400" />
+                                            <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={mono}>{item.label}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -284,23 +286,23 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
                                                 }}
                                                 onMouseEnter={() => setSelectedIndex(idx)}
                                                 className={cn(
-                                                    "w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all group",
-                                                    isSelected ? "bg-white text-black" : "text-white/40 hover:bg-white/5 hover:text-white"
+                                                    "w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all group",
+                                                    isSelected ? "bg-[#A51C30] text-white" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <div className={cn(
-                                                        "p-2 rounded-xl transition-colors",
-                                                        isSelected ? "bg-black/10" : "bg-white/5"
+                                                        "p-2 rounded-lg transition-colors",
+                                                        isSelected ? "bg-white/15" : "bg-stone-100"
                                                     )}>
                                                         <Icon size={18} />
                                                     </div>
                                                     <div className="text-left">
-                                                        <span className="text-sm font-bold block">{item.label}</span>
+                                                        <span className="font-mono text-[12px] uppercase tracking-[0.06em] block" style={mono}>{item.label}</span>
                                                         <span className={cn(
-                                                            "text-[10px] uppercase tracking-widest font-bold",
-                                                            isSelected ? "opacity-40" : "opacity-20"
-                                                        )}>
+                                                            "font-mono text-[9px] uppercase tracking-[0.18em]",
+                                                            isSelected ? "text-white/60" : "text-stone-400"
+                                                        )} style={mono}>
                                                             {item.category}
                                                         </span>
                                                     </div>
@@ -316,23 +318,23 @@ export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProp
                                 </div>
                             ) : query && !isLoading && (
                                 <div className="py-12 text-center">
-                                    <p className="text-white/20 font-bold tracking-widest uppercase text-xs">No Results Found</p>
+                                    <p className="font-mono text-stone-400 tracking-[0.18em] uppercase text-[11px]" style={mono}>No Results Found</p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+                        <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between">
                             <div className="flex gap-4">
                                 <div className="flex items-center gap-2">
-                                    <div className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10 text-[9px] font-black text-white/40">↑↓</div>
-                                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">Navigate</span>
+                                    <div className="px-1.5 py-0.5 bg-white rounded border border-stone-200 font-mono text-[9px] font-medium text-stone-500" style={mono}>↑↓</div>
+                                    <span className="font-mono text-[9px] text-stone-400 uppercase tracking-[0.14em]" style={mono}>Navigate</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10 text-[9px] font-black text-white/40">ENTER</div>
-                                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-tighter">Execute</span>
+                                    <div className="px-1.5 py-0.5 bg-white rounded border border-stone-200 font-mono text-[9px] font-medium text-stone-500" style={mono}>ENTER</div>
+                                    <span className="font-mono text-[9px] text-stone-400 uppercase tracking-[0.14em]" style={mono}>Execute</span>
                                 </div>
                             </div>
-                            <div className="text-[9px] font-black text-white/10 uppercase tracking-[0.2em]">Neural OS v2.5</div>
+                            <div className="font-mono text-[9px] text-stone-300 uppercase tracking-[0.2em]" style={mono}>Neural OS v2.5</div>
                         </div>
                     </motion.div>
                 </div>
