@@ -1,6 +1,9 @@
 import { MetadataRoute } from "next"
 import { projects } from "@/lib/data"
 
+// Static so the route can be emitted by `output: export` (GitHub Pages).
+export const dynamic = "force-static"
+
 const siteUrl = "https://www.hamzehhamdan.com"
 
 export default function sitemap(): MetadataRoute.Sitemap {

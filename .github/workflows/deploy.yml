@@ -76,8 +76,33 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      # SECURITY: GitHub Pages runs NO middleware, so any exported app route would be
+      # served unauthenticated. Remove the authenticated app surface from this ephemeral
+      # CI checkout BEFORE the static export runs. The `output: export` build errors on
+      # these dynamic route handlers / server actions before it can emit ./out, so a
+      # post-build prune is not sufficient — they must be gone before `next build`.
+      # Marketing pages only link to these routes as href strings; they never import them.
+      # components/dashboard is the dashboard-only UI layer (imported solely by
+      # app/dashboard); it must go too, otherwise `next build`'s project-wide TypeScript
+      # check fails on its now-dangling import of app/dashboard/actions.
+      - name: Exclude authenticated app surface from static export
+        run: rm -rf app/dashboard app/login app/auth app/api components/dashboard
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+      # SECURITY GUARD: fail the Pages deploy if any authenticated route leaked into ./out.
+      - name: Assert app surface did not leak into export
+        run: |
+          leaked=0
+          for d in dashboard login auth api; do
+            for p in "out/$d" "out/$d.html" "out/$d.txt"; do
+              if [ -e "$p" ]; then
+                echo "SECURITY: $p leaked into the Pages export"
+                leaked=1
+              fi
+            done
+          done
+          if [ "$leaked" -ne 0 ]; then exit 1; fi
+          echo "OK: no authenticated app routes present in ./out"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:

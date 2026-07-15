@@ -2,9 +2,16 @@
 import { ImageResponse } from "next/og"
 import { projects } from "@/lib/data"
 
-export const runtime = "edge"
+export const dynamic = "force-static"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
+
+// Required for `output: export` (GitHub Pages): a metadata route in a dynamic
+// segment does not inherit the sibling page's generateStaticParams, so declare
+// the exportable slugs here too.
+export function generateStaticParams() {
+    return projects.map((project) => ({ slug: project.slug }))
+}
 
 interface Props {
     params: Promise<{ slug: string }>
