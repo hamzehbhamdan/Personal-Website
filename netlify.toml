@@ -4,9 +4,16 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Keys safe to expose to the browser (NEXT_PUBLIC_*) — omitted by KEY, not path,
-  # so the scanner still inspects build output for accidental server-secret inlining.
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,ALLOWED_EMAIL"
+  # Non-secret env values, omitted by KEY (not path) so the scanner still inspects
+  # the build output + repo for accidental REAL server-secret leaks:
+  #  - NEXT_PUBLIC_*        : intentionally client-exposed (inlined into the browser bundle).
+  #  - ALLOWED_EMAIL        : the single allow-listed address — not a credential.
+  #  - GOOGLE_OAUTH_REDIRECT: the public OAuth callback URL (sent in every consent request,
+  #    visible in the browser during the flow). Its value is documented verbatim in
+  #    docs/superpowers/plans/*a1*.md, which the scanner reads — hence the false positive.
+  # Real secrets (ANTHROPIC_API_KEY, OPENAI_API_KEY, TOKEN_ENC_KEY, GCAL_CLIENT_SECRET) are
+  # deliberately NOT omitted, so a genuine leak would still fail the build.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,ALLOWED_EMAIL,GOOGLE_OAUTH_REDIRECT"
   # Only omit static public assets (incl. public/playground/ injection-lab corpus, which
   # would otherwise trip false positives). Do NOT omit .next — let the scanner watch the
   # build output so a server-secret bundle leak is caught.
