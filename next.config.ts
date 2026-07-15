@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-// Content-Security-Policy for the dashboard shell. Shipped as Report-Only first
-// (see Task 18); flipped to enforcing after live verification confirms no violations.
+// Content-Security-Policy for the dashboard shell. Enforcing (see Task 18):
+// live-verified as Report-Only against a production build (dashboard, login,
+// command palette, /api/ai, Supabase search) with zero violations before flipping.
 // Origins: self by default; 'unsafe-inline' scripts for Next.js hydration/RSC (no nonce
 // infra) and Plausible; 'unsafe-inline' styles for the Task 3 primitives' style={...};
 // Plausible analytics (script + beacon); Supabase browser/auth client (connect);
@@ -25,7 +26,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
 ];
 
 const nextConfig: NextConfig = {
