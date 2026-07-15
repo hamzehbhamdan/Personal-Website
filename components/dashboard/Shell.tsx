@@ -97,7 +97,14 @@ export function DashboardShell() {
       </Sheet>
 
       <Toaster position="bottom-right" />
-      <CommandPalette isOpen={cmdOpen} onClose={() => setCmdOpen(false)} onAction={() => setCmdOpen(false)} />
+      <CommandPalette
+        isOpen={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        onAction={(id) => {
+          if (typeof id === "string" && id.startsWith("nav-")) setView(id.slice(4) as ViewKey);
+          setCmdOpen(false);
+        }}
+      />
     </div>
   );
 }

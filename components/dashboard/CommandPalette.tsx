@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Command, ArrowRight, Zap, Target, Users, BookOpen, Settings as SettingsIcon, File, Clock } from "lucide-react";
+import { Search, Command, ArrowRight, Target, Users, BookOpen, File, Clock, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Task, Contact } from "@/lib/types";
@@ -27,25 +27,19 @@ const ICON_MAP: Record<string, any> = {
     "Search": Search,
     "Command": Command,
     "ArrowRight": ArrowRight,
-    "Zap": Zap,
     "Target": Target,
     "Users": Users,
     "BookOpen": BookOpen,
-    "Settings": SettingsIcon,
     "File": File,
-    "Clock": Clock
+    "Clock": Clock,
+    "Home": Home
 };
 
 const STATIC_ACTIONS: SearchResult[] = [
-    { id: "goto-momentum", label: "Switch to Momentum View", icon: Zap, iconName: "Zap", category: "Navigation", type: "action" },
-    { id: "goto-directives", label: "Open Directives (Tasks)", icon: Target, iconName: "Target", category: "Navigation", type: "action" },
-    { id: "goto-network", label: "Open Network (Contacts)", icon: Users, iconName: "Users", category: "Navigation", type: "action" },
-    { id: "goto-brain", label: "Open Neural Brain", icon: BookOpen, iconName: "BookOpen", category: "Navigation", type: "action" },
-    { id: "open-settings", label: "Open System Settings", icon: SettingsIcon, iconName: "Settings", category: "System", type: "action" },
-    { id: "create-task", label: "Create New Directive", icon: Zap, iconName: "Zap", category: "Actions", type: "action" },
-    { id: "open-calendar", label: "Open Calendar Protocol", icon: Clock, iconName: "Clock", category: "System", type: "action" },
-    { id: "start-focus", label: "Initialize Focus Session", icon: Target, iconName: "Target", category: "Actions", type: "action" },
-    { id: "toggle-theme", label: "Toggle System Theme", icon: Zap, iconName: "Zap", category: "System", type: "action" },
+    { id: "nav-home", label: "Go to Home", icon: Home, iconName: "Home", category: "Navigation", type: "action" },
+    { id: "nav-people", label: "Go to People", icon: Users, iconName: "Users", category: "Navigation", type: "action" },
+    { id: "nav-coach", label: "Go to Coach", icon: Target, iconName: "Target", category: "Navigation", type: "action" },
+    { id: "nav-brain", label: "Go to Brain", icon: BookOpen, iconName: "BookOpen", category: "Navigation", type: "action" },
 ];
 
 export function CommandPalette({ isOpen, onClose, onAction }: CommandPaletteProps) {
