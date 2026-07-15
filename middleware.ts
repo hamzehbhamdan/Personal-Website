@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
     // is only set BY exchangeCodeForSession, so gating /auth would redirect the
     // callback to /login before it can run. Returns the already-built response
     // (with any refreshed cookies). Does NOT weaken the gate for other paths.
-    if (request.nextUrl.pathname.startsWith("/auth")) return response;
+    if (request.nextUrl.pathname.startsWith("/auth/")) return response;
 
     // Page protection only.
     // NOTE: middleware does NOT run on /api (see matcher). API routes authenticate via requireUser().
