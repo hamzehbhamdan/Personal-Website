@@ -51,7 +51,7 @@ export default async function LoginPage({
                             </div>
                         )}
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="pt-4">
                         <Button className="w-full font-semibold" type="submit">Sign in</Button>
                     </CardFooter>
                 </form>
