@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+
+const mono = { fontFamily: "var(--font-geist-mono), monospace" };
 
 export function GoogleButton() {
     const [loading, setLoading] = useState(false);
@@ -25,12 +26,12 @@ export function GoogleButton() {
     }
 
     return (
-        <Button
+        <button
             type="button"
-            variant="outline"
-            className="w-full font-semibold"
             onClick={handleClick}
             disabled={loading}
+            style={mono}
+            className="flex w-full items-center justify-center gap-2.5 rounded-[8px] border border-stone-200 bg-white px-4 py-3 font-mono text-[11px] uppercase tracking-[0.14em] text-stone-600 transition-colors hover:border-stone-300 hover:text-stone-900 disabled:opacity-50"
         >
             <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4">
                 <path
@@ -50,7 +51,7 @@ export function GoogleButton() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.46 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
                 />
             </svg>
-            Continue with Google
-        </Button>
+            {loading ? "Redirecting…" : "Continue with Google"}
+        </button>
     );
 }
