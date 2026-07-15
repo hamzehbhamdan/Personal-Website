@@ -1,21 +1,10 @@
 
 import { ImageResponse } from "next/og"
+import { loadPlayfair } from "@/lib/og-font"
 
 export const dynamic = "force-static"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
-
-async function loadPlayfair(): Promise<ArrayBuffer | null> {
-    try {
-        const css = await fetch(
-            "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap",
-            { headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" } }
-        ).then((r) => r.text())
-        const url = css.match(/src: url\(([^)]+)\)/)?.[1]
-        if (url) return fetch(url).then((r) => r.arrayBuffer())
-    } catch {}
-    return null
-}
 
 export default async function Image() {
     const fontData = await loadPlayfair()

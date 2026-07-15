@@ -1,5 +1,6 @@
 
 import { ImageResponse } from "next/og"
+import { loadPlayfair } from "@/lib/og-font"
 import { projects } from "@/lib/data"
 
 export const dynamic = "force-static"
@@ -15,18 +16,6 @@ export function generateStaticParams() {
 
 interface Props {
     params: Promise<{ slug: string }>
-}
-
-async function loadPlayfair(): Promise<ArrayBuffer | null> {
-    try {
-        const css = await fetch(
-            "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap",
-            { headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" } }
-        ).then((r) => r.text())
-        const url = css.match(/src: url\(([^)]+)\)/)?.[1]
-        if (url) return fetch(url).then((r) => r.arrayBuffer())
-    } catch {}
-    return null
 }
 
 export default async function Image({ params }: Props) {
