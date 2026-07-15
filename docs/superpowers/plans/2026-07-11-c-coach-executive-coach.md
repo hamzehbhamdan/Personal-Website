@@ -16,6 +16,31 @@
 
 ---
 
+## ⚠️ Reconciliation with A1 (as-built, 2026-07-14) — READ FIRST
+
+A1 shipped and was **merged to `main`** (tip commit `062c0a2`). It matches this plan closely; the deltas below are the source of truth (confirmed against the as-built code during A1 execution).
+
+**Spine interfaces C imports (as-built signatures):**
+- `requireUser(req?)` (`@/lib/supabase-server`) → `{ ok:true, supabase, userId } | { ok:false, response }` (auth + `ALLOWED_EMAIL` + same-origin on mutations). C adds no routes, so this only matters if you ever touch `/api/*`.
+- `useAppState<T>(app, seed)` → `{ state, setState: update, loaded }`; `setState` is a functional updater `(prev)=>next`, debounced ~500ms. **As-built behaviors that interact with Coach timers:** (a) the pending debounced write is **cleared on unmount** — a timer start/pause or task edit made <500ms before switching away from Coach is DROPPED (not flushed); because timers store an absolute `timerStart` epoch and reconcile on the next load (your Task 5 multi-device model), this is usually self-healing, but a pause done immediately before navigating away may not persist until re-touched. (b) PUT failures are swallowed (no save-error UI).
+- `/api/ai` (`{task, prompt, system?}` → `{text}`): tasks `coach_chat, suggest_tasks, suggest_goals, intake` are all in the allowlist ✓; `MAX_PROMPT=40_000`; model **`claude-sonnet-5`** (fixed in the route). **Quirk:** `system: ""` drops the default persona (`?? default`, and `""` isn't nullish). Your persona call sites (`intakeSystemPrompt`, `COACH_CHAT_SYSTEM`) send real strings — fine; structured-extraction tasks OMIT `system` (don't send `""`).
+- `lib/dashboard/ring.ts` → `ringGeometry(pct, size=40)` + `clampPct`; the `Ring` primitive + the other `ui/` primitives + `cn` are as-built. `ViewKey` is exported from `@/components/dashboard/ui`.
+
+**A1 as-built baselines your amendments touch:**
+- **`Modal` (as-built) has NO `size` prop.** Current signature: `Modal({ title, onClose, children })`, `"use client"`, fixed `max-w-[620px]`, ESC/backdrop close, Playfair title, `rgba(40,35,22,0.45)` scrim. Your Task 18 Step 1 additive amendment (optional `size` → widen for `size="wide"`) is correct and still needed — keep it backward-compatible (default = current width) so no existing caller breaks.
+- **Shell integration:** replace `{view === "coach" && <Placeholder name="Coach" />}` in `components/dashboard/Shell.tsx`'s `<main>` with `<CoachView />` (confirmed: A1's Shell uses exactly that placeholder pattern — your Task 25 "reconcile at execution time" resolves to this). Leave the other slots, the mobile Sheet, ⌘K, and the palette wiring intact.
+- **`vitest.config.ts`** exists (A1) with the `@/` alias + a `test.env` block; register `test/setup.ts` per your Task 1 Step 0 (additive).
+
+**A1 decisions relevant to Coach:**
+- **HttpOnly cookie → no browser Supabase client for authed data** — Coach reads/writes only via `useAppState`→`/api/state`, so you're already compliant.
+- **AI text-only, zero side effects** — matches your "AI prompt authorship" note exactly; nothing to change.
+- **CSP is ENFORCED** (`next.config.ts`, directives: `default-src 'self'`; `script-src 'self' 'unsafe-inline' https://plausible.io` +`'unsafe-eval'` dev-only; `style-src 'self' 'unsafe-inline'`; `img-src 'self' data: blob: https:`; `connect-src 'self' https://*.supabase.co https://plausible.io`; `frame-ancestors 'none'`; `form-action 'self'`). Coach uses inline styles + same-origin `/api/*` fetches + `react-markdown` (no external) — **no CSP change needed**. Only update `contentSecurityPolicy` if you add a new external origin.
+- **react-markdown** is already in `package.json` (as you noted) — no install.
+
+**Legacy cleanup:** `TaskBoard`, `SprintDashboard`, `MomentumView`, `FocusTimerPopUp`, `TaskStats`, etc. and the legacy relational tables are superseded by `app_state`(`execCoach`). Remove the Coach-side legacy views as you land C.
+
+---
+
 ## Files created by this plan
 
 **Pure logic + types (`lib/dashboard/coach/`)** — all unit-tested:

@@ -12,6 +12,33 @@
 
 ---
 
+## ⚠️ Reconciliation with A1 (as-built, 2026-07-14) — READ FIRST
+
+A1 shipped and was **merged to `main`** (tip commit `062c0a2`). It matches this plan closely; the deltas below are the source of truth (confirmed against the as-built code during A1 execution).
+
+**Spine interfaces B imports (as-built signatures):**
+- `requireUser(req?)` (`@/lib/supabase-server`) → `{ ok:true, supabase, userId } | { ok:false, response }`. Every B route: `const gate = await requireUser(req); if (!gate.ok) return gate.response;` then use `gate.supabase` (RLS-scoped **as the user**) + `gate.userId`. It enforces auth + `ALLOWED_EMAIL` + a same-origin check on non-GET/HEAD. (The "Depends on" line ref `supabase-server.ts:241-246` is stale — the file is ~65 lines; the gate is `requireUser` near the end.)
+- `useAppState<T>(app, seed)` (`@/lib/dashboard/useAppState`) → `{ state, setState: update, loaded }`. `setState` takes a functional updater `(prev)=>next` and debounces a `PUT /api/state` (~500ms). **Two as-built behaviors to design around:** (a) the pending debounced write is **cleared on unmount** — an edit made <500ms before switching away from People is DROPPED (not flushed); for a critical edit, do it well before navigating or force a save. (b) PUT failures are **swallowed** (no save-error UI) — add a save-status indicator in B if you want one (deferred from A1).
+- `/api/ai` (`{task, prompt, system?}` → `{text}`): the task allowlist includes `draft_checkin, group_update, ask_people, suggest_tags` ✓; `MAX_PROMPT=40_000`; model is **`claude-sonnet-5`** (fixed in the route). **Quirk:** passing `system: ""` drops the default persona (route uses `?? default`, and `""` isn't nullish) — send a non-empty `system` or **omit** it, never `""`.
+- `/api/calendar/events` (GET → `{connected, events}`, fail-closed to `{connected:false}` when not linked/on any error), `getGoogleAccessToken` (`@/lib/google`), the `ui/` primitives, `cn`, `allow` — all as-built. `ViewKey` is exported from `@/components/dashboard/ui`.
+
+**A1 decisions that change B's approach:**
+- **HttpOnly session cookie → NEVER use the browser Supabase client for authed data.** JS can't read the session, so `createSupabaseBrowserClient().from(...)` runs as anon/empty. B's `DB` correctly loads via `useAppState`→`/api/state`; keep ALL authed reads on `/api/*`.
+- **AI is text-only, zero side effects.** `/api/gmail/draft` (which B builds) is a SEPARATE route needing its own `requireUser` gate, `Origin` check, recipient echo-back, and an explicit human confirm before creating the draft — **never send**. `/api/ai` never drafts/sends.
+- **You build `/api/gmail/search` + `/api/gmail/draft`** — A1 shipped only `/api/calendar/events`. The Gmail scopes (`gmail.metadata`, `gmail.compose`) were already requested by A1's connector, so no new consent (P1's re-connect applies only if you linked Google before those scopes existed).
+- **You own the "Connect Google" UI.** A1 has no connect affordance in the shell — linking is `GET /api/google/connect` (redirects to consent; the callback stores the encrypted refresh token, then redirects to `/dashboard?google=connected|error`). Make the "Connect Google to sync…" note a real button hitting `/api/google/connect`, and read the `?google=` param.
+- **CSP is ENFORCED** (A1 Task 18, `next.config.ts`): `default-src 'self'`; `script-src 'self' 'unsafe-inline' https://plausible.io` (+`'unsafe-eval'` **dev-only**); `style-src 'self' 'unsafe-inline'`; `img-src 'self' data: blob: https:`; `connect-src 'self' https://*.supabase.co https://plausible.io`; `frame-ancestors 'none'`; `form-action 'self'`. B's inline styles, same-origin `/api` fetches, and data:-URL avatars all fit — **no CSP change needed**. Only if you add a NEW external origin (a remote image host beyond `https:`, a new `connect-src` target) update `contentSecurityPolicy` in `next.config.ts`.
+- **Shell integration:** replace `{view === "people" && <Placeholder name="People" />}` in `components/dashboard/Shell.tsx`'s `<main>` with `<PeopleView />`; leave the other view slots, the mobile Sheet nav, ⌘K, and the command-palette wiring intact.
+- **Command palette:** A1 wired it to nav only (`nav-home/people/coach/brain` → `setView`, via Shell's `onAction`). Its dynamic search still uses the now-dead browser-client path — for People-aware palette search/actions, route search through an authed `/api/*` and add action ids in Shell's `onAction` (deferred from A1).
+
+**Stale OPS steps — already satisfied by A1 (skip / verify only):**
+- **P2 (`npm install react-markdown`) is already done** — `react-markdown@^10.1.0` + `remark-gfm` are in `package.json`. Just import it (raw HTML disabled).
+- **P3 (vitest wiring) is already done** — A1 ships `vitest` + the `test`/`test:watch` scripts + the `@/` alias + a `test.env` block; tests go in `test/`.
+
+**Legacy cleanup:** the old relational tables (`contacts`, `tasks`, `notes`, …) and views (`CrmView`, `ContactTable`, `ImportContactsModal`, `NetworkGraph`, …) are superseded by `app_state`(`lifeCRM`). Remove the People-side legacy views as you land B; the empty legacy tables (RLS-secured, harmless) can be dropped in a later cleanup.
+
+---
+
 ## ⚠️ OPS PREFACE (Hamzeh)
 
 - [ ] **P1. Confirm Gmail scopes consented.** A1/P2 already added `gmail.metadata` + `gmail.compose` to the OAuth client and consent. If you connected Google before those scopes were added, **re-run `/api/google/connect`** once so the stored refresh token carries the Gmail scopes. Verify: `POST /api/gmail/search {"mailbox":"sent"}` (authed, same-origin) returns rows, not a scope error.
