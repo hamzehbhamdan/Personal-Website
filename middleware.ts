@@ -64,6 +64,12 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
+    // Let the Supabase-Auth OAuth callback through unauthenticated: the session
+    // is only set BY exchangeCodeForSession, so gating /auth would redirect the
+    // callback to /login before it can run. Returns the already-built response
+    // (with any refreshed cookies). Does NOT weaken the gate for other paths.
+    if (request.nextUrl.pathname.startsWith("/auth")) return response;
+
     // Page protection only.
     // NOTE: middleware does NOT run on /api (see matcher). API routes authenticate via requireUser().
     const isDashboard = request.nextUrl.pathname.startsWith("/dashboard") || subdomain === "my";
@@ -74,7 +80,7 @@ export async function middleware(request: NextRequest) {
         const allowedEmail = process.env.ALLOWED_EMAIL;
         if (allowedEmail && user.email !== allowedEmail) {
             const url = new URL("/login", request.url);
-            url.searchParams.set("error", "Unauthorized account");
+            url.searchParams.set("message", "Unauthorized account");
             return NextResponse.redirect(url);
         }
     }

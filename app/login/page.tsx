@@ -1,5 +1,6 @@
 
 import { login } from "./actions";
+import { GoogleButton } from "./GoogleButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,14 @@ export default async function LoginPage({
                         <Button className="w-full font-semibold" type="submit">Sign in</Button>
                     </CardFooter>
                 </form>
+                <CardFooter className="flex-col gap-4 pt-0">
+                    <div className="flex w-full items-center gap-3">
+                        <span className="h-px flex-1 bg-border" />
+                        <span className="text-xs uppercase text-muted-foreground">or</span>
+                        <span className="h-px flex-1 bg-border" />
+                    </div>
+                    <GoogleButton />
+                </CardFooter>
             </Card>
         </div>
     );
