@@ -14,7 +14,20 @@
   # Real secrets (ANTHROPIC_API_KEY, OPENAI_API_KEY, TOKEN_ENC_KEY, GCAL_CLIENT_SECRET) are
   # deliberately NOT omitted, so a genuine leak would still fail the build.
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,ALLOWED_EMAIL,GOOGLE_OAUTH_REDIRECT"
-  # Only omit static public assets (incl. public/playground/ injection-lab corpus, which
-  # would otherwise trip false positives). Do NOT omit .next — let the scanner watch the
-  # build output so a server-secret bundle leak is caught.
+  # Only omit static public assets (incl. public/playground/mcp-injection-lab corpus, whose
+  # canary/decoy tokens would otherwise trip false positives). Do NOT omit .next — let the
+  # scanner watch the build output so a server-secret bundle leak is caught.
   SECRETS_SCAN_OMIT_PATHS = "public"
+  #
+  # ⚠ RESIDUAL RISKS (adversarially audited 2026-07-15; also documented in spec §5.7):
+  #  1. The anon-key omission is safe ONLY while strict RLS is enforced on the LIVE Supabase
+  #     project. NEXT_PUBLIC_SUPABASE_ANON_KEY ships to the browser by design and is non-secret
+  #     purely because per-owner RLS (auth.uid()=user_id; no service_role / nil-UUID / using(true)
+  #     backdoor) blocks it. If RLS were ever weakened, the omitted public key becomes a full
+  #     data read/write exposure that the scanner is no longer watching. INVARIANT: keep RLS strict
+  #     on every table. Hardening: a deploy assertion that an anon-key SELECT returns 0 rows.
+  #  2. OMIT_PATHS="public" skips the WHOLE public/ tree (served world-readable) — a real secret
+  #     manually dropped anywhere under public/ would ship un-flagged. None is there today and the
+  #     build never writes env values into public/ (only into the still-scanned .next). Hardening:
+  #     narrow to "public/playground/mcp-injection-lab" (the only dir with decoys) so the rest of
+  #     public/ stays scanned — test against Netlify's scan before applying.
