@@ -46,3 +46,12 @@ describe("gmail helpers", () => {
     });
   });
 });
+
+describe("buildDraftRaw — Cc", () => {
+  it("adds a Cc header only when cc is non-empty (trailing 5th arg)", () => {
+    const withCc = Buffer.from(buildDraftRaw(["a@x.com"], [], "Hi", "body", ["c@x.com", "d@y.com"]), "base64url").toString("utf8");
+    expect(withCc).toContain("Cc: c@x.com, d@y.com");
+    const noCc = Buffer.from(buildDraftRaw(["a@x.com"], [], "Hi", "body"), "base64url").toString("utf8");
+    expect(noCc).not.toContain("Cc:");
+  });
+});

@@ -65,8 +65,9 @@ export function encodeSubject(s: string): string {
 }
 
 /** Build a base64url RFC-2822 draft. Never sent — caller uses drafts.create only. */
-export function buildDraftRaw(to: string[], bcc: string[], subject: string, body: string): string {
+export function buildDraftRaw(to: string[], bcc: string[], subject: string, body: string, cc: string[] = []): string {
   const lines = [`To: ${to.join(", ")}`];
+  if (cc.length) lines.push(`Cc: ${cc.join(", ")}`);
   if (bcc.length) lines.push(`Bcc: ${bcc.join(", ")}`);
   lines.push("Content-Type: text/plain; charset=UTF-8", `Subject: ${encodeSubject(subject)}`, "", body);
   return Buffer.from(lines.join("\r\n"), "utf8").toString("base64url");

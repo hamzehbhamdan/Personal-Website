@@ -15,9 +15,9 @@ export async function POST(req: Request) {
   if (!parsed.ok) return Response.json({ error: parsed.reason }, { status: 400 });
   const token = await getGoogleAccessToken(gate.supabase, gate.userId);
   if (!token) return Response.json({ error: "Gmail not connected" }, { status: 409 });
-  const { to, bcc, subject, body } = parsed.value;
-  const draft = await gmailCreateDraft(token, buildDraftRaw(to, bcc, subject, body));
+  const { to, cc, bcc, subject, body } = parsed.value;
+  const draft = await gmailCreateDraft(token, buildDraftRaw(to, bcc, subject, body, cc));
   if (!draft) return Response.json({ error: "draft create failed" }, { status: 502 });
   // Echo recipients so the UI can reconfirm what was created (nothing is sent).
-  return Response.json({ ok: true, draftId: draft.id, to, bcc });
+  return Response.json({ ok: true, draftId: draft.id, to, cc, bcc });
 }
