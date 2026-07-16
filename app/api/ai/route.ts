@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { requireUser } from "@/lib/supabase-server";
 import { allow } from "@/lib/rate-limit";
-import { parseAiRequest } from "@/lib/dashboard/ai-schema";
+import { parseAiRequest, DEFAULT_MODEL } from "@/lib/dashboard/ai-schema";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   try {
     const msg = await client.messages.create({
-      model: "claude-sonnet-5",
+      model: parsed.value.model ?? DEFAULT_MODEL,
       max_tokens: 1024,
       system: parsed.value.system ?? "You are a concise, warm assistant. Return only the requested text.",
       messages: [{ role: "user", content: parsed.value.prompt }],

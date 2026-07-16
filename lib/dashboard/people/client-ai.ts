@@ -1,6 +1,6 @@
 // lib/dashboard/people/client-ai.ts
-export async function askAi(task: string, prompt: string, system?: string): Promise<string> {
-  const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task, prompt, system }) });
+export async function askAi(task: string, prompt: string, opts?: { system?: string; model?: string }): Promise<string> {
+  const r = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task, prompt, system: opts?.system, model: opts?.model }) });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "AI unavailable");
   return (await r.json()).text as string;
 }
