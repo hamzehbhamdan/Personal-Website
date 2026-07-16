@@ -22,9 +22,12 @@ export function state(c: Contact, gmail: GmailMap, cal: CalMap, db: Pick<CrmDB, 
   let bdayIn: number | null = null;
   if (c.birthday && /^\d{2}-\d{2}$/.test(c.birthday)) {
     const [mm, dd] = c.birthday.split("-").map(Number);
+    // Anchor to date-only "today" (local midnight) so the countdown is an exact day count
+    // regardless of the time-of-day carried by `now`: 0 = today, 1 = tomorrow (no off-by-one).
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let b = new Date(now.getFullYear(), mm - 1, dd);
-    if (b < new Date(now.getFullYear(), now.getMonth(), now.getDate())) b = new Date(now.getFullYear() + 1, mm - 1, dd);
-    bdayIn = daysBetween(b, now);
+    if (b < today0) b = new Date(now.getFullYear() + 1, mm - 1, dd);
+    bdayIn = daysBetween(b, today0);
   }
   return { last, days, cad, overdue, soon, snoozed, oweReply, calNext, bdayIn };
 }

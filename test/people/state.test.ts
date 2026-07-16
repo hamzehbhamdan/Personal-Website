@@ -70,4 +70,10 @@ describe("state()", () => {
   it("cadence falls back to 90 when the tier is unknown", () => {
     expect(state(c({ tier: "ghost" }), {}, {}, db(), NOW).cad).toBe(90);
   });
+  it("birthday countdown has no off-by-one when now carries a time-of-day", () => {
+    const afternoon = new Date("2026-07-11T15:30:00Z"); // TZ pinned UTC in vitest config
+    expect(state(c({ birthday: "07-11" }), {}, {}, db(), afternoon).bdayIn).toBe(0); // today
+    expect(state(c({ birthday: "07-12" }), {}, {}, db(), afternoon).bdayIn).toBe(1); // tomorrow
+    expect(state(c({ birthday: "07-20" }), {}, {}, db(), afternoon).bdayIn).toBe(9);
+  });
 });
