@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/gmail.metadata",
+  "https://www.googleapis.com/auth/gmail.readonly", // was gmail.metadata — enables format=full body reads for voice distillation (see lib/gmail-read.ts). Requires re-consent.
   "https://www.googleapis.com/auth/gmail.compose",
 ];
 
