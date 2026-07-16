@@ -1,6 +1,25 @@
 import { DEFAULT_TIERS } from "./tiers";
-import type { CrmDB } from "./types";
+import type { CrmDB, CrmSettings, VoiceProfile } from "./types";
 export const emptyDb = (): CrmDB => ({ version: 1, contacts: [], groups: [], dismissed: [], tiers: DEFAULT_TIERS.map((t) => ({ ...t })), settings: { autoTags: false } });
+
+function normalizeVoice(v: any): VoiceProfile | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const cap = (x: any, n: number) => (typeof x === "string" && x ? x.slice(0, n) : undefined);
+  const out: VoiceProfile = {};
+  const tone = cap(v.tone, 60); if (tone) out.tone = tone;
+  const styleGuide = cap(v.styleGuide, 8000); if (styleGuide) out.styleGuide = styleGuide;
+  const styleNotes = cap(v.styleNotes, 2000); if (styleNotes) out.styleNotes = styleNotes;
+  const styleSummary = cap(v.styleSummary, 4000); if (styleSummary) out.styleSummary = styleSummary;
+  if (Array.isArray(v.examples)) {
+    const ex = v.examples.filter((e: any) => typeof e === "string" && e).slice(0, 5).map((e: string) => e.slice(0, 1000));
+    if (ex.length) out.examples = ex;
+  }
+  if (Array.isArray(v.sentSamples)) {
+    const ss = v.sentSamples.filter((s: any) => s && typeof s === "object").slice(0, 10).map((s: any) => ({ subject: String(s.subject ?? "").slice(0, 300), date: String(s.date ?? "").slice(0, 40) }));
+    if (ss.length) out.sentSamples = ss;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 /**
  * PURE port of load()+import normalization (crm.html:234-240, 629).
@@ -23,13 +42,17 @@ export function normalizeDb(raw: any): CrmDB {
     rule: g?.rule ? { ...g.rule } : null,
   }));
   const tiers = Array.isArray(r.tiers) && r.tiers.length ? r.tiers.map((t: any) => ({ ...t })) : DEFAULT_TIERS.map((t) => ({ ...t }));
+  const rs = r.settings && typeof r.settings === "object" ? r.settings : {};
+  const settings: CrmSettings = { autoTags: !!rs.autoTags };
+  const voice = normalizeVoice(rs.voice);
+  if (voice) settings.voice = voice;
   return {
     version: typeof r.version === "number" ? r.version : 1,
     contacts,
     groups,
     dismissed: Array.isArray(r.dismissed) ? [...r.dismissed] : [],
     tiers,
-    settings: r.settings && typeof r.settings === "object" ? { autoTags: !!r.settings.autoTags } : { autoTags: false },
+    settings,
   };
 }
 export function validateBackup(obj: any): { ok: boolean; reason?: string } {

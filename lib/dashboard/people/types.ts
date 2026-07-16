@@ -36,7 +36,15 @@ export interface Group {
   avatarImg?: string | null;
 }
 
-export interface CrmSettings { autoTags: boolean; }
+export interface VoiceProfile {
+  tone?: string;
+  styleGuide?: string;
+  styleNotes?: string;
+  styleSummary?: string;
+  examples?: string[];
+  sentSamples?: { subject: string; date: string }[];
+}
+export interface CrmSettings { autoTags: boolean; voice?: VoiceProfile; }
 
 export interface CrmDB {
   version: number;
