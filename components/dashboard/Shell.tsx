@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { Menu } from "lucide-react";
 import { Rail, type ViewKey } from "./ui";
 import { HomeView } from "./HomeView";
+import { PeopleView } from "@/components/dashboard/people/PeopleView";
 import { CommandPalette } from "./CommandPalette";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { signout } from "@/app/dashboard/actions"; // A0: server action — HttpOnly cookies can't be cleared from JS
@@ -61,7 +62,7 @@ export function DashboardShell() {
         </div>
         <main className="flex-1 overflow-auto">
           {view === "home" && <HomeView onNavigate={setView} />}
-          {view === "people" && <Placeholder name="People" />}
+          {view === "people" && <PeopleView />}
           {view === "coach" && <Placeholder name="Coach" />}
           {view === "brain" && <Placeholder name="Brain" />}
         </main>
