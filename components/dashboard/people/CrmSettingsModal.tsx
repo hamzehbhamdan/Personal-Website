@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Modal } from "@/components/dashboard/ui";
-import { cn } from "@/lib/utils";
 import { TierManagerModal } from "@/components/dashboard/people/TierManagerModal";
 import { normalizeDb, validateBackup } from "@/lib/dashboard/people/backup";
 import { parseCSV, importCsvInto } from "@/lib/dashboard/people/csv";
@@ -51,6 +50,10 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
   // read-only `db`/`live` snapshot, then asks Claude via the tested prompt/parse pair — no inline
   // prompt-building or JSON parsing here. Graceful on AI failure; `system` is intentionally
   // omitted from askAi (never pass "").
+  // Prompt size is bounded: buildTagsAllPrompt caps the flattened subjects list to 60 chars;
+  // this component truncates each contact's notes to 200 chars to keep the roster bounded.
+  // The roster itself includes all contacts (plan design); an oversized prompt still fails
+  // gracefully via askAi's catch (the "Could not reach Claude" path).
   async function handleSuggestAll() {
     if (!db.contacts.length) { setSuggestMsg("No contacts yet."); return; }
     setSuggesting(true);
@@ -59,7 +62,7 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
       const people: TagsAllPerson[] = db.contacts.map((c) => ({
         name: c.name,
         tier: c.tier,
-        notes: c.notes || "",
+        notes: (c.notes || "").slice(0, 200),
         subjects: interactionsFor(c, live.gmail, live.cal)
           .filter((i) => i.type === "email")
           .map((i) => i.text),
@@ -76,8 +79,6 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
   }
 
   // ---- backup & data ----
-  const backupInputRef = useRef<HTMLInputElement>(null);
-  const csvInputRef = useRef<HTMLInputElement>(null);
   const [backupMsg, setBackupMsg] = useState<string | null>(null);
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
 
@@ -182,7 +183,6 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
             <label className={btnGhost} style={mono}>
               ⬆ Import backup
               <input
-                ref={backupInputRef}
                 type="file"
                 accept="application/json,.json"
                 onChange={handleImportBackupChange}
@@ -192,7 +192,6 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
             <label className={btnGhost} style={mono}>
               ⬆ Import contacts (.csv)
               <input
-                ref={csvInputRef}
                 type="file"
                 accept=".csv,text/csv"
                 onChange={handleImportCsvChange}
