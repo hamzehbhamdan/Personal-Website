@@ -1,0 +1,189 @@
+// components/dashboard/people/PeopleView.tsx
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import { useAppState } from "@/lib/dashboard/useAppState";
+import { ViewHeader, Segmented } from "@/components/dashboard/ui";
+import { useLiveInteractions } from "./useLiveInteractions";
+import { emptyDb, normalizeDb } from "@/lib/dashboard/people/backup";
+import { state as computeState } from "@/lib/dashboard/people/state";
+import { summaryCounts } from "@/lib/dashboard/people/select";
+import { AttentionList } from "./AttentionList";
+import { PeopleList } from "./PeopleList";
+import { GroupsList } from "./GroupsList";
+import { ContactDetailModal } from "./ContactDetailModal";
+import { ContactEditModal } from "./ContactEditModal";
+import { GroupEditModal } from "./GroupEditModal";
+import { CrmSettingsModal } from "./CrmSettingsModal";
+import { AskPanel } from "./AskPanel";
+import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
+
+type Seg = "attention" | "people" | "groups";
+type GoogleStatus = "connected" | "error" | null;
+
+const mono = { fontFamily: "var(--font-geist-mono), monospace" };
+const btnPrimary =
+  "rounded-[8px] bg-[#A51C30] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white hover:bg-[#8a1728]";
+const btnGhost =
+  "rounded-[8px] border border-stone-200 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-stone-500 hover:border-stone-300";
+
+/**
+ * PeopleView root — wires the whole People (Life CRM) view together (Task 24).
+ *
+ * `db` is a normalized READ-only snapshot (`useMemo(() => normalizeDb(raw), [raw])`), which is
+ * pure and safe during render. Every write goes through `setState` using the STATE-MUTATION
+ * CONVENTION — re-derive from `normalizeDb(prev)` inside the updater, never from this `db`
+ * snapshot — the `onDismiss` inline updater below and every child modal follow this.
+ */
+export function PeopleView() {
+  const { state: raw, setState, loaded } = useAppState<CrmDB>("lifeCRM", emptyDb());
+  const db = useMemo(() => normalizeDb(raw), [raw]);
+  const now = useMemo(() => new Date(), []);
+  const live = useLiveInteractions(now);
+
+  const [seg, setSeg] = useState<Seg>("attention");
+  const [openContact, setOpenContact] = useState<string | null>(null);
+  const [editContact, setEditContact] = useState<{ id: string | null; prefill?: string } | null>(null);
+  const [openGroup, setOpenGroup] = useState<string | "new" | null>(null);
+  const [settings, setSettings] = useState(false);
+
+  // Read the ?google=connected|error status set by app/api/google/callback's redirect. Read via
+  // window.location.search in an effect (not useSearchParams) so this component never requires a
+  // Suspense boundary / can't trip a build-time prerender error. Scrub the param from the URL
+  // after reading so it doesn't reappear on a later client-side nav or refresh.
+  const [googleStatus, setGoogleStatus] = useState<GoogleStatus>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const g = params.get("google");
+    if (g === "connected" || g === "error") {
+      setGoogleStatus(g);
+      params.delete("google");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+  }, []);
+
+  const stateOf = (c: Contact) => computeState(c, live.gmail, live.cal, db, now);
+  const counts = summaryCounts(db, stateOf);
+  const meta =
+    `${counts.total} contacts · ${counts.overdue} need a nudge · ${counts.owe} owed · ${counts.bdays} birthdays soon`.toUpperCase();
+
+  if (!loaded) {
+    return (
+      <div className="p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
+    );
+  }
+
+  return (
+    <div className="p-7 md:p-8 max-w-3xl">
+      <ViewHeader
+        title="People"
+        meta={meta}
+        actions={
+          <>
+            <button type="button" onClick={() => setEditContact({ id: null })} className={btnPrimary} style={mono}>
+              + Add contact
+            </button>
+            <button type="button" onClick={() => setSettings(true)} className={btnGhost} style={mono}>
+              ⚙ Settings
+            </button>
+          </>
+        }
+      />
+
+      {!live.connected && !live.syncing && (
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400" style={mono}>
+            Connect Google to sync Gmail + Calendar. Showing saved data.
+          </p>
+          <a
+            href="/api/google/connect"
+            className="rounded-[8px] bg-[#A51C30] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white hover:bg-[#8a1728]"
+            style={mono}
+          >
+            Connect Google
+          </a>
+        </div>
+      )}
+      {googleStatus === "connected" && (
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500" style={mono}>
+          Google connected ✓
+        </p>
+      )}
+      {googleStatus === "error" && (
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>
+          Google connection failed — try again.
+        </p>
+      )}
+
+      <Segmented
+        value={seg}
+        onChange={setSeg}
+        options={[
+          { value: "attention", label: "Attention" },
+          { value: "people", label: "People" },
+          { value: "groups", label: `Groups${db.groups.length ? ` (${db.groups.length})` : ""}` },
+        ]}
+      />
+
+      <div className="mt-5">
+        {seg === "attention" && (
+          <AttentionList db={db} live={live} now={now} onOpenContact={setOpenContact} onOpenGroup={setOpenGroup} />
+        )}
+        {seg === "people" && (
+          <PeopleList
+            db={db}
+            live={live}
+            now={now}
+            onOpenContact={setOpenContact}
+            onAdd={(email) => setEditContact({ id: null, prefill: email })}
+            onDismiss={(email) =>
+              setState((prev) => {
+                const d = normalizeDb(prev);
+                return { ...d, dismissed: [...d.dismissed, email] };
+              })
+            }
+          />
+        )}
+        {seg === "groups" && (
+          <GroupsList db={db} now={now} live={live} onOpenGroup={setOpenGroup} onNewGroup={() => setOpenGroup("new")} />
+        )}
+      </div>
+
+      {openContact && (
+        <ContactDetailModal
+          id={openContact}
+          db={db}
+          live={live}
+          now={now}
+          setState={setState}
+          onClose={() => setOpenContact(null)}
+          onEdit={(id) => {
+            setOpenContact(null);
+            setEditContact({ id });
+          }}
+          onOpenGroup={(g) => {
+            setOpenContact(null);
+            setOpenGroup(g);
+          }}
+        />
+      )}
+      {editContact && (
+        <ContactEditModal init={editContact} db={db} live={live} setState={setState} onClose={() => setEditContact(null)} />
+      )}
+      {openGroup && (
+        <GroupEditModal
+          id={openGroup === "new" ? null : openGroup}
+          db={db}
+          live={live}
+          now={now}
+          setState={setState}
+          onClose={() => setOpenGroup(null)}
+        />
+      )}
+      {settings && <CrmSettingsModal db={db} live={live} setState={setState} onClose={() => setSettings(false)} />}
+
+      <AskPanel db={db} stateOf={stateOf} now={now} />
+    </div>
+  );
+}
