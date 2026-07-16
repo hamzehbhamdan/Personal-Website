@@ -5,10 +5,11 @@ import { readFileSync } from "node:fs";
 /**
  * Durability guard for the create-never-send invariant.
  *
- * The Gmail integration uses the `gmail.compose` scope (required for drafts.create). That scope
- * ALSO technically permits sending — so the "nothing is ever sent" guarantee rests entirely on the
- * code never calling a Gmail send endpoint. This test fails CI if any send path is (re)introduced
- * into the Gmail server code, keeping the guarantee durable rather than convention-only.
+ * The Gmail integration uses `gmail.compose` (required for drafts.create), which ALSO permits sending.
+ * There is now exactly ONE sanctioned send path — `app/api/gmail/send/route.ts` + `lib/gmail-send.ts`
+ * (deliberately NOT in FILES) — gated by auth + a low irreversible rate-limit + a client-side undo.
+ * This test keeps the files below strictly send-free so an accidental send can never creep into the
+ * draft / search / metadata paths; it fails CI if a send path is (re)introduced into any of them.
  */
 const FILES = [
   "lib/gmail.ts",
