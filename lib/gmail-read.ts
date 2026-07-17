@@ -38,32 +38,6 @@ export function cleanBody(raw: string, cap = 3000): string {
   return s.trim().slice(0, cap);
 }
 
-/** SANCTIONED: read the last n SENT messages' plaintext bodies (one-time voice distillation).
- *  Graceful on any failure (returns []); bodies/recipients never logged. */
-export async function gmailRecentSent(token: string, n = 5): Promise<{ subject: string; date: string; body: string }[]> {
-  try {
-    const count = Math.min(Math.max(n, 1), 20);
-    const u = new URL(`${API}/messages`);
-    u.searchParams.append("labelIds", "SENT");
-    u.searchParams.set("maxResults", String(count));
-    const list = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
-    if (!list.ok) { console.warn("gmail-read: list failed", list.status); return []; }
-    const lj = await list.json();
-    const ids: string[] = (lj.messages ?? []).slice(0, count).map((m: any) => m.id);
-    const got = await Promise.all(ids.map(async (id) => {
-      try {
-        const g = await fetch(`${API}/messages/${id}?format=full`, { headers: { Authorization: `Bearer ${token}` } });
-        if (!g.ok) return null;
-        const j = await g.json();
-        const body = cleanBody(extractPlainBody(j.payload));
-        if (!body) return null;
-        const h = j.payload?.headers ?? [];
-        return { subject: header(h, "Subject").slice(0, 300), date: header(h, "Date").slice(0, 60), body };
-      } catch (e) { console.warn("gmail-read: message fetch failed", e); return null; }
-    }));
-    return got.filter(Boolean) as { subject: string; date: string; body: string }[];
-  } catch (e) { console.warn("gmail-read: recent-sent failed", e); return []; }
-}
 
 /** SANCTIONED: search SENT messages, returning header metadata + Gmail's short `snippet` (a body
  *  excerpt — hence this lives here, not in the metadata-only lib/gmail.ts) for browsing. NO full body.

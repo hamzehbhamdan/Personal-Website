@@ -123,6 +123,15 @@ export function PeopleView() {
           </a>
         </div>
       )}
+      {live.connected && (
+        <a
+          href="/api/google/connect"
+          className="mb-4 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400 underline decoration-stone-300 underline-offset-2 hover:text-[#A51C30]"
+          style={mono}
+        >
+          Reconnect Google
+        </a>
+      )}
       {googleStatus === "connected" && (
         <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500" style={mono}>
           Google connected ✓
