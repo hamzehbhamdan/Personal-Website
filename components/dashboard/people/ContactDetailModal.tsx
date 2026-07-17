@@ -131,6 +131,7 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
           contact={contact}
           recent={formatRecent(interactionsFor(contact, live.gmail, live.cal))}
           days={s.days}
+          voice={db.settings.voice}
         />
       )}
 

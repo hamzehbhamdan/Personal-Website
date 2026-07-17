@@ -12,9 +12,15 @@ export async function fetchSentSamples(): Promise<{ connected: boolean; samples:
   const j = await r.json().catch(() => ({ connected: false, samples: [] }));
   return { connected: !!j.connected, samples: Array.isArray(j.samples) ? j.samples : [] };
 }
-export async function createGmailDraft(to: string[], bcc: string[], subject: string, body: string) {
-  const r = await fetch("/api/gmail/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, bcc, subject, body }) });
+export async function createGmailDraft(to: string[], bcc: string[], subject: string, body: string, cc: string[] = []) {
+  const r = await fetch("/api/gmail/draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to, cc, bcc, subject, body }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || "draft failed");
-  return j as { ok: true; draftId: string; to: string[]; bcc: string[] };
+  return j as { ok: true; draftId: string; to: string[]; cc: string[]; bcc: string[] };
+}
+export async function sendGmail(draftId: string, msg: { to: string[]; cc: string[]; bcc: string[]; subject: string; body: string }) {
+  const r = await fetch("/api/gmail/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ draftId, ...msg }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "send failed");
+  return j as { ok: true; sent: true; to: string[]; cc: string[]; bcc: string[] };
 }
