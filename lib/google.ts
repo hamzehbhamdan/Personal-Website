@@ -14,7 +14,10 @@ export function authUrl(state: string): string {
     response_type: "code",
     access_type: "offline",
     prompt: "consent",
-    include_granted_scopes: "true",
+    // NOT include_granted_scopes: incremental auth would merge a previously-granted gmail.metadata
+    // scope onto the new token, and metadata (being restrictive) then caps message reads to metadata
+    // only — blocking format=full bodies + search even when gmail.readonly is also present. Requesting
+    // exactly GOOGLE_SCOPES each time keeps the token clean (readonly, no metadata).
     scope: GOOGLE_SCOPES.join(" "),
     state,
   });
