@@ -6,7 +6,7 @@ import { Rail, type ViewKey } from "./ui";
 import { HomeView } from "./HomeView";
 import { PeopleView } from "@/components/dashboard/people/PeopleView";
 import { CommandPalette } from "./CommandPalette";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { signout } from "@/app/dashboard/actions"; // A0: server action — HttpOnly cookies can't be cleared from JS
 import { cn } from "@/lib/utils";
 
@@ -72,6 +72,7 @@ export function DashboardShell() {
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent side="left" className="w-[220px] bg-rail p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetDescription className="sr-only">Site navigation menu</SheetDescription>
           <nav className="flex flex-col pt-14">
             {MOBILE_NAV.map((it) => {
               const on = it.key === view;

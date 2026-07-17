@@ -6,7 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 export function SiteHeader() {
     const pathname = usePathname()
@@ -77,6 +77,7 @@ export function SiteHeader() {
                             className="w-[240px] bg-[#f9f8f6] border-l border-stone-200 p-0"
                         >
                             <SheetTitle className="sr-only">Menu</SheetTitle>
+                            <SheetDescription className="sr-only">Site navigation menu</SheetDescription>
                             <div className="flex flex-col pt-16 px-8 gap-7">
                                 {routes.map((route) => (
                                     <Link
