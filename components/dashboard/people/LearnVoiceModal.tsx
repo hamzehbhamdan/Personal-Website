@@ -51,6 +51,7 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [bodies, setBodies] = useState<Record<string, string>>({});
+  const [bodyErr, setBodyErr] = useState<Record<string, string>>({});
   const [bodyBusy, setBodyBusy] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [loadedOnce, setLoadedOnce] = useState(false);
@@ -93,14 +94,16 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   const toggleExpand = async (id: string) => {
     const isOpen = expanded.has(id);
     setExpanded((prev) => { const n = new Set(prev); if (isOpen) n.delete(id); else n.add(id); return n; });
-    if (isOpen || bodies[id] !== undefined) return; // collapsing, or already loaded
+    if (isOpen || bodies[id] !== undefined) return; // collapsing, or body already loaded
+    setBodyErr((prev) => { const n = { ...prev }; delete n[id]; return n; }); // fresh attempt — clear any prior error (so it's retryable)
     setBodyBusy((prev) => new Set(prev).add(id));
     try {
       const r = await fetchSentBodies([id]);
       const body = r.samples[0]?.body;
-      setBodies((prev) => ({ ...prev, [id]: body || (r.connected ? "(Couldn't load this email's text — Gmail read access may be needed. Reconnect Google.)" : "(Reconnect Google to read message text.)") }));
+      if (body) setBodies((prev) => ({ ...prev, [id]: body }));
+      else setBodyErr((prev) => ({ ...prev, [id]: r.connected ? "Couldn't load this email's text — Gmail read access may be needed. Reconnect Google, then reopen." : "Reconnect Google to read message text." }));
     } catch {
-      setBodies((prev) => ({ ...prev, [id]: "(Couldn't load — try again.)" }));
+      setBodyErr((prev) => ({ ...prev, [id]: "Couldn't load — collapse and reopen to try again." }));
     } finally {
       setBodyBusy((prev) => { const n = new Set(prev); n.delete(id); return n; });
     }
@@ -185,7 +188,9 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
                             <div className="border-t border-stone-100 px-2.5 py-2">
                               {bodyBusy.has(r.id)
                                 ? <div className="text-[11.5px] text-stone-400">Loading email…</div>
-                                : <div className="max-h-[220px] overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-stone-600">{bodies[r.id] ?? r.snippet}</div>}
+                                : bodyErr[r.id]
+                                  ? <div className="text-[11.5px] text-[#A51C30]">{bodyErr[r.id]}</div>
+                                  : <div className="max-h-[220px] overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-stone-600">{bodies[r.id] ?? r.snippet}</div>}
                             </div>
                           )}
                         </div>
