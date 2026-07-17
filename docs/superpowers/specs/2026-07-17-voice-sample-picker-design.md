@@ -24,6 +24,8 @@ This is an enhancement of C's voice feature. It does **not** add a Google scope 
 - **Placement:** a dedicated "Learn my voice" modal, opened from the Settings "Your voice" section.
 - **Recipient autocomplete:** suggest CRM contacts as you type; **Tab** completes to the top match.
 - **Snippet preview:** show Gmail's ~1-line `snippet` per browse row (display-only).
+- **Reconnect Google button:** an always-available way to re-run consent (the widened `gmail.readonly`
+  scope requires one re-consent, and today's "Connect Google" CTA is hidden once connected).
 
 ## Security principle (the crux)
 
@@ -114,6 +116,17 @@ state (`query`, `to`, `results`, `nextPageToken`, `selectedIds: Set`, `bodies`, 
    `setState((prev) => { const d = normalizeDb(prev); … })` convention (identical to C's `learnApprove`).
    Closing the modal discards `bodies` and all in-memory state.
 
+### Reconnect Google affordance
+`/api/google/connect` is a GET redirect that already forces `prompt=consent`, so re-consent is just a
+link to it — it works whether or not a token exists, and the same-origin gate does not apply to GETs.
+Surface a **"Reconnect Google"** control in two places (both plain `<a href="/api/google/connect">`,
+styled to the system):
+- **PeopleView** — a subtle secondary "Reconnect Google" link in the Google-status row, shown even
+  when `live.connected` (distinct from the primary "Connect Google" CTA shown only when disconnected),
+  so re-consent is reachable any time a scope changes.
+- **LearnVoiceModal** — an emphasized "Reconnect Google" button in the 409 (not-connected /
+  scope-missing) state, so the owner can fix it without leaving the wizard.
+
 ### `CrmSettingsModal.tsx` changes
 Replace the inline `learnFetch`/sample-list/`learnDistill`/`learnApprove` block in the "Your voice"
 section with a single **"Learn my voice from sent mail…"** button that opens `LearnVoiceModal`. Keep:
@@ -139,7 +152,7 @@ the "A learned voice is currently saved…" status line and the **"Clear learned
   passes (lib/gmail.ts snippet-free).
 - **Live:** filter by a recipient (with Tab autocomplete), keyword-search, Load more, pick a few,
   Distill, edit, Approve; confirm via `/api/state` that only `styleSummary` + `{subject,date}` persist
-  (no bodies/snippets); 409 path when scope missing.
+  (no bodies/snippets); 409 path when scope missing; the "Reconnect Google" links re-run consent.
 
 ## Removed / retired
 `app/api/gmail/sent-samples/route.ts`, `gmailRecentSent` (lib/gmail-read.ts), `fetchSentSamples`
