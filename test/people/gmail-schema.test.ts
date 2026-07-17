@@ -40,32 +40,33 @@ describe("gmail schema — cc + send", () => {
   });
 });
 
-import { buildSentQuery, parseSentSearchReq, parseSentBodiesReq } from "@/lib/dashboard/people/gmail-schema";
+import { sentRecipientQuery, parseSentSearchReq, parseSentBodiesReq } from "@/lib/dashboard/people/gmail-schema";
 
-describe("buildSentQuery", () => {
-  it("always scopes to in:sent", () => {
-    expect(buildSentQuery({})).toBe("in:sent");
+describe("sentRecipientQuery", () => {
+  it("returns '' when there is no recipient", () => {
+    expect(sentRecipientQuery("")).toBe("");
+    expect(sentRecipientQuery("   ")).toBe("");
   });
-  it("groups to: and keyword under in:sent, strips newlines + caps length", () => {
-    expect(buildSentQuery({ to: "alex@acme.com", keyword: "intro" })).toBe("in:sent (to:alex@acme.com intro)");
-    expect(buildSentQuery({ keyword: "a\nb" })).toBe("in:sent (a b)");
-    expect(buildSentQuery({ to: "x".repeat(300) }).length).toBeLessThan(140);
-  });
-  it("keeps a stray OR operator scoped inside in:sent (can't surface received mail)", () => {
-    // `in:sent (…)` binds as `in:sent AND (…)`, so the OR branch can't escape the sent-only scope.
-    expect(buildSentQuery({ to: "foo OR in:anywhere" })).toBe("in:sent (to:foo OR in:anywhere)");
+  it("builds a to: term, strips newlines + caps length", () => {
+    expect(sentRecipientQuery("alex@acme.com")).toBe("to:alex@acme.com");
+    expect(sentRecipientQuery("a\nb")).toBe("to:a b");
+    expect(sentRecipientQuery("x".repeat(300)).length).toBeLessThan(130);
   });
 });
 
 describe("parseSentSearchReq", () => {
   it("accepts optional fields and defaults to empty strings", () => {
     const r = parseSentSearchReq({ to: "a@b.com" });
-    expect(r.ok && r.value).toEqual({ to: "a@b.com", keyword: "", pageToken: "" });
+    expect(r.ok && r.value).toEqual({ to: "a@b.com", pageToken: "" });
   });
   it("coerces non-strings to empty + caps", () => {
-    const r = parseSentSearchReq({ to: 5, keyword: "k".repeat(500) });
+    const r = parseSentSearchReq({ to: 5, pageToken: 7 });
     expect(r.ok && r.value.to).toBe("");
-    expect(r.ok && r.value.keyword.length).toBe(120);
+    expect(r.ok && r.value.pageToken).toBe("");
+  });
+  it("caps an over-long recipient", () => {
+    const r = parseSentSearchReq({ to: "k".repeat(500) });
+    expect(r.ok && r.value.to.length).toBe(120);
   });
   it("rejects a non-object body", () => {
     expect(parseSentSearchReq("nope").ok).toBe(false);

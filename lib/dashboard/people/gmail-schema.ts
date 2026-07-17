@@ -43,27 +43,22 @@ export function parseSendReq(body: unknown): { ok: true; value: SendReq } | { ok
 const MAX_Q_FIELD = 120, MAX_IDS = 20, MAX_ID_LEN = 256;
 const stripQ = (s: string) => String(s ?? "").replace(/[\r\n]+/g, " ").trim();
 
-/** Gmail `q` for the sent-mail voice picker. Always scoped to in:sent; to/keyword sanitized + capped.
- *  The user terms are grouped in parens so `in:sent` binds as `in:sent AND (…)` — a stray `OR`
- *  operator inside a term can't escape the sent-only scope (the voice model must only see the user's
- *  own sent mail, never received mail). */
-export function buildSentQuery(f: { to?: string; keyword?: string }): string {
-  const to = stripQ(f?.to ?? "").slice(0, MAX_Q_FIELD);
-  const keyword = stripQ(f?.keyword ?? "").slice(0, MAX_Q_FIELD);
-  const inner: string[] = [];
-  if (to) inner.push(`to:${to}`);
-  if (keyword) inner.push(keyword);
-  return inner.length ? `in:sent (${inner.join(" ")})` : "in:sent";
+/** Gmail `q` fragment that narrows SENT mail to a recipient (`to:…`), sanitized + capped; "" when no
+ *  recipient. The reader always ALSO sets labelIds=SENT, which hard-scopes results to sent mail
+ *  regardless of `q` — so a stray operator in the recipient can't surface received mail. Keyword is
+ *  NOT a Gmail query term: it filters the already-fetched list client-side. */
+export function sentRecipientQuery(recipient: string): string {
+  const to = stripQ(recipient ?? "").slice(0, MAX_Q_FIELD);
+  return to ? `to:${to}` : "";
 }
 
-export type SentSearchReq = { to: string; keyword: string; pageToken: string };
+export type SentSearchReq = { to: string; pageToken: string };
 export function parseSentSearchReq(body: unknown): { ok: true; value: SentSearchReq } | { ok: false; reason: string } {
   if (body != null && typeof body !== "object") return { ok: false, reason: "invalid body" };
   const b = body as any;
   const to = typeof b?.to === "string" ? b.to.slice(0, MAX_Q_FIELD) : "";
-  const keyword = typeof b?.keyword === "string" ? b.keyword.slice(0, MAX_Q_FIELD) : "";
   const pageToken = typeof b?.pageToken === "string" ? b.pageToken.slice(0, 4096) : "";
-  return { ok: true, value: { to, keyword, pageToken } };
+  return { ok: true, value: { to, pageToken } };
 }
 
 export type SentBodiesReq = { ids: string[] };

@@ -1,13 +1,15 @@
 import { requireUser } from "@/lib/supabase-server";
 import { allow } from "@/lib/rate-limit";
 import { getGoogleAccessToken } from "@/lib/google";
-import { gmailSearchSent } from "@/lib/gmail-read";
-import { parseSentSearchReq, buildSentQuery } from "@/lib/dashboard/people/gmail-schema";
+import { gmailListSent } from "@/lib/gmail-read";
+import { parseSentSearchReq, sentRecipientQuery } from "@/lib/dashboard/people/gmail-schema";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Browse SENT mail by recipient/keyword — returns headers + Gmail snippet (display-only), no full body.
+// List recent SENT mail (optionally narrowed to a recipient) — headers + Gmail snippet (display-only),
+// no full body. `ok:false` when the Gmail read itself failed (e.g. missing readonly scope), so the UI
+// can prompt reconnect rather than show a misleading empty result. Keyword filtering is client-side.
 export async function POST(req: Request) {
   const gate = await requireUser(req);
   if (!gate.ok) return gate.response;
@@ -15,8 +17,8 @@ export async function POST(req: Request) {
   const parsed = parseSentSearchReq(await req.json().catch(() => null));
   if (!parsed.ok) return Response.json({ error: parsed.reason }, { status: 400 });
   const token = await getGoogleAccessToken(gate.supabase, gate.userId);
-  if (!token) return Response.json({ connected: false, messages: [] }, { status: 409 });
-  const q = buildSentQuery({ to: parsed.value.to, keyword: parsed.value.keyword });
-  const r = await gmailSearchSent(token, { q, pageToken: parsed.value.pageToken || undefined });
+  if (!token) return Response.json({ connected: false, ok: false, messages: [] }, { status: 409 });
+  const q = sentRecipientQuery(parsed.value.to);
+  const r = await gmailListSent(token, { q: q || undefined, pageToken: parsed.value.pageToken || undefined });
   return Response.json({ connected: true, ...r });
 }

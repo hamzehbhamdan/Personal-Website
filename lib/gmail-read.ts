@@ -39,21 +39,26 @@ export function cleanBody(raw: string, cap = 3000): string {
 }
 
 
-/** SANCTIONED: search SENT messages, returning header metadata + Gmail's short `snippet` (a body
- *  excerpt — hence this lives here, not in the metadata-only lib/gmail.ts) for browsing. NO full body.
- *  Graceful on failure ([]); nothing logged beyond generic status. */
-export async function gmailSearchSent(
+/** SANCTIONED: list recent SENT messages via labelIds=SENT (same mechanism as the interaction sync —
+ *  works under any Gmail read scope, incl. the older metadata scope), optionally narrowed to a
+ *  recipient with `q` (a `to:…` term; that narrowing uses the Gmail search param, which requires the
+ *  gmail.readonly scope). Returns header metadata + Gmail's short `snippet` (a body excerpt — hence
+ *  this lives here, not in the metadata-only lib/gmail.ts). NO full body. `ok:false` means the Gmail
+ *  list call itself failed (e.g. missing readonly scope for a recipient search), so the caller can
+ *  prompt reconnect instead of showing a misleading "no results". Nothing logged beyond generic status. */
+export async function gmailListSent(
   token: string,
-  opts: { q: string; pageToken?: string; max?: number },
-): Promise<{ messages: { id: string; subject: string; to: string; date: string; snippet: string }[]; nextPageToken?: string }> {
+  opts: { q?: string; pageToken?: string; max?: number },
+): Promise<{ ok: boolean; messages: { id: string; subject: string; to: string; date: string; snippet: string }[]; nextPageToken?: string }> {
   try {
     const max = Math.min(Math.max(opts.max ?? 25, 1), 50);
     const u = new URL(`${API}/messages`);
-    u.searchParams.set("q", opts.q);
+    u.searchParams.append("labelIds", "SENT");
     u.searchParams.set("maxResults", String(max));
+    if (opts.q) u.searchParams.set("q", opts.q);
     if (opts.pageToken) u.searchParams.set("pageToken", opts.pageToken);
     const list = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
-    if (!list.ok) { console.warn("gmail-read: search list failed", list.status); return { messages: [] }; }
+    if (!list.ok) { console.warn("gmail-read: sent list failed", list.status); return { ok: false, messages: [] }; }
     const lj = await list.json();
     const ids: string[] = (lj.messages ?? []).map((m: any) => m.id);
     const rows = await Promise.all(ids.map(async (id) => {
@@ -63,10 +68,10 @@ export async function gmailSearchSent(
         const j = await g.json();
         const h = j.payload?.headers ?? [];
         return { id, subject: header(h, "Subject").slice(0, 300), to: header(h, "To").slice(0, 300), date: header(h, "Date").slice(0, 60), snippet: String(j.snippet || "").slice(0, 300) };
-      } catch { console.warn("gmail-read: search meta fetch failed"); return null; }
+      } catch { console.warn("gmail-read: sent meta fetch failed"); return null; }
     }));
-    return { messages: rows.filter(Boolean) as { id: string; subject: string; to: string; date: string; snippet: string }[], nextPageToken: lj.nextPageToken };
-  } catch { console.warn("gmail-read: search failed"); return { messages: [] }; }
+    return { ok: true, messages: rows.filter(Boolean) as { id: string; subject: string; to: string; date: string; snippet: string }[], nextPageToken: lj.nextPageToken };
+  } catch { console.warn("gmail-read: sent list failed"); return { ok: false, messages: [] }; }
 }
 
 /** SANCTIONED: read the plaintext BODIES for the given selected SENT ids (voice distillation).

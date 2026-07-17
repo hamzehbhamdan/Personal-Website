@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/dashboard/ui";
 import { RecipientAutocomplete } from "./RecipientAutocomplete";
 import { fetchSentSearch, fetchSentBodies, askAi } from "@/lib/dashboard/people/client-ai";
@@ -12,10 +12,19 @@ const btnPrimary = "rounded-[8px] bg-[#A51C30] px-3.5 py-1.5 font-mono text-[10p
 const btnGhost = "rounded-[8px] border border-stone-200 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-stone-500 hover:border-stone-300 disabled:opacity-50";
 const inputCls = "w-full rounded-[8px] border border-stone-200 px-2.5 py-1.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30]";
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.12em] text-stone-400";
+const hintCls = "normal-case tracking-normal text-stone-400";
 const MAX = 20;
 
 type Row = { id: string; subject: string; to: string; date: string; snippet: string };
 
+/**
+ * Learn-my-voice wizard. On open it auto-loads the most recent SENT mail (via labelIds — works under
+ * any Gmail read scope). A recipient triggers an explicit server-side `to:` search; the keyword box
+ * filters the already-loaded list CLIENT-SIDE (no server call). Selection is by id and survives the
+ * keyword filter. Only the ≤20 picked emails' bodies are read (at distill) — never stored; approve
+ * persists only the distilled summary + each pick's {subject,date}. A real Gmail read failure (e.g.
+ * missing readonly scope) surfaces a Reconnect prompt instead of a misleading "no results".
+ */
 export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState: (u: (prev: CrmDB) => CrmDB) => void; onClose: () => void }) {
   const [to, setTo] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -23,21 +32,31 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   const [pageToken, setPageToken] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [notConnected, setNotConnected] = useState(false);
+  const [loadedOnce, setLoadedOnce] = useState(false);
+  const [connError, setConnError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
 
-  const search = async (append = false) => {
-    setBusy(true); setMsg(null); setNotConnected(false);
+  // Fetch from the server. append=false is a fresh load (recent sent, or a recipient search);
+  // append=true pages in more via nextPageToken. Keyword never hits the server — see `shown` below.
+  const load = async (append: boolean) => {
+    setBusy(true); setMsg(null); setConnError(null);
     try {
-      const r = await fetchSentSearch({ to, keyword, pageToken: append ? pageToken : undefined });
-      if (!r.connected) { setNotConnected(true); return; }
+      const r = await fetchSentSearch({ to, pageToken: append ? pageToken : undefined });
+      if (!r.connected) { setConnError("You're not connected to Google. Connect to read your sent mail."); return; }
+      if (!r.ok) { setConnError("Couldn't read your sent mail — this needs Gmail read access. Make sure the readonly scope is granted, then reconnect."); return; }
       setResults((prev) => (append ? [...prev, ...r.messages] : r.messages));
       setPageToken(r.nextPageToken);
-      if (!append) { setSelected(new Set()); if (!r.messages.length) setMsg("No sent emails match that filter."); }
+      if (!append) setSelected(new Set());
     } catch { setMsg("Something went wrong — try again in a moment."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setLoadedOnce(true); }
   };
+
+  // Auto-load the most recent sent mail on open (no recipient). Recipient search is explicit (button).
+  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const kw = keyword.trim().toLowerCase();
+  const shown = kw ? results.filter((r) => `${r.subject} ${r.to} ${r.snippet}`.toLowerCase().includes(kw)) : results;
 
   const toggle = (id: string) => setSelected((prev) => {
     const next = new Set(prev);
@@ -47,11 +66,11 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   });
 
   const distill = async () => {
-    setBusy(true); setMsg(null); setNotConnected(false);
+    setBusy(true); setMsg(null); setConnError(null);
     try {
       const r = await fetchSentBodies([...selected]);
-      if (!r.connected) { setNotConnected(true); return; }
-      if (!r.samples.length) { setMsg("Couldn't read those emails — try different ones."); return; }
+      if (!r.connected) { setConnError("You're not connected to Google. Connect to read your sent mail."); return; }
+      if (!r.samples.length) { setConnError("Couldn't read the text of the selected emails — this needs Gmail read access. Make sure the readonly scope is granted, then reconnect."); return; }
       setSummary((await askAi("distill_voice", buildDistillPrompt(r.samples))).trim());
     } catch { setMsg("Something went wrong — try again in a moment."); }
     finally { setBusy(false); }
@@ -71,34 +90,38 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
     <Modal title="Learn my voice from sent mail" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <div className="text-[12px] text-stone-500">
-          Filter your sent mail, pick up to {MAX} emails, and I&apos;ll distill your writing voice from them. The text of the emails you pick goes to Claude only for this step and is never stored — only the resulting summary is kept.
+          Pick up to {MAX} of your sent emails and I&apos;ll distill your writing voice from them. It loads your most recent sent mail below — add a recipient to find emails to a specific person, or type a keyword to narrow the list. The text of the emails you pick goes to Claude only for this step and is never stored — only the summary is kept.
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1"><label className={labelCls}>Recipient</label>
+          <div className="flex-1">
+            <label className={labelCls}>Recipient <span className={hintCls}>(searches your sent mail)</span></label>
             <RecipientAutocomplete db={db} value={to} onChange={setTo} placeholder="name or email (Tab to complete)" />
           </div>
-          <div className="flex-1"><label className={labelCls}>Keyword / subject</label>
-            <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="optional" className={inputCls} />
-          </div>
-          <button type="button" onClick={() => search(false)} disabled={busy} className={btnPrimary} style={mono}>{busy ? "…" : "Search"}</button>
+          <button type="button" onClick={() => load(false)} disabled={busy} className={btnPrimary} style={mono}>{busy ? "…" : to.trim() ? "Search" : "Refresh"}</button>
+        </div>
+        <div>
+          <label className={labelCls}>Keyword / subject <span className={hintCls}>(filters the list below)</span></label>
+          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="optional" className={inputCls} />
         </div>
 
-        {notConnected ? (
+        {connError ? (
           <div className="rounded-[8px] border border-[#A51C30]/40 bg-[#f9f8f6] p-3 text-[12px] text-stone-600">
-            <div className="mb-2">Reading your sent mail needs the newer Google permission. Reconnect to grant it, then search again.</div>
+            <div className="mb-2">{connError}</div>
             <a href="/api/google/connect" className={btnPrimary} style={mono}>Reconnect Google</a>
           </div>
         ) : (
           <>
+            {busy && !results.length && <div className="text-[12px] text-stone-500">Loading your recent sent mail…</div>}
+            {loadedOnce && !busy && !results.length && <div className="text-[12px] text-stone-500">{to.trim() ? "No sent emails found to that person." : "No sent mail found."}</div>}
             {results.length > 0 && (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11.5px] text-stone-500">Pick the emails to learn from:</span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-stone-400" style={mono}>{selected.size} / {MAX} selected</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11.5px] text-stone-500">Pick the emails to learn from{kw ? ` (${shown.length} of ${results.length} shown)` : ""}:</span>
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-stone-400" style={mono}>{selected.size} / {MAX} selected</span>
                 </div>
                 <ul className="flex max-h-[46vh] flex-col gap-1.5 overflow-auto">
-                  {results.map((r) => {
+                  {shown.map((r) => {
                     const on = selected.has(r.id);
                     const disabled = !on && selected.size >= MAX;
                     return (
@@ -118,8 +141,9 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
                     );
                   })}
                 </ul>
+                {kw && !shown.length && <div className="text-[11.5px] text-stone-500">No loaded emails match that keyword.</div>}
                 {pageToken && (
-                  <button type="button" onClick={() => search(true)} disabled={busy} className={btnGhost} style={mono}>Load more</button>
+                  <button type="button" onClick={() => load(true)} disabled={busy} className={btnGhost} style={mono}>Load more</button>
                 )}
                 <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 pt-2.5">
                   <button type="button" onClick={distill} disabled={busy || selected.size < 1} className={btnPrimary} style={mono}>{busy ? "Distilling…" : `Distill ${selected.size || ""}`.trim()}</button>
@@ -131,7 +155,7 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
 
         {summary && (
           <div className="border-t border-stone-100 pt-2.5">
-            <label className={labelCls}>Learned voice summary <span className="normal-case tracking-normal text-stone-400">(editable)</span></label>
+            <label className={labelCls}>Learned voice summary <span className={hintCls}>(editable)</span></label>
             <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={6} className={`${inputCls} min-h-[120px]`} />
             <div className="mt-2.5"><button type="button" onClick={approve} disabled={busy} className={btnPrimary} style={mono}>Approve &amp; save</button></div>
           </div>
