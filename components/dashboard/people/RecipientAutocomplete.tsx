@@ -7,15 +7,26 @@ import type { CrmDB } from "@/lib/dashboard/people/types";
 const inputCls = "w-full rounded-[8px] border border-stone-200 px-2.5 py-1.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30]";
 
 /**
- * Recipient input with CRM-contact autocomplete. Tab/Enter completes to the highlighted suggestion;
- * ArrowUp/Down move the highlight. Escape is intentionally NOT handled here so it closes the modal.
+ * Recipient input with autocomplete over CRM contacts PLUS `extra` candidates (e.g. recipients pulled
+ * from already-fetched sent mail). Tab/Enter completes to the highlighted suggestion; ArrowUp/Down
+ * move the highlight. Escape is intentionally NOT handled here so it closes the modal.
  */
-export function RecipientAutocomplete({ db, value, onChange, placeholder }: {
-  db: CrmDB; value: string; onChange: (v: string) => void; placeholder?: string;
+export function RecipientAutocomplete({ db, value, onChange, placeholder, extra = [] }: {
+  db: CrmDB; value: string; onChange: (v: string) => void; placeholder?: string; extra?: { name: string; email: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
-  const suggestions = open ? matchContacts(db, value, 6) : [];
+  const suggestions = (() => {
+    if (!open) return [];
+    const q = value.trim().toLowerCase();
+    const base = matchContacts(db, value, 8);
+    const seen = new Set(base.map((s) => s.email));
+    // Fold in recipients seen in fetched mail that aren't already CRM matches (only while typing).
+    const fromMail = q
+      ? extra.filter((e) => !seen.has(e.email) && (e.email.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)))
+      : [];
+    return [...base, ...fromMail].slice(0, 8);
+  })();
   const pick = (email: string) => { onChange(email); setOpen(false); setHi(0); };
 
   const onKeyDown = (e: React.KeyboardEvent) => {

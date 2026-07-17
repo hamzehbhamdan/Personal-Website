@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/dashboard/ui";
 import { RecipientAutocomplete } from "./RecipientAutocomplete";
 import { fetchSentSearch, fetchSentBodies, askAi } from "@/lib/dashboard/people/client-ai";
 import { buildDistillPrompt } from "@/lib/dashboard/people/ai-prompts";
 import { normalizeDb } from "@/lib/dashboard/people/backup";
+import { fmtDate } from "@/lib/dashboard/people/text";
 import type { CrmDB } from "@/lib/dashboard/people/types";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -14,16 +15,33 @@ const inputCls = "w-full rounded-[8px] border border-stone-200 px-2.5 py-1.5 tex
 const labelCls = "font-mono text-[10px] uppercase tracking-[0.12em] text-stone-400";
 const hintCls = "normal-case tracking-normal text-stone-400";
 const MAX = 20;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Row = { id: string; subject: string; to: string; date: string; snippet: string };
+
+/** Parse the (raw) `To` headers of fetched rows into distinct {name,email} recipients for autocomplete. */
+function recipientsFrom(rows: Row[]): { name: string; email: string }[] {
+  const seen = new Set<string>();
+  const out: { name: string; email: string }[] = [];
+  for (const r of rows) {
+    for (const part of r.to.split(",")) {
+      const m = part.match(/<([^>]+)>/);
+      const email = (m ? m[1] : part).trim().toLowerCase();
+      if (!EMAIL.test(email) || seen.has(email)) continue;
+      seen.add(email);
+      const name = m ? part.slice(0, part.indexOf("<")).replace(/["']/g, "").trim() : "";
+      out.push({ name: name || email, email });
+    }
+  }
+  return out;
+}
 
 /**
  * Learn-my-voice wizard. On open it auto-loads the most recent SENT mail (via labelIds — works under
  * any Gmail read scope). A recipient triggers an explicit server-side `to:` search; the keyword box
- * filters the already-loaded list CLIENT-SIDE (no server call). Selection is by id and survives the
- * keyword filter. Only the ≤20 picked emails' bodies are read (at distill) — never stored; approve
- * persists only the distilled summary + each pick's {subject,date}. A real Gmail read failure (e.g.
- * missing readonly scope) surfaces a Reconnect prompt instead of a misleading "no results".
+ * filters the already-loaded list CLIENT-SIDE. Each row expands to preview the email's text (fetched
+ * on demand, cached, never stored). Selection is by id and survives the keyword filter. Only the ≤20
+ * picked emails feed distillation; approve persists only the summary + each pick's {subject,date}.
  */
 export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState: (u: (prev: CrmDB) => CrmDB) => void; onClose: () => void }) {
   const [to, setTo] = useState("");
@@ -31,6 +49,9 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   const [results, setResults] = useState<Row[]>([]);
   const [pageToken, setPageToken] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [bodies, setBodies] = useState<Record<string, string>>({});
+  const [bodyBusy, setBodyBusy] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [connError, setConnError] = useState<string | null>(null);
@@ -47,14 +68,16 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
       if (!r.ok) { setConnError("Couldn't read your sent mail — this needs Gmail read access. Make sure the readonly scope is granted, then reconnect."); return; }
       setResults((prev) => (append ? [...prev, ...r.messages] : r.messages));
       setPageToken(r.nextPageToken);
-      if (!append) setSelected(new Set());
+      if (!append) { setSelected(new Set()); setExpanded(new Set()); }
     } catch { setMsg("Something went wrong — try again in a moment."); }
     finally { setBusy(false); setLoadedOnce(true); }
   };
 
   // Auto-load the most recent sent mail on open (no recipient). Recipient search is explicit (button).
-  useEffect(() => { load(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(false); }, []);
 
+  const fetchedRecipients = useMemo(() => recipientsFrom(results), [results]);
   const kw = keyword.trim().toLowerCase();
   const shown = kw ? results.filter((r) => `${r.subject} ${r.to} ${r.snippet}`.toLowerCase().includes(kw)) : results;
 
@@ -64,6 +87,24 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
     else if (next.size < MAX) next.add(id);
     return next;
   });
+
+  // Expand/collapse a row to preview its text. The body is fetched on demand (own sent mail, readonly
+  // token) and cached; it is never persisted, logged, or sent to the model (preview is display-only).
+  const toggleExpand = async (id: string) => {
+    const isOpen = expanded.has(id);
+    setExpanded((prev) => { const n = new Set(prev); if (isOpen) n.delete(id); else n.add(id); return n; });
+    if (isOpen || bodies[id] !== undefined) return; // collapsing, or already loaded
+    setBodyBusy((prev) => new Set(prev).add(id));
+    try {
+      const r = await fetchSentBodies([id]);
+      const body = r.samples[0]?.body;
+      setBodies((prev) => ({ ...prev, [id]: body || (r.connected ? "(Couldn't load this email's text — Gmail read access may be needed. Reconnect Google.)" : "(Reconnect Google to read message text.)") }));
+    } catch {
+      setBodies((prev) => ({ ...prev, [id]: "(Couldn't load — try again.)" }));
+    } finally {
+      setBodyBusy((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    }
+  };
 
   const distill = async () => {
     setBusy(true); setMsg(null); setConnError(null);
@@ -90,13 +131,13 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
     <Modal title="Learn my voice from sent mail" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <div className="text-[12px] text-stone-500">
-          Pick up to {MAX} of your sent emails and I&apos;ll distill your writing voice from them. It loads your most recent sent mail below — add a recipient to find emails to a specific person, or type a keyword to narrow the list. The text of the emails you pick goes to Claude only for this step and is never stored — only the summary is kept.
+          Pick up to {MAX} of your sent emails and I&apos;ll distill your writing voice from them. It loads your most recent sent mail below — add a recipient to find emails to a specific person, type a keyword to narrow the list, or click an email to read it. The text of the emails you pick goes to Claude only for this step and is never stored — only the summary is kept.
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label className={labelCls}>Recipient <span className={hintCls}>(searches your sent mail)</span></label>
-            <RecipientAutocomplete db={db} value={to} onChange={setTo} placeholder="name or email (Tab to complete)" />
+            <RecipientAutocomplete db={db} value={to} onChange={setTo} extra={fetchedRecipients} placeholder="name or email (Tab to complete)" />
           </div>
           <button type="button" onClick={() => load(false)} disabled={busy} className={btnPrimary} style={mono}>{busy ? "…" : to.trim() ? "Search" : "Refresh"}</button>
         </div>
@@ -124,19 +165,30 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
                   {shown.map((r) => {
                     const on = selected.has(r.id);
                     const disabled = !on && selected.size >= MAX;
+                    const isOpen = expanded.has(r.id);
                     return (
                       <li key={r.id}>
-                        <label className={`flex cursor-pointer gap-2.5 rounded-[8px] border p-2.5 ${on ? "border-[#A51C30]/50 bg-[#f9f8f6]" : "border-stone-200"} ${disabled ? "opacity-40" : ""}`}>
-                          <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(r.id)} className="mt-1 accent-[#A51C30]" />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="truncate text-[13px] font-medium text-stone-800">{r.subject || "(no subject)"}</span>
-                              <span className="shrink-0 text-[11px] text-stone-400">{r.date}</span>
-                            </div>
-                            <div className="truncate text-[11.5px] text-stone-500">{r.to}</div>
-                            <div className="mt-0.5 line-clamp-2 text-[11.5px] text-stone-500">{r.snippet}</div>
+                        <div className={`rounded-[8px] border ${on ? "border-[#A51C30]/50 bg-[#f9f8f6]" : "border-stone-200"} ${disabled ? "opacity-40" : ""}`}>
+                          <div className="flex gap-2.5 p-2.5">
+                            <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(r.id)} aria-label={`Select "${r.subject || "(no subject)"}"`} className="mt-1 accent-[#A51C30]" />
+                            <button type="button" onClick={() => toggleExpand(r.id)} className="min-w-0 flex-1 text-left" aria-expanded={isOpen}>
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="truncate text-[13px] font-medium text-stone-800">{r.subject || "(no subject)"}</span>
+                                <span className="shrink-0 text-[11px] text-stone-400">{fmtDate(r.date)}</span>
+                              </div>
+                              <div className="truncate text-[11.5px] text-stone-500">{r.to}</div>
+                              {!isOpen && <div className="mt-0.5 line-clamp-2 text-[11.5px] text-stone-500">{r.snippet}</div>}
+                            </button>
+                            <span className="mt-0.5 shrink-0 text-[11px] text-stone-400" aria-hidden>{isOpen ? "▾" : "▸"}</span>
                           </div>
-                        </label>
+                          {isOpen && (
+                            <div className="border-t border-stone-100 px-2.5 py-2">
+                              {bodyBusy.has(r.id)
+                                ? <div className="text-[11.5px] text-stone-400">Loading email…</div>
+                                : <div className="max-h-[220px] overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-stone-600">{bodies[r.id] ?? r.snippet}</div>}
+                            </div>
+                          )}
+                        </div>
                       </li>
                     );
                   })}
