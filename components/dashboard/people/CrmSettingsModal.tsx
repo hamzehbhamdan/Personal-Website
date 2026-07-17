@@ -7,8 +7,8 @@ import { TierManagerModal } from "@/components/dashboard/people/TierManagerModal
 import { normalizeDb, validateBackup } from "@/lib/dashboard/people/backup";
 import { parseCSV, importCsvInto } from "@/lib/dashboard/people/csv";
 import { interactionsFor } from "@/lib/dashboard/people/interactions";
-import { buildTagsAllPrompt, parseTagsAllResponse, applyTagsAll, type TagsAllPerson } from "@/lib/dashboard/people/ai-prompts";
-import { askAi } from "@/lib/dashboard/people/client-ai";
+import { buildTagsAllPrompt, parseTagsAllResponse, applyTagsAll, buildDistillPrompt, type TagsAllPerson } from "@/lib/dashboard/people/ai-prompts";
+import { askAi, fetchSentSamples } from "@/lib/dashboard/people/client-ai";
 import type { CrmDB } from "@/lib/dashboard/people/types";
 import type { LiveState } from "@/components/dashboard/people/useLiveInteractions";
 
@@ -78,6 +78,80 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
     });
     setVoiceSavedMsg("Voice saved ✓");
     setTimeout(() => setVoiceSavedMsg(null), 2500);
+  }
+
+  // ---- learn my voice from recent sent mail ----
+  // SECURITY: raw sample BODIES live only in this in-memory state. They are sent to Claude once
+  // (at distill) and never persisted — only the distilled styleSummary + {subject,date} metadata
+  // are written to settings.voice, via the same normalizeDb(prev) state-mutation convention as the
+  // rest of this modal. Never log bodies; render snippets as plain text (JSX-escaped), never
+  // dangerouslySetInnerHTML.
+  const [vSamples, setVSamples] = useState<{ subject: string; date: string; body: string }[] | null>(null);
+  const [vSummary, setVSummary] = useState("");
+  const [vBusy, setVBusy] = useState(false);
+  const [vMsg, setVMsg] = useState<string | null>(null);
+
+  async function learnFetch() {
+    setVBusy(true);
+    setVMsg(null);
+    try {
+      const r = await fetchSentSamples();
+      if (!r.connected) {
+        setVMsg("Reconnect Google to grant mail-reading access, then try again.");
+        setVSamples(null);
+      } else if (!r.samples.length) {
+        setVMsg("No recent sent emails found. If you just enabled this, reconnect Google (broader scope) and retry.");
+        setVSamples(null);
+      } else {
+        setVSamples(r.samples);
+        setVSummary("");
+      }
+    } catch {
+      setVMsg("Couldn't read recent sent mail.");
+    } finally {
+      setVBusy(false);
+    }
+  }
+
+  async function learnDistill() {
+    if (!vSamples?.length) return;
+    setVBusy(true);
+    setVMsg(null);
+    try {
+      setVSummary((await askAi("distill_voice", buildDistillPrompt(vSamples))).trim());
+    } catch {
+      setVMsg("Couldn't distill — try again.");
+    } finally {
+      setVBusy(false);
+    }
+  }
+
+  // Approve: only the distilled summary + {subject,date} metadata are persisted — bodies are
+  // discarded here (never written to settings).
+  function learnApprove() {
+    setState((prev) => {
+      const d = normalizeDb(prev);
+      const voice = {
+        ...(d.settings.voice ?? {}),
+        styleSummary: vSummary.trim() || undefined,
+        sentSamples: vSamples ? vSamples.map((s) => ({ subject: s.subject, date: s.date })) : d.settings.voice?.sentSamples,
+      };
+      return { ...d, settings: { ...d.settings, voice } };
+    });
+    setVSamples(null);
+    setVSummary("");
+    setVMsg("Voice learned + saved ✓");
+  }
+
+  function learnClear() {
+    setState((prev) => {
+      const d = normalizeDb(prev);
+      const voice = { ...(d.settings.voice ?? {}) };
+      delete (voice as any).styleSummary;
+      delete (voice as any).sentSamples;
+      return { ...d, settings: { ...d.settings, voice: Object.keys(voice).length ? voice : undefined } };
+    });
+    setVMsg("Cleared learned voice.");
   }
 
   // ---- auto-tags ----
@@ -260,6 +334,71 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
               Save voice
             </button>
             {voiceSavedMsg && <span className="text-[11.5px] text-stone-500">{voiceSavedMsg}</span>}
+          </div>
+
+          <div className="mt-4 border-t border-stone-100 pt-3">
+            <label className={labelCls}>Learn my voice from recent sent mail</label>
+            <div className={noteCls}>
+              Reads your last 5 sent emails once to learn your tone. The email text goes to Claude only for this step and is not stored — only the resulting summary is kept.
+            </div>
+            {db.settings.voice?.styleSummary && !vSamples && (
+              <div className="mt-2 text-[11.5px] text-stone-500">
+                A learned voice is currently saved and woven into drafts.
+              </div>
+            )}
+            <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+              <button type="button" onClick={learnFetch} disabled={vBusy} className={btnAlt} style={mono}>
+                {vBusy && !vSamples ? "Reading…" : "Learn my voice from recent sent mail"}
+              </button>
+              {db.settings.voice?.styleSummary && (
+                <button type="button" onClick={learnClear} disabled={vBusy} className={btnGhost} style={mono}>
+                  Clear learned voice
+                </button>
+              )}
+            </div>
+
+            {vSamples && vSamples.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="text-[11.5px] text-stone-500">
+                  Review the emails this will learn from:
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {vSamples.map((s, i) => (
+                    <li key={i} className="rounded-[6px] border border-stone-200 px-2.5 py-2 text-[12px] text-stone-700">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-medium text-stone-800">{s.subject || "(no subject)"}</span>
+                        <span className="shrink-0 text-[11px] text-stone-400">{s.date}</span>
+                      </div>
+                      <div className="mt-1 text-stone-500">{s.body.slice(0, 160)}…</div>
+                    </li>
+                  ))}
+                </ul>
+                <div>
+                  <button type="button" onClick={learnDistill} disabled={vBusy} className={btnPrimary} style={mono}>
+                    {vBusy ? "Distilling…" : "Distill"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {vSummary && (
+              <div className="mt-3">
+                <label className={labelCls}>Learned voice summary <span className="normal-case tracking-normal text-stone-400">(editable)</span></label>
+                <textarea
+                  value={vSummary}
+                  onChange={(e) => setVSummary(e.target.value)}
+                  rows={5}
+                  className={cn(inputCls, "min-h-[100px]")}
+                />
+                <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+                  <button type="button" onClick={learnApprove} disabled={vBusy} className={btnPrimary} style={mono}>
+                    Approve &amp; save
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {vMsg && <div className="mt-2 text-[11.5px] text-stone-500">{vMsg}</div>}
           </div>
         </div>
 
