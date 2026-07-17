@@ -15,6 +15,7 @@ import { ContactEditModal } from "./ContactEditModal";
 import { GroupEditModal } from "./GroupEditModal";
 import { CrmSettingsModal } from "./CrmSettingsModal";
 import { AskPanel } from "./AskPanel";
+import { EmptyOnboarding } from "./EmptyOnboarding";
 import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
 
 type Seg = "attention" | "people" | "groups";
@@ -108,7 +109,7 @@ export function PeopleView() {
         }
       />
 
-      {!live.connected && !live.syncing && (
+      {!live.connected && !live.syncing && db.contacts.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400" style={mono}>
             Connect Google to sync Gmail + Calendar. Showing saved data.
@@ -133,39 +134,56 @@ export function PeopleView() {
         </p>
       )}
 
-      <Segmented
-        value={seg}
-        onChange={setSeg}
-        options={[
-          { value: "attention", label: "Attention" },
-          { value: "people", label: "People" },
-          { value: "groups", label: `Groups${db.groups.length ? ` (${db.groups.length})` : ""}` },
-        ]}
-      />
-
-      <div className="mt-5">
-        {seg === "attention" && (
-          <AttentionList db={db} live={live} now={now} onOpenContact={setOpenContact} onOpenGroup={setOpenGroup} />
-        )}
-        {seg === "people" && (
-          <PeopleList
-            db={db}
-            live={live}
-            now={now}
-            onOpenContact={setOpenContact}
-            onAdd={(email) => setEditContact({ id: null, prefill: email })}
-            onDismiss={(email) =>
-              setState((prev) => {
-                const d = normalizeDb(prev);
-                return { ...d, dismissed: [...d.dismissed, email] };
-              })
-            }
+      {db.contacts.length === 0 ? (
+        <EmptyOnboarding
+          db={db}
+          live={live}
+          setState={setState}
+          onAdd={(email) => setEditContact({ id: null, prefill: email })}
+          onDismiss={(email) =>
+            setState((prev) => {
+              const d = normalizeDb(prev);
+              return { ...d, dismissed: [...d.dismissed, email] };
+            })
+          }
+        />
+      ) : (
+        <>
+          <Segmented
+            value={seg}
+            onChange={setSeg}
+            options={[
+              { value: "attention", label: "Attention" },
+              { value: "people", label: "People" },
+              { value: "groups", label: `Groups${db.groups.length ? ` (${db.groups.length})` : ""}` },
+            ]}
           />
-        )}
-        {seg === "groups" && (
-          <GroupsList db={db} now={now} live={live} onOpenGroup={setOpenGroup} onNewGroup={() => setOpenGroup("new")} />
-        )}
-      </div>
+
+          <div className="mt-5">
+            {seg === "attention" && (
+              <AttentionList db={db} live={live} now={now} onOpenContact={setOpenContact} onOpenGroup={setOpenGroup} />
+            )}
+            {seg === "people" && (
+              <PeopleList
+                db={db}
+                live={live}
+                now={now}
+                onOpenContact={setOpenContact}
+                onAdd={(email) => setEditContact({ id: null, prefill: email })}
+                onDismiss={(email) =>
+                  setState((prev) => {
+                    const d = normalizeDb(prev);
+                    return { ...d, dismissed: [...d.dismissed, email] };
+                  })
+                }
+              />
+            )}
+            {seg === "groups" && (
+              <GroupsList db={db} now={now} live={live} onOpenGroup={setOpenGroup} onNewGroup={() => setOpenGroup("new")} />
+            )}
+          </div>
+        </>
+      )}
 
       {openContact && (
         <ContactDetailModal
