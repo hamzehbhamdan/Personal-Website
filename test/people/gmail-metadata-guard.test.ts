@@ -8,4 +8,11 @@ describe("lib/gmail.ts stays metadata-only", () => {
     expect(src).toContain("format=metadata");
     expect(/format=full|format=raw/.test(src)).toBe(false);
   });
+
+  it("full-body reads (format=full) live ONLY in the sanctioned lib/gmail-read.ts", () => {
+    const gmailSrc = readFileSync(new URL("../../lib/gmail.ts", import.meta.url), "utf8");
+    expect(/format=full/.test(gmailSrc)).toBe(false);
+    const readSrc = readFileSync(new URL("../../lib/gmail-read.ts", import.meta.url), "utf8");
+    expect(readSrc.includes("format=full")).toBe(true);
+  });
 });

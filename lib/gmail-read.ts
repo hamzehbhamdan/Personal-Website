@@ -64,3 +64,52 @@ export async function gmailRecentSent(token: string, n = 5): Promise<{ subject: 
     return got.filter(Boolean) as { subject: string; date: string; body: string }[];
   } catch (e) { console.warn("gmail-read: recent-sent failed", e); return []; }
 }
+
+/** SANCTIONED: search SENT messages, returning header metadata + Gmail's short `snippet` (a body
+ *  excerpt — hence this lives here, not in the metadata-only lib/gmail.ts) for browsing. NO full body.
+ *  Graceful on failure ([]); nothing logged beyond generic status. */
+export async function gmailSearchSent(
+  token: string,
+  opts: { q: string; pageToken?: string; max?: number },
+): Promise<{ messages: { id: string; subject: string; to: string; date: string; snippet: string }[]; nextPageToken?: string }> {
+  try {
+    const max = Math.min(Math.max(opts.max ?? 25, 1), 50);
+    const u = new URL(`${API}/messages`);
+    u.searchParams.set("q", opts.q);
+    u.searchParams.set("maxResults", String(max));
+    if (opts.pageToken) u.searchParams.set("pageToken", opts.pageToken);
+    const list = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
+    if (!list.ok) { console.warn("gmail-read: search list failed", list.status); return { messages: [] }; }
+    const lj = await list.json();
+    const ids: string[] = (lj.messages ?? []).map((m: any) => m.id);
+    const rows = await Promise.all(ids.map(async (id) => {
+      try {
+        const g = await fetch(`${API}/messages/${id}?format=metadata&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!g.ok) return null;
+        const j = await g.json();
+        const h = j.payload?.headers ?? [];
+        return { id, subject: header(h, "Subject").slice(0, 300), to: header(h, "To").slice(0, 300), date: header(h, "Date").slice(0, 60), snippet: String(j.snippet || "").slice(0, 300) };
+      } catch { console.warn("gmail-read: search meta fetch failed"); return null; }
+    }));
+    return { messages: rows.filter(Boolean) as { id: string; subject: string; to: string; date: string; snippet: string }[], nextPageToken: lj.nextPageToken };
+  } catch { console.warn("gmail-read: search failed"); return { messages: [] }; }
+}
+
+/** SANCTIONED: read the plaintext BODIES for the given selected SENT ids (voice distillation).
+ *  Order preserved; failed ids skipped; bodies/recipients never logged. Hard cap 20. */
+export async function gmailFetchBodies(token: string, ids: string[]): Promise<{ id: string; subject: string; date: string; body: string }[]> {
+  try {
+    const got = await Promise.all(ids.slice(0, 20).map(async (id) => {
+      try {
+        const g = await fetch(`${API}/messages/${id}?format=full`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!g.ok) return null;
+        const j = await g.json();
+        const body = cleanBody(extractPlainBody(j.payload));
+        if (!body) return null;
+        const h = j.payload?.headers ?? [];
+        return { id, subject: header(h, "Subject").slice(0, 300), date: header(h, "Date").slice(0, 60), body };
+      } catch { console.warn("gmail-read: body fetch failed"); return null; }
+    }));
+    return got.filter(Boolean) as { id: string; subject: string; date: string; body: string }[];
+  } catch { console.warn("gmail-read: fetch bodies failed"); return []; }
+}
