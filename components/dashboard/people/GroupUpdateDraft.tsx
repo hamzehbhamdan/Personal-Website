@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { askAi, createGmailDraft } from "@/lib/dashboard/people/client-ai";
 import { buildGroupUpdatePrompt } from "@/lib/dashboard/people/ai-prompts";
 import { contactEmails } from "@/lib/dashboard/people/interactions";
@@ -52,8 +52,14 @@ export function GroupUpdateDraft({ group, db, live, now }: {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
   const [createdDraft, setCreatedDraft] = useState(false);
+  // Bumped on every user action that invalidates an in-flight save (edit body, switch mode,
+  // regenerate). handleConfirmSave snapshots the current value; if it no longer matches when the
+  // save resolves, the on-screen text/mode has moved on and we must not surface a stale
+  // "Open in Gmail" for a draft that no longer matches what's shown.
+  const saveGenRef = useRef(0);
 
   const generate = (opts?: { tone?: string; length?: "short" | "long" }) => {
+    saveGenRef.current += 1;
     setLoading(true); setError(null); setCreatedDraft(false);
     let prompt = buildGroupUpdatePrompt(group.name, group.notes ?? "", members.map((m) => m.name), voice);
     if (opts?.tone) prompt += ` Adjust the tone to be more ${opts.tone}.`;
@@ -96,6 +102,7 @@ export function GroupUpdateDraft({ group, db, live, now }: {
   const handleConfirmSave = () => {
     setSaving(true);
     setSaveMsg(null);
+    const gen = saveGenRef.current;
     const p = mode === "to"
       ? createGmailDraft(emails, [], group.name, text)
       : createGmailDraft([MY_EMAILS[0]], emails, group.name, text);
@@ -103,7 +110,10 @@ export function GroupUpdateDraft({ group, db, live, now }: {
       setSaveMsg(mode === "to"
         ? `Saved to Gmail drafts ✓ (TO all: ${r.to.join(", ")})`
         : `Saved to Gmail drafts ✓ (BCC group: ${r.bcc.join(", ")})`);
-      setCreatedDraft(true);
+      // Only surface "Open in Gmail" if nothing invalidated this save while it was in flight
+      // (edit/regenerate/mode-switch) — otherwise the just-created draft no longer matches
+      // what's on screen (stale-save race guard; see saveGenRef above).
+      if (saveGenRef.current === gen) setCreatedDraft(true);
     })
       .catch(() => setSaveMsg("Could not save draft."))
       .finally(() => { setSaving(false); setConfirming(false); });
@@ -122,15 +132,16 @@ export function GroupUpdateDraft({ group, db, live, now }: {
     <div className="mt-3 rounded-[10px] border border-stone-200 p-3">
       <textarea
         value={text}
-        onChange={(e) => { setText(e.target.value); setCopyMsg(null); setCreatedDraft(false); }}
+        onChange={(e) => { saveGenRef.current += 1; setText(e.target.value); setCopyMsg(null); setCreatedDraft(false); }}
         rows={6}
-        className="w-full rounded-[8px] border border-stone-200 p-2.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30]"
+        disabled={saving}
+        className="w-full rounded-[8px] border border-stone-200 p-2.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30] disabled:opacity-50"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => generate()} className={btnGhost} style={mono}>Regenerate</button>
-        <button type="button" onClick={() => generate({ tone: "warmer" })} className={btnGhost} style={mono}>Warmer</button>
-        <button type="button" onClick={() => generate({ tone: "more casual" })} className={btnGhost} style={mono}>Casual</button>
-        <button type="button" onClick={() => { const n = length === "short" ? "long" : "short"; setLength(n); generate({ length: n }); }} className={btnGhost} style={mono}>
+        <button type="button" onClick={() => generate()} disabled={saving} className={btnGhost} style={mono}>Regenerate</button>
+        <button type="button" onClick={() => generate({ tone: "warmer" })} disabled={saving} className={btnGhost} style={mono}>Warmer</button>
+        <button type="button" onClick={() => generate({ tone: "more casual" })} disabled={saving} className={btnGhost} style={mono}>Casual</button>
+        <button type="button" onClick={() => { const n = length === "short" ? "long" : "short"; setLength(n); generate({ length: n }); }} disabled={saving} className={btnGhost} style={mono}>
           {length === "short" ? "Longer" : "Shorter"}
         </button>
         <button type="button" onClick={handleCopy} className={btnGhost} style={mono}>
@@ -143,7 +154,8 @@ export function GroupUpdateDraft({ group, db, live, now }: {
           Send as
           <select
             value={mode}
-            onChange={(e) => { setMode(e.target.value as SendMode); setConfirming(false); setCreatedDraft(false); }}
+            onChange={(e) => { saveGenRef.current += 1; setMode(e.target.value as SendMode); setConfirming(false); setCreatedDraft(false); }}
+            disabled={saving}
             className={selectCls}
           >
             <option value="bcc">BCC — private (recommended)</option>
