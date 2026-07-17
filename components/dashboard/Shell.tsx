@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Rail, type ViewKey } from "./ui";
 import { HomeView } from "./HomeView";
 import { PeopleView } from "@/components/dashboard/people/PeopleView";
+import { CoachView } from "@/components/dashboard/coach/CoachView";
 import { CommandPalette } from "./CommandPalette";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { signout } from "@/app/dashboard/actions"; // A0: server action — HttpOnly cookies can't be cleared from JS
@@ -63,7 +64,7 @@ export function DashboardShell() {
         <main className="flex-1 overflow-auto">
           {view === "home" && <HomeView onNavigate={setView} />}
           {view === "people" && <PeopleView />}
-          {view === "coach" && <Placeholder name="Coach" />}
+          {view === "coach" && <CoachView />}
           {view === "brain" && <Placeholder name="Brain" />}
         </main>
       </div>
