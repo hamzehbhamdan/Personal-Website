@@ -30,7 +30,10 @@ export function extractPlainBody(payload: any): string {
 /** Trim quoted-reply history + cap length so distillation sees the user's own prose. */
 export function cleanBody(raw: string, cap = 3000): string {
   let s = String(raw || "").replace(/\r\n/g, "\n");
-  const markers = [/\n>+/, /\nOn .+ wrote:/, /\n-{2,}\s*Original Message\s*-{2,}/i, /\nFrom: .+\nSent: /i];
+  // `[\s\S]+?` (any char incl. newlines) on the "On … wrote:" marker so it matches Gmail's wrapped
+  // header, where the address and "wrote:" land on separate lines ("On <date> <name> <email>\nwrote:").
+  // Using [\s\S] instead of the dotAll `s` flag keeps it valid under the repo's TS target.
+  const markers = [/\nOn [\s\S]+?wrote:/, /\n>+/, /\n-{2,}\s*Original Message\s*-{2,}/i, /\nFrom: .+\nSent: /i];
   for (const m of markers) {
     const idx = s.search(m);
     if (idx > 0) s = s.slice(0, idx);

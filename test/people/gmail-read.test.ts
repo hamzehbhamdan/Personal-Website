@@ -23,4 +23,11 @@ describe("gmail-read pure helpers", () => {
     expect(c).not.toContain("old stuff");
     expect(cleanBody("x".repeat(5000)).length).toBe(3000);
   });
+  it("cleanBody strips a Gmail wrapped 'On … wrote:' header (address + 'wrote:' on separate lines)", () => {
+    const raw = "My reply text.\n\nOn Tue, Jul 14, 2026 at 4:27 PM Jen Winston <jen@x.com>\nwrote:\n\n> old thread\n> more";
+    const c = cleanBody(raw);
+    expect(c).toBe("My reply text.");
+    expect(c).not.toContain("wrote:");
+    expect(c).not.toContain("Jen Winston");
+  });
 });
