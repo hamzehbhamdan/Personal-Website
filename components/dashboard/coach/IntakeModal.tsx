@@ -191,8 +191,12 @@ export function IntakeModal({
       <div ref={scrollRef} className="mb-2.5 flex max-h-[320px] flex-col gap-2.5 overflow-auto px-0.5 py-1">
         {convo.map((m, i) =>
           m.role === "me" ? (
-            <div key={i} className="self-end max-w-[88%] rounded-[13px] rounded-br-[4px] bg-[#A51C30] px-3 py-2.5 text-[13.5px] leading-[1.55] text-white whitespace-pre-wrap">
-              {m.text}
+            // [&_p]:text-white overrides AiMarkdown's hardcoded text-stone-700 on its
+            // wrapping <p> (a directly-specified rule on the descendant always beats
+            // an inherited color, no !important needed) so the bubble stays legible
+            // on the crimson fill.
+            <div key={i} className="self-end max-w-[88%] rounded-[13px] rounded-br-[4px] bg-[#A51C30] px-3 py-2.5 [&_p]:text-white">
+              <AiMarkdown text={m.text} />
             </div>
           ) : (
             <div
