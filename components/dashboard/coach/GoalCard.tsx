@@ -29,6 +29,7 @@ export function GoalCard({
   setOverlay,
   jumpTo,
   onEditGoal,
+  today,
 }: {
   goal: Goal;
   db: CoachDB;
@@ -39,6 +40,7 @@ export function GoalCard({
   setOverlay: SetOverlay;
   jumpTo: JumpTo;
   onEditGoal: (id: string) => void;
+  today: Date;
 }) {
   const p = progressOf(db, goal, tickNow);
   const parent = goal.parentId ? getGoal(db, goal.parentId) : undefined;
@@ -49,10 +51,12 @@ export function GoalCard({
   const tasks = db.tasks.filter((t) => t.goalId === goal.id);
 
   // coach.html:510 (`jumpTo(id)`) resolves the offset with NO explicit
-  // `today` arg — `findOffset`'s default (`new Date()`) is used. Mirrored here
-  // so a jump lands on whichever period actually contains that goal right now.
+  // `today` arg — `findOffset`'s default (`new Date()`) is used there. Here we
+  // thread the module-frozen `today` (CoachView's `TODAY`) instead, so a jump
+  // lands on the period that contained the target goal at load time, not
+  // whatever period a stale click-time `new Date()` would resolve to.
   function jumpToGoal(target: Goal) {
-    jumpTo(target.horizon, findOffset(target.horizon, target.period));
+    jumpTo(target.horizon, findOffset(target.horizon, target.period, today));
   }
 
   const onEditTask = (id: string) => setOverlay({ kind: "task", id });
@@ -76,12 +80,12 @@ export function GoalCard({
           {parent ? (
             <div className="mt-[2px] text-[11.5px] text-stone-400">
               toward{" "}
-              <a
+              <span
                 onClick={() => jumpToGoal(parent)}
                 className="cursor-pointer text-[#A51C30] no-underline"
               >
                 {parent.title}
-              </a>
+              </span>
             </div>
           ) : (
             nextUp && (

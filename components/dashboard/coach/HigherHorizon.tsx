@@ -120,6 +120,7 @@ export function HigherHorizon({
             setOverlay={setOverlay}
             jumpTo={jumpTo}
             onEditGoal={onEditGoal}
+            today={today}
           />
         ))
       )}
