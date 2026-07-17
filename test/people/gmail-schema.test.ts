@@ -46,10 +46,14 @@ describe("buildSentQuery", () => {
   it("always scopes to in:sent", () => {
     expect(buildSentQuery({})).toBe("in:sent");
   });
-  it("adds to: and keyword when present, strips newlines + caps length", () => {
-    expect(buildSentQuery({ to: "alex@acme.com", keyword: "intro" })).toBe("in:sent to:alex@acme.com intro");
-    expect(buildSentQuery({ keyword: "a\nb" })).toBe("in:sent a b");
+  it("groups to: and keyword under in:sent, strips newlines + caps length", () => {
+    expect(buildSentQuery({ to: "alex@acme.com", keyword: "intro" })).toBe("in:sent (to:alex@acme.com intro)");
+    expect(buildSentQuery({ keyword: "a\nb" })).toBe("in:sent (a b)");
     expect(buildSentQuery({ to: "x".repeat(300) }).length).toBeLessThan(140);
+  });
+  it("keeps a stray OR operator scoped inside in:sent (can't surface received mail)", () => {
+    // `in:sent (…)` binds as `in:sent AND (…)`, so the OR branch can't escape the sent-only scope.
+    expect(buildSentQuery({ to: "foo OR in:anywhere" })).toBe("in:sent (to:foo OR in:anywhere)");
   });
 });
 

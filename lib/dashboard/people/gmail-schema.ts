@@ -43,14 +43,17 @@ export function parseSendReq(body: unknown): { ok: true; value: SendReq } | { ok
 const MAX_Q_FIELD = 120, MAX_IDS = 20, MAX_ID_LEN = 256;
 const stripQ = (s: string) => String(s ?? "").replace(/[\r\n]+/g, " ").trim();
 
-/** Gmail `q` for the sent-mail voice picker. Always scoped to in:sent; to/keyword sanitized + capped. */
+/** Gmail `q` for the sent-mail voice picker. Always scoped to in:sent; to/keyword sanitized + capped.
+ *  The user terms are grouped in parens so `in:sent` binds as `in:sent AND (…)` — a stray `OR`
+ *  operator inside a term can't escape the sent-only scope (the voice model must only see the user's
+ *  own sent mail, never received mail). */
 export function buildSentQuery(f: { to?: string; keyword?: string }): string {
-  const parts = ["in:sent"];
   const to = stripQ(f?.to ?? "").slice(0, MAX_Q_FIELD);
   const keyword = stripQ(f?.keyword ?? "").slice(0, MAX_Q_FIELD);
-  if (to) parts.push(`to:${to}`);
-  if (keyword) parts.push(keyword);
-  return parts.join(" ");
+  const inner: string[] = [];
+  if (to) inner.push(`to:${to}`);
+  if (keyword) inner.push(keyword);
+  return inner.length ? `in:sent (${inner.join(" ")})` : "in:sent";
 }
 
 export type SentSearchReq = { to: string; keyword: string; pageToken: string };
