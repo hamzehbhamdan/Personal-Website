@@ -168,7 +168,7 @@ export function CoachView() {
 
       {overlay.kind === "goal" && (
         <GoalModal
-          key={`goal:${overlay.id ?? overlay.parentForNew ?? "new"}`}
+          key={overlay.id ? `goal:edit:${overlay.id}` : `goal:new:${overlay.parentForNew ?? "root"}`}
           db={db}
           mutate={mutate}
           today={TODAY}

@@ -99,7 +99,7 @@ export function GoalCard({
                 <span
                   key={k.id}
                   onClick={() => jumpToGoal(k)}
-                  className="cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-[11px] text-[#6b6450]"
+                  className="cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-[11px] text-[#78716c]"
                 >
                   {k.title} · {progressOf(db, k, tickNow)}%
                 </span>
@@ -155,7 +155,7 @@ export function GoalCard({
             <button
               type="button"
               onClick={() => setOverlay({ kind: "goal", parentForNew: goal.id })}
-              className="cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-[11px] text-[#6b6450]"
+              className="cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-[11px] text-[#78716c]"
             >
               + {nextDown}
             </button>
