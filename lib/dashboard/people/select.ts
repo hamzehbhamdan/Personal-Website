@@ -31,3 +31,23 @@ export function filterSortContacts(db: CrmDB, stateOf: (c: Contact) => ContactSt
   else list.sort((a, b) => a.c.name.localeCompare(b.c.name));
   return list;
 }
+
+/** Rank CRM contacts whose name or primary email matches `query` (case-insensitive substring).
+ *  Prefix matches rank above interior matches; empty query → []. Contacts without an email are skipped. */
+export function matchContacts(db: CrmDB, query: string, limit = 6): { name: string; email: string }[] {
+  const q = lc(String(query || "").trim());
+  if (!q) return [];
+  const scored: { name: string; email: string; score: number }[] = [];
+  for (const c of db.contacts) {
+    const email = contactEmails(c)[0] || "";
+    if (!email) continue;
+    const name = c.name || "";
+    const nl = lc(name), el = lc(email);
+    let score = -1;
+    if (nl.startsWith(q) || el.startsWith(q)) score = 0;
+    else if (nl.includes(q) || el.includes(q)) score = 1;
+    if (score >= 0) scored.push({ name, email, score });
+  }
+  scored.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name));
+  return scored.slice(0, limit).map(({ name, email }) => ({ name, email }));
+}

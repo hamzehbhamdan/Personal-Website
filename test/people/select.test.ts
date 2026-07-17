@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { allTags, summaryCounts, attentionList, filterSortContacts } from "@/lib/dashboard/people/select";
+import { allTags, summaryCounts, attentionList, filterSortContacts, matchContacts } from "@/lib/dashboard/people/select";
 import { buildSuggestions } from "@/lib/dashboard/people/suggestions";
 import { state } from "@/lib/dashboard/people/state";
 import { groupState } from "@/lib/dashboard/people/groups";
@@ -43,5 +43,26 @@ describe("selectors", () => {
     ], NOW);
     const s = buildSuggestions(db(), g, {});
     expect(s.map((x) => x.email)).toEqual(["new.person@corp.com"]);
+  });
+});
+
+describe("matchContacts", () => {
+  const db: any = { contacts: [
+    { id: "1", name: "Alex Rivera", emails: ["alex@acme.com"], tier: "1" },
+    { id: "2", name: "Alexa Stone", emails: ["astone@x.com"], tier: "1" },
+    { id: "3", name: "Bob Lin", emails: ["bob@x.com"], tier: "1" },
+    { id: "4", name: "No Email", emails: [], tier: "1" },
+  ], groups: [] };
+  it("returns [] for an empty query", () => {
+    expect(matchContacts(db, "  ")).toEqual([]);
+  });
+  it("matches on name or email substring, prefix-first, skips contacts with no email", () => {
+    const r = matchContacts(db, "alex");
+    expect(r.map((x) => x.email)).toEqual(["alex@acme.com", "astone@x.com"]); // both start with "alex"
+    expect(r.some((x) => x.name === "No Email")).toBe(false);
+  });
+  it("matches by email fragment and respects the limit", () => {
+    expect(matchContacts(db, "acme").map((x) => x.email)).toEqual(["alex@acme.com"]);
+    expect(matchContacts(db, "x.com", 1).length).toBe(1);
   });
 });
