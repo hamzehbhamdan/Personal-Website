@@ -73,7 +73,10 @@ export function InsightsModal({ db, today, onClose }: { db: CoachDB; today: Date
     .join(" ");
 
   const needParent = ins.need && ins.need.k !== "__un" ? db.goals.find((g) => g.id === ins.need!.k)?.parentId : undefined;
+  // coach.html:823 — dangling parentId still shows the ladder clause, falling
+  // back to the literal "a higher goal" when the parent goal can't be found.
   const needParentGoal = needParent ? db.goals.find((g) => g.id === needParent) : undefined;
+  const needLadderText = needParent ? needParentGoal?.title ?? "a higher goal" : undefined;
   const needOpenN = ins.need ? ins.need.n - ins.need.done : 0;
 
   return (
@@ -111,12 +114,12 @@ export function InsightsModal({ db, today, onClose }: { db: CoachDB; today: Date
         ))}
 
       {ins.need && (
-        <Card className="mb-4 mt-4 flex items-start gap-[10px] border-[#e8cfa9] bg-[#faf0f1] px-[12px] py-[10px] text-[12px] leading-[1.5] text-stone-600">
+        <Card className="mb-4 mt-4 flex items-start gap-[10px] border-[#A51C30]/40 bg-[#faf0f1] px-[12px] py-[10px] text-[12px] leading-[1.5] text-stone-600">
           <span className="text-[15px] text-[#A51C30]">⚠</span>
           <div>
             <b className="text-stone-900">{ins.need.name} is getting the least time.</b>{" "}
             {fmtHM(ins.need.ms)} across {needOpenN} open task{needOpenN === 1 ? "" : "s"}
-            {needParentGoal ? `, and it ladders up to ${needParentGoal.title}` : ""}. Consider giving it a block this week.
+            {needLadderText ? `, and it ladders up to ${needLadderText}` : ""}. Consider giving it a block this week.
           </div>
         </Card>
       )}
