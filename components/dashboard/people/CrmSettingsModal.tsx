@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/dashboard/ui";
+import { cn } from "@/lib/utils";
 import { TierManagerModal } from "@/components/dashboard/people/TierManagerModal";
 import { normalizeDb, validateBackup } from "@/lib/dashboard/people/backup";
 import { parseCSV, importCsvInto } from "@/lib/dashboard/people/csv";
@@ -18,6 +19,7 @@ const btnGhost = "rounded-[8px] border border-stone-200 px-3.5 py-1.5 font-mono 
 const labelCls = "mb-1 block text-[11px] uppercase tracking-[0.08em] text-stone-500";
 const noteCls = "mt-2 text-[11.5px] leading-relaxed text-stone-500";
 const sectionCls = "border-t border-stone-200 pt-4 mt-4 first:mt-0 first:border-0 first:pt-0";
+const inputCls = "w-full rounded-[6px] border border-stone-200 px-2 py-1.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30]";
 
 /**
  * Settings modal. Port of openSettings (crm.html:632-660).
@@ -34,6 +36,49 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
   onClose: () => void;
 }) {
   const [showTiers, setShowTiers] = useState(false);
+
+  // ---- your voice ----
+  // Local form state seeded once from db.settings.voice. Only the owner-authored fields live
+  // here (tone/styleGuide/styleNotes/examples) — styleSummary/sentSamples are written by the
+  // separate learn-from-sent-mail flow (a later task) and are never touched by this form.
+  const [voiceForm, setVoiceForm] = useState(() => ({
+    tone: db.settings.voice?.tone ?? "",
+    styleGuide: db.settings.voice?.styleGuide ?? "",
+    styleNotes: db.settings.voice?.styleNotes ?? "",
+    examples: db.settings.voice?.examples ?? [],
+  }));
+  const [voiceSavedMsg, setVoiceSavedMsg] = useState<string | null>(null);
+
+  function handleAddExample() {
+    setVoiceForm((f) => (f.examples.length >= 3 ? f : { ...f, examples: [...f.examples, ""] }));
+  }
+
+  function handleExampleChange(i: number, value: string) {
+    setVoiceForm((f) => ({ ...f, examples: f.examples.map((e, idx) => (idx === i ? value : e)) }));
+  }
+
+  function handleRemoveExample(i: number) {
+    setVoiceForm((f) => ({ ...f, examples: f.examples.filter((_, idx) => idx !== i) }));
+  }
+
+  // Save merges the owner-authored fields into whatever voice profile already exists,
+  // PRESERVING styleSummary/sentSamples (written elsewhere) rather than clobbering them.
+  function handleSaveVoice() {
+    setState((prev) => {
+      const d = normalizeDb(prev);
+      const trimmedExamples = voiceForm.examples.map((e) => e.trim()).filter(Boolean);
+      const voice = {
+        ...(d.settings.voice ?? {}),
+        tone: voiceForm.tone.trim() || undefined,
+        styleGuide: voiceForm.styleGuide.trim() || undefined,
+        styleNotes: voiceForm.styleNotes.trim() || undefined,
+        examples: trimmedExamples.length ? trimmedExamples : undefined,
+      };
+      return { ...d, settings: { ...d.settings, voice } };
+    });
+    setVoiceSavedMsg("Voice saved ✓");
+    setTimeout(() => setVoiceSavedMsg(null), 2500);
+  }
 
   // ---- auto-tags ----
   const [suggesting, setSuggesting] = useState(false);
@@ -147,6 +192,77 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
   return (
     <>
       <Modal title="Settings" onClose={onClose}>
+        <div className={sectionCls}>
+          <label className={labelCls}>Your voice</label>
+          <div className="mt-1 text-[11.5px] leading-relaxed text-stone-500">
+            Shape how AI-drafted check-ins and group updates sound — this is woven into every draft.
+          </div>
+          <div className="mt-2.5 flex flex-col gap-3">
+            <div>
+              <label className={labelCls}>Tone</label>
+              <input
+                type="text"
+                value={voiceForm.tone}
+                onChange={(e) => setVoiceForm((f) => ({ ...f, tone: e.target.value }))}
+                placeholder="warm, a little playful, concise"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Style guide</label>
+              <textarea
+                value={voiceForm.styleGuide}
+                onChange={(e) => setVoiceForm((f) => ({ ...f, styleGuide: e.target.value }))}
+                rows={5}
+                placeholder="How you generally like check-ins and updates written — length, structure, things to always include or avoid…"
+                className={cn(inputCls, "min-h-[100px]")}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Style notes</label>
+              <textarea
+                value={voiceForm.styleNotes}
+                onChange={(e) => setVoiceForm((f) => ({ ...f, styleNotes: e.target.value }))}
+                rows={2}
+                placeholder="sign off with -H; avoid exclamation points"
+                className={cn(inputCls, "min-h-[50px]")}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>
+                Example messages <span className="normal-case tracking-normal text-stone-400">(0–3)</span>
+              </label>
+              <div className="flex flex-col gap-2">
+                {voiceForm.examples.map((ex, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <textarea
+                      value={ex}
+                      onChange={(e) => handleExampleChange(i, e.target.value)}
+                      rows={2}
+                      placeholder="Paste a message that sounds like you…"
+                      className={cn(inputCls, "min-h-[44px] flex-1")}
+                    />
+                    <button type="button" onClick={() => handleRemoveExample(i)} className={btnGhost} style={mono}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {voiceForm.examples.length < 3 && (
+                  <button type="button" onClick={handleAddExample} className={btnGhost} style={mono}>
+                    + Add example
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+            <button type="button" onClick={handleSaveVoice} className={btnPrimary} style={mono}>
+              Save voice
+            </button>
+            {voiceSavedMsg && <span className="text-[11.5px] text-stone-500">{voiceSavedMsg}</span>}
+          </div>
+        </div>
+
         <div className={sectionCls}>
           <label className={labelCls}>Auto-tags <span className="normal-case tracking-normal text-stone-400">(uses Claude)</span></label>
           <label className="flex items-center gap-2 text-[13px] text-stone-700">
