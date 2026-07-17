@@ -19,9 +19,8 @@ import type { Mutate } from "./overlay";
 import { periodRange, periodLabelOf, HORIZONS, NEXTUP, NEXTDOWN } from "@/lib/dashboard/coach/periods";
 import { getGoal } from "@/lib/dashboard/coach/rollup";
 import { uid } from "@/lib/dashboard/coach/migrate";
-import { askAi } from "@/lib/dashboard/coach/ai";
-import { parseList } from "@/lib/dashboard/coach/parse";
 import { Modal } from "@/components/dashboard/ui";
+import { useSuggestRows } from "./useSuggestRows";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
 const btnPrimary =
@@ -79,10 +78,10 @@ export function GoalModal({
   const [manualProgress, setManualProgress] = useState(existing?.manualProgress ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? "");
 
-  const [suggesting, setSuggesting] = useState(false);
-  const [suggestItems, setSuggestItems] = useState<string[] | null>(null);
-  const [addedIdx, setAddedIdx] = useState<Set<number>>(new Set());
-  const [suggestError, setSuggestError] = useState<string | null>(null);
+  // Task 19: askAi -> parseList -> loading/error/tap-to-add-rows state is shared
+  // with CoachPanel's suggest-goals path via useSuggestRows; only the "what does
+  // adding a row do" mutation (addSuggestedTask, below) stays local to this modal.
+  const suggestRows = useSuggestRows();
 
   const isNew = !goalId;
   const parentHorizon = NEXTUP[selHorizon];
@@ -150,28 +149,17 @@ export function GoalModal({
   }
 
   // Suggest tasks (coach.html:603-609): ask the coach for 3-6 short task strings
-  // for this goal. Task 19 will extract this into a shared hook reused by the
-  // Coach panel — for now it's implemented inline here.
+  // for this goal.
   async function handleSuggestTasks() {
-    setSuggesting(true);
-    setSuggestError(null);
-    setSuggestItems(null);
-    setAddedIdx(new Set());
     const goalTitle = title.trim() || existing?.title || "Untitled goal";
     const prompt = `Suggest 3-6 concrete, doable tasks that would move this ${selHorizon} goal forward: "${goalTitle}". Notes: ${notes || "none"}. Return ONLY a JSON array of short task strings.`;
-    const text = await askAi("suggest_tasks", prompt, { goal: goalTitle, horizon: selHorizon, notes });
-    setSuggesting(false);
-    if (text === null) {
-      setSuggestError("The coach is unavailable right now.");
-      return;
-    }
-    setSuggestItems(parseList(text));
+    await suggestRows.run("suggest_tasks", prompt, { goal: goalTitle, horizon: selHorizon, notes });
   }
 
   // Tap-to-add a suggested task (coach.html:611-612): lazily inserts the goal
   // (if it hasn't been saved yet) using the CURRENT form values, then pushes a
   // task for THIS week and registers the goal into that week's plan.
-  function addSuggestedTask(label: string, idx: number) {
+  function addSuggestedTask(label: string) {
     const goalTitle = title.trim() || existing?.title || "Untitled goal";
     const wk = periodRange("week", 0, today).key;
     mutate((draft) => {
@@ -207,7 +195,6 @@ export function GoalModal({
       draft.weekPlan[wk] = draft.weekPlan[wk] || [];
       if (!draft.weekPlan[wk].includes(stableId)) draft.weekPlan[wk].push(stableId);
     });
-    setAddedIdx((prev) => new Set(prev).add(idx));
   }
 
   return (
@@ -295,8 +282,8 @@ export function GoalModal({
         <button type="button" onClick={handleSave} className={btnPrimary} style={mono}>
           Save
         </button>
-        <button type="button" onClick={handleSuggestTasks} disabled={suggesting} className={btnCrimsonOutline} style={mono}>
-          {suggesting ? "…" : "✦ Suggest tasks"}
+        <button type="button" onClick={handleSuggestTasks} disabled={suggestRows.suggesting} className={btnCrimsonOutline} style={mono}>
+          {suggestRows.suggesting ? "…" : "✦ Suggest tasks"}
         </button>
         {!isNew && (
           <button type="button" onClick={handleDelete} className={btnGhost} style={mono}>
@@ -308,25 +295,25 @@ export function GoalModal({
         </button>
       </div>
 
-      {suggesting && <div className="mt-3 text-[12.5px] text-stone-500">Thinking of tasks…</div>}
-      {suggestError && <div className="mt-3 text-[12.5px] text-[#A51C30]">{suggestError}</div>}
-      {suggestItems && suggestItems.length === 0 && (
+      {suggestRows.suggesting && <div className="mt-3 text-[12.5px] text-stone-500">Thinking of tasks…</div>}
+      {suggestRows.error && <div className="mt-3 text-[12.5px] text-[#A51C30]">{suggestRows.error}</div>}
+      {suggestRows.items && suggestRows.items.length === 0 && (
         <div className="mt-3 text-[12.5px] text-stone-400">No suggestions — try rephrasing the goal.</div>
       )}
-      {suggestItems && suggestItems.length > 0 && (
+      {suggestRows.items && suggestRows.items.length > 0 && (
         <div className="mt-3 rounded-[11px] border border-stone-200 bg-stone-50 p-3">
           <div className="mb-2 text-[12.5px] text-stone-500">Tap to add as tasks in this week:</div>
-          {suggestItems.map((label, i) => (
+          {suggestRows.items.map((label, i) => (
             <div key={i} className="flex items-center gap-2 border-b border-stone-200 py-1.5 text-[13px] last:border-b-0">
               <span className="flex-1">{label}</span>
               <button
                 type="button"
-                disabled={addedIdx.has(i)}
-                onClick={() => addSuggestedTask(label, i)}
+                disabled={suggestRows.addedIdx.has(i)}
+                onClick={() => suggestRows.add(i, addSuggestedTask)}
                 className={btnGhostSmall}
                 style={mono}
               >
-                {addedIdx.has(i) ? "Added ✓" : "+ Add"}
+                {suggestRows.addedIdx.has(i) ? "Added ✓" : "+ Add"}
               </button>
             </div>
           ))}
