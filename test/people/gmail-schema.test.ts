@@ -39,3 +39,44 @@ describe("gmail schema — cc + send", () => {
     expect(parseSendReq({ draftId: "d", to: ["bad"], subject: "hi", body: "b" }).ok).toBe(false);
   });
 });
+
+import { buildSentQuery, parseSentSearchReq, parseSentBodiesReq } from "@/lib/dashboard/people/gmail-schema";
+
+describe("buildSentQuery", () => {
+  it("always scopes to in:sent", () => {
+    expect(buildSentQuery({})).toBe("in:sent");
+  });
+  it("adds to: and keyword when present, strips newlines + caps length", () => {
+    expect(buildSentQuery({ to: "alex@acme.com", keyword: "intro" })).toBe("in:sent to:alex@acme.com intro");
+    expect(buildSentQuery({ keyword: "a\nb" })).toBe("in:sent a b");
+    expect(buildSentQuery({ to: "x".repeat(300) }).length).toBeLessThan(140);
+  });
+});
+
+describe("parseSentSearchReq", () => {
+  it("accepts optional fields and defaults to empty strings", () => {
+    const r = parseSentSearchReq({ to: "a@b.com" });
+    expect(r.ok && r.value).toEqual({ to: "a@b.com", keyword: "", pageToken: "" });
+  });
+  it("coerces non-strings to empty + caps", () => {
+    const r = parseSentSearchReq({ to: 5, keyword: "k".repeat(500) });
+    expect(r.ok && r.value.to).toBe("");
+    expect(r.ok && r.value.keyword.length).toBe(120);
+  });
+  it("rejects a non-object body", () => {
+    expect(parseSentSearchReq("nope").ok).toBe(false);
+  });
+});
+
+describe("parseSentBodiesReq", () => {
+  it("accepts 1..20 string ids", () => {
+    const r = parseSentBodiesReq({ ids: ["a", "b"] });
+    expect(r.ok && r.value.ids).toEqual(["a", "b"]);
+  });
+  it("rejects empty, >20, non-array, or newline ids", () => {
+    expect(parseSentBodiesReq({ ids: [] }).ok).toBe(false);
+    expect(parseSentBodiesReq({ ids: Array(21).fill("x") }).ok).toBe(false);
+    expect(parseSentBodiesReq({ ids: "x" }).ok).toBe(false);
+    expect(parseSentBodiesReq({ ids: ["a\nb"] }).ok).toBe(false);
+  });
+});

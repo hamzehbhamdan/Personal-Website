@@ -15,7 +15,7 @@ function normalizeVoice(v: any): VoiceProfile | undefined {
     if (ex.length) out.examples = ex;
   }
   if (Array.isArray(v.sentSamples)) {
-    const ss = v.sentSamples.filter((s: any) => s && typeof s === "object").slice(0, 10).map((s: any) => ({ subject: String(s.subject ?? "").slice(0, 300), date: String(s.date ?? "").slice(0, 40) }));
+    const ss = v.sentSamples.filter((s: any) => s && typeof s === "object").slice(0, 20).map((s: any) => ({ subject: String(s.subject ?? "").slice(0, 300), date: String(s.date ?? "").slice(0, 40) }));
     if (ss.length) out.sentSamples = ss;
   }
   return Object.keys(out).length ? out : undefined;

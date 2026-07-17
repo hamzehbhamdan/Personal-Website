@@ -17,7 +17,7 @@ describe("normalizeDb — voice migration", () => {
     expect(v.styleSummary!.length).toBe(4000);
     expect(v.examples!.length).toBe(5);
     expect(v.examples![0].length).toBe(1000);
-    expect(v.sentSamples!.length).toBe(10);
+    expect(v.sentSamples!.length).toBe(20);
     expect(v.sentSamples![0].subject.length).toBe(300);
     expect(v.sentSamples![0].date.length).toBe(40);
   });
