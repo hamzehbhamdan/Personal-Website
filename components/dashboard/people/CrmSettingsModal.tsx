@@ -81,12 +81,9 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
     setTimeout(() => setVoiceSavedMsg(null), 2500);
   }
 
-  // ---- learn my voice from recent sent mail ----
-  // SECURITY: raw sample BODIES live only in this in-memory state. They are sent to Claude once
-  // (at distill) and never persisted — only the distilled styleSummary + {subject,date} metadata
-  // are written to settings.voice, via the same normalizeDb(prev) state-mutation convention as the
-  // rest of this modal. Never log bodies; render snippets as plain text (JSX-escaped), never
-  // dangerouslySetInnerHTML.
+  // ---- learn my voice from sent mail ----
+  // The filter/browse/pick/distill/approve flow (incl. all sent-mail body handling) lives in
+  // LearnVoiceModal. This modal only opens it and clears the saved voice; it never touches bodies.
   const [showLearn, setShowLearn] = useState(false);
 
   function learnClear() {
