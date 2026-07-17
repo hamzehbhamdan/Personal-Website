@@ -10,7 +10,7 @@ import { fmtDate, initials } from "@/lib/dashboard/people/text";
 import { normalizeDb } from "@/lib/dashboard/people/backup";
 import { CheckinDraft } from "./CheckinDraft";
 import { LogInteractionForm } from "./LogInteractionForm";
-import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
+import type { CrmDB, Contact, LogEntry } from "@/lib/dashboard/people/types";
 import type { LiveState } from "./useLiveInteractions";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -53,6 +53,25 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
       };
     });
     onClose();
+  };
+
+  // Auto-log an in-platform send as an "Email" interaction on this contact. Fires only after the send
+  // actually goes out (CheckinDraft calls this from the post-undo send callback), so a cancelled send
+  // logs nothing. State-mutation convention: derive from `prev`, never the captured `db`/`contact`.
+  const logSent = (subject: string) => {
+    const date = new Date().toISOString();
+    const entry: LogEntry = { date, type: "Email", note: subject.trim() ? `Sent: ${subject.trim()}` : "Sent an email" };
+    setState((prev) => {
+      const nextDb = normalizeDb(prev);
+      return {
+        ...nextDb,
+        contacts: nextDb.contacts.map((x) =>
+          x.id === contact.id
+            ? { ...x, log: [...x.log, entry], lastTouch: !x.lastTouch || date > x.lastTouch ? date : x.lastTouch, snoozeUntil: null }
+            : x
+        ),
+      };
+    });
   };
 
   return (
@@ -132,6 +151,7 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
           recent={formatRecent(interactionsFor(contact, live.gmail, live.cal))}
           days={s.days}
           voice={db.settings.voice}
+          onSent={logSent}
         />
       )}
 
