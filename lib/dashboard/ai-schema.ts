@@ -1,6 +1,6 @@
 export const MODELS = ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5-20251001"] as const;
 export const DEFAULT_MODEL = "claude-sonnet-5";
-const TASKS = new Set(["draft_checkin", "group_update", "coach_chat", "suggest_tasks", "suggest_goals", "intake", "ask_people", "suggest_tags", "distill_voice"]);
+const TASKS = new Set(["draft_checkin", "group_update", "coach_chat", "suggest_tasks", "suggest_goals", "intake", "ask_people", "suggest_tags", "distill_voice", "plan_day"]);
 export const MAX_PROMPT = 40_000;
 export type AiRequest = { task: string; prompt: string; system?: string; model?: string };
 export type ParseResult = { ok: true; value: AiRequest } | { ok: false; reason: string };

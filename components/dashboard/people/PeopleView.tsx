@@ -88,12 +88,12 @@ export function PeopleView() {
 
   if (!loaded) {
     return (
-      <div className="p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
+      <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
     );
   }
 
   return (
-    <div className="p-7 md:p-8 max-w-3xl">
+    <div className="mx-auto w-full p-7 md:p-8 max-w-reading">
       <ViewHeader
         title="People"
         meta={meta}

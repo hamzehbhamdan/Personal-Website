@@ -23,7 +23,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const greeting = now ? `Good ${now.getHours() < 12 ? "morning" : now.getHours() < 18 ? "afternoon" : "evening"}, Hamzeh.` : "Hello, Hamzeh.";
 
   return (
-    <div className="p-7 md:p-8 max-w-3xl">
+    <div className="mx-auto w-full p-7 md:p-8 max-w-wide">
       <ViewHeader meta={meta} title={greeting} />
       <SectionHeader index="01" label="Momentum" />
       <div className="flex gap-9 mb-8">

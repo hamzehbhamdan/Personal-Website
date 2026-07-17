@@ -278,7 +278,7 @@ create policy "owner_all_calendar_events" on public.calendar_events for all
 -- ---------------------------------------------------------------
 create table if not exists public.app_state (
   user_id    uuid not null references auth.users(id) on delete cascade,
-  app        text not null check (app in ('lifeCRM','execCoach')),
+  app        text not null check (app in ('lifeCRM','execCoach','home','brain')),
   data       jsonb not null default '{}',
   updated_at timestamptz not null default now(),
   primary key (user_id, app)

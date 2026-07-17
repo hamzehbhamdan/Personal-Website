@@ -1,5 +1,5 @@
 export const MAX_STATE_BYTES = 2 * 1024 * 1024; // 2 MB per app document
-const APPS = new Set(["lifeCRM", "execCoach"]);
+const APPS = new Set(["lifeCRM", "execCoach", "home", "brain"]);
 
 export type StateWriteResult = { ok: true } | { ok: false; status: 400; reason: string };
 

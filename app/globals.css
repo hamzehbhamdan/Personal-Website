@@ -25,6 +25,10 @@
     --color-rail: hsl(var(--rail));
     --color-hairline: hsl(var(--hairline));
 
+    /* Content width caps → Tailwind v4 generates max-w-reading / max-w-wide */
+    --container-reading: 60rem;  /* 960px — People / Coach / Brain single column */
+    --container-wide:    72rem;  /* 1152px — Home widget grid */
+
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);

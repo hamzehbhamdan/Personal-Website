@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 # env
 .env
+
+# Git worktrees for parallel dashboard sub-projects
+.claude/worktrees/
