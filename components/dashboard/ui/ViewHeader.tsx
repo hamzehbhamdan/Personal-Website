@@ -1,5 +1,5 @@
 const serif = { fontFamily: "var(--font-playfair), Georgia, serif" };
-export function ViewHeader({ meta, title, actions }: { meta?: string; title: string; actions?: React.ReactNode }) {
+export function ViewHeader({ meta, title, actions, status }: { meta?: string; title: string; actions?: React.ReactNode; status?: React.ReactNode }) {
   return (
     <div className="mb-6">
       <div className="flex items-start justify-between gap-3">
@@ -8,7 +8,12 @@ export function ViewHeader({ meta, title, actions }: { meta?: string; title: str
             style={{ fontFamily: "var(--font-geist-mono), monospace" }}>{meta}</p>}
           <h1 className="text-[26px] font-medium text-stone-900" style={serif}>{title}</h1>
         </div>
-        {actions && <div className="flex items-center gap-2.5">{actions}</div>}
+        {(status || actions) && (
+          <div className="flex items-center gap-2.5">
+            {status}
+            {actions}
+          </div>
+        )}
       </div>
       <div className="h-px bg-stone-200 mt-5" />
     </div>

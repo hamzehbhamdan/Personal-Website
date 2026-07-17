@@ -35,7 +35,7 @@ const btnGhost =
  * snapshot — the `onDismiss` inline updater below and every child modal follow this.
  */
 export function PeopleView() {
-  const { state: raw, setState, loaded } = useAppState<CrmDB>("lifeCRM", emptyDb());
+  const { state: raw, setState, loaded, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
   const db = useMemo(() => normalizeDb(raw), [raw]);
   const now = useMemo(() => new Date(), []);
   const live = useLiveInteractions(now);
@@ -68,6 +68,22 @@ export function PeopleView() {
   const meta =
     `${counts.total} contacts · ${counts.overdue} need a nudge · ${counts.owe} owed · ${counts.bdays} birthdays soon`.toUpperCase();
 
+  const saveStatus =
+    status === "saving" ? (
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400" style={mono}>Saving…</span>
+    ) : status === "saved" ? (
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400" style={mono}>Saved ✓</span>
+    ) : status === "error" ? (
+      <button
+        type="button"
+        onClick={() => setState((prev) => ({ ...prev }))}
+        className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30] hover:underline"
+        style={mono}
+      >
+        Save failed — retry
+      </button>
+    ) : null;
+
   if (!loaded) {
     return (
       <div className="p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
@@ -79,6 +95,7 @@ export function PeopleView() {
       <ViewHeader
         title="People"
         meta={meta}
+        status={saveStatus}
         actions={
           <>
             <button type="button" onClick={() => setEditContact({ id: null })} className={btnPrimary} style={mono}>

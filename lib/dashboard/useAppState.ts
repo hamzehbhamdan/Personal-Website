@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useAppState<T extends object>(app: "lifeCRM" | "execCoach", seed: T) {
   const [state, setState] = useState<T>(seed);
   const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const genRef = useRef(0);
 
   useEffect(() => {
     let alive = true;
@@ -22,9 +24,20 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach", seed
   const persist = useCallback((next: T) => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      fetch(`/api/state?app=${app}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: next }),
-      }).catch(() => {});
+      const gen = ++genRef.current;              // capture this save's generation
+      setStatus("saving");
+      const put = () =>
+        fetch(`/api/state?app=${app}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: next }),
+        }).then((r) => { if (!r.ok) throw new Error("save failed"); });
+      put()
+        .catch(() => put())                       // one retry on failure (network or non-2xx)
+        .then(
+          () => { if (genRef.current === gen) setStatus("saved"); },
+          () => { if (genRef.current === gen) setStatus("error"); },
+        );
     }, 500);
   }, [app]);
 
@@ -32,5 +45,5 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach", seed
     setState((prev) => { const next = updater(prev); persist(next); return next; });
   }, [persist]);
 
-  return { state, setState: update, loaded };
+  return { state, setState: update, loaded, status };
 }
