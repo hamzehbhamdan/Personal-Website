@@ -24,3 +24,19 @@ export async function sendGmail(draftId: string, msg: { to: string[]; cc: string
   if (!r.ok) throw new Error(j.error || "send failed");
   return j as { ok: true; sent: true; to: string[]; cc: string[]; bcc: string[] };
 }
+
+export async function fetchSentSearch(params: { to?: string; keyword?: string; pageToken?: string }): Promise<{ connected: boolean; messages: { id: string; subject: string; to: string; date: string; snippet: string }[]; nextPageToken?: string }> {
+  const r = await fetch("/api/gmail/sent-search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) });
+  if (r.status === 409) return { connected: false, messages: [] };
+  if (!r.ok) throw new Error("search failed");
+  const j = await r.json();
+  return { connected: true, messages: Array.isArray(j.messages) ? j.messages : [], nextPageToken: j.nextPageToken };
+}
+
+export async function fetchSentBodies(ids: string[]): Promise<{ connected: boolean; samples: { id: string; subject: string; date: string; body: string }[] }> {
+  const r = await fetch("/api/gmail/sent-bodies", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+  if (r.status === 409) return { connected: false, samples: [] };
+  if (!r.ok) throw new Error("body fetch failed");
+  const j = await r.json();
+  return { connected: true, samples: Array.isArray(j.samples) ? j.samples : [] };
+}
