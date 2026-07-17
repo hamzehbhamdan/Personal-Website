@@ -1,9 +1,9 @@
 // components/dashboard/coach/CoachView.tsx
 //
 // Container that owns all Coach state (Task 14). Ports coach.html:190–220 (header),
-// 321–341 (banner), 453–459 (period bar). Board content and modals are wired in
-// Task 23 once WeekBoard/HigherHorizon (Tasks 16–17) and the modal set (Tasks
-// 18–22) exist — see the placeholders below.
+// 321–341 (banner), 453–459 (period bar). Board content, the search overlay, and
+// the modal switch are wired here (Task 23) using WeekBoard/HigherHorizon (Tasks
+// 16–17) and the modal set (Tasks 18–22).
 "use client";
 import { useMemo, useState, useCallback } from "react";
 import { ViewHeader, Segmented } from "@/components/dashboard/ui";
@@ -14,10 +14,18 @@ import { periodRange, HORIZONS } from "@/lib/dashboard/coach/periods";
 import type { CoachDB, Horizon } from "@/lib/dashboard/coach/types";
 import { PeriodBar } from "./PeriodBar";
 import { IntakeBanner } from "./IntakeBanner";
-import type { Overlay } from "./overlay";
-// Board (WeekBoard / HigherHorizon — Tasks 16–17) and the modal set (Tasks 18–22)
-// don't exist yet. Task 23 imports and mounts them here, replacing the inline
-// placeholders below — do NOT import them in this task.
+import type { Overlay, JumpTo } from "./overlay";
+import { SearchOverlay } from "./SearchOverlay";
+import { WeekBoard } from "./WeekBoard";
+import { HigherHorizon } from "./HigherHorizon";
+import { GoalModal } from "./GoalModal";
+import { TaskModal } from "./TaskModal";
+import { SubtaskModal } from "./SubtaskModal";
+import { PickGoalModal } from "./PickGoalModal";
+import { CoachPanel } from "./CoachPanel";
+import { IntakeModal } from "./IntakeModal";
+import { RollForwardModal } from "./RollForwardModal";
+import { InsightsModal } from "./InsightsModal";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
 const btnPrimary =
@@ -34,8 +42,8 @@ export function CoachView() {
   const [horizon, setHorizon] = useState<Horizon>("week");
   const [offset, setOffset] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>({ kind: "none" });
-  // Backing state for the search toggle (⌕); the SearchOverlay itself is mounted
-  // in Task 23 — this button is a non-wired placeholder for now (see actions below).
+  // Backing state for the search toggle (⌕) — SearchOverlay mounts below the
+  // header while true (coach.html:198,204-207's `searchWrap`/`show`).
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Read snapshot: run migration on every state change into a normalized v3 doc
@@ -54,8 +62,14 @@ export function CoachView() {
     },
     [setState],
   );
-  // `mutate` is not yet called from this file — the board/modals that call it
-  // (WeekBoard, HigherHorizon, GoalModal, etc.) are wired in Task 23+.
+
+  // Ports the artifact's global `jumpTo(id)` (coach.html:510,846) as a typed
+  // (horizon, offset) pair — callers (GoalCard, SearchOverlay) resolve the
+  // target goal/task's own offset via `findOffset` before calling this.
+  const jumpTo: JumpTo = useCallback((h, o) => {
+    setHorizon(h);
+    setOffset(o);
+  }, []);
 
   const r = periodRange(horizon, offset, TODAY);
 
@@ -74,7 +88,7 @@ export function CoachView() {
           <>
             <button
               type="button"
-              onClick={() => {} /* TODO(Task 23): toggle SearchOverlay */}
+              onClick={() => setSearchOpen((o) => !o)}
               className={iconBtn}
               style={mono}
               aria-label="Search goals & tasks"
@@ -84,7 +98,7 @@ export function CoachView() {
             </button>
             <button
               type="button"
-              onClick={() => {} /* TODO(Task 23): open Insights modal */}
+              onClick={() => setOverlay({ kind: "insights" })}
               className={btnGhost}
               style={mono}
             >
@@ -92,7 +106,7 @@ export function CoachView() {
             </button>
             <button
               type="button"
-              onClick={() => {} /* TODO(Task 23): open Coach panel */}
+              onClick={() => setOverlay({ kind: "coach" })}
               className={btnPrimary}
               style={mono}
             >
@@ -102,7 +116,9 @@ export function CoachView() {
         }
       />
 
-      {/* SearchOverlay (Task 23) renders here when searchOpen */}
+      {searchOpen && (
+        <SearchOverlay db={db} today={TODAY} jumpTo={jumpTo} onClose={() => setSearchOpen(false)} />
+      )}
 
       <Segmented<Horizon>
         options={HORIZONS.map(([v, label]) => ({ value: v, label }))}
@@ -133,16 +149,100 @@ export function CoachView() {
           onNext={() => setOffset((o) => o + 1)}
         />
 
-        {/* Board area: WeekBoard for "week", HigherHorizon for month/quarter/year
-            (Tasks 16–17). Mounted in Task 23 — placeholder until then. */}
-        <div className="mt-6 rounded-[10px] border border-dashed border-stone-200 p-8 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-stone-300">
-          Board — wired in Task 23
+        <div className="mt-6">
+          {horizon === "week" ? (
+            <WeekBoard db={db} offset={offset} today={TODAY} mutate={mutate} setOverlay={setOverlay} />
+          ) : (
+            <HigherHorizon
+              db={db}
+              horizon={horizon}
+              offset={offset}
+              today={TODAY}
+              mutate={mutate}
+              setOverlay={setOverlay}
+              jumpTo={jumpTo}
+            />
+          )}
         </div>
       </div>
 
-      {/* Modal switch on overlay.kind -> GoalModal / TaskModal / SubtaskModal /
-          PickGoalModal / CoachPanel / IntakeModal / RollForwardModal / InsightsModal
-          (Tasks 18–22). Wired in Task 23 — placeholder until then. */}
+      {overlay.kind === "goal" && (
+        <GoalModal
+          key={`goal:${overlay.id ?? overlay.parentForNew ?? "new"}`}
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          horizon={horizon}
+          offset={offset}
+          goalId={overlay.id}
+          parentForNew={overlay.parentForNew}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "task" && (
+        <TaskModal
+          key={`task:${overlay.id}`}
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          taskId={overlay.id}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "sub" && (
+        <SubtaskModal
+          key={`sub:${overlay.taskId}:${overlay.subId}`}
+          db={db}
+          mutate={mutate}
+          taskId={overlay.taskId}
+          subId={overlay.subId}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "pickGoal" && (
+        <PickGoalModal
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          horizon={horizon}
+          offset={offset}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "coach" && (
+        <CoachPanel
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          horizon={horizon}
+          offset={offset}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "intake" && (
+        <IntakeModal
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          horizons={overlay.horizons}
+          onClose={() => setOverlay({ kind: "none" })}
+        />
+      )}
+      {overlay.kind === "rollforward" && (
+        <RollForwardModal
+          db={db}
+          mutate={mutate}
+          today={TODAY}
+          onClose={() => setOverlay({ kind: "none" })}
+          onApplied={() => {
+            setHorizon("week");
+            setOffset(0);
+          }}
+        />
+      )}
+      {overlay.kind === "insights" && (
+        <InsightsModal db={db} today={TODAY} onClose={() => setOverlay({ kind: "none" })} />
+      )}
     </div>
   );
 }
