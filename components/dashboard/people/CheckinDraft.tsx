@@ -20,7 +20,7 @@ const parseList = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolea
  * UNDO window before it actually sends; Undo (or unmounting) cancels — nothing auto-sends. "Save as
  * draft" only creates a Gmail draft. Body/AI text render as plain values (no dangerouslySetInnerHTML).
  */
-export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact: Contact; recent: string[]; days: number | null; voice?: VoiceProfile; onSent?: (subject: string) => void }) {
+export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact: Contact; recent: string[]; days: number | null; voice?: VoiceProfile; onSent?: (email: { subject: string; body: string }) => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [to, setTo] = useState(contactEmails(contact)[0] || "");
@@ -54,7 +54,8 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { generate(); return clearTimers; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { generate(); return clearTimers; }, []);
 
   const handleCopy = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(body);
@@ -79,7 +80,7 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
       sendTimeoutRef.current = setTimeout(() => {
         clearTimers();
         setPending(null);
-        sendGmail(draft.draftId, params).then(() => { setStatusMsg("Sent ✓"); onSent?.(params.subject); }).catch(() => setStatusMsg("Send failed — the draft is in your Gmail Drafts."));
+        sendGmail(draft.draftId, params).then(() => { setStatusMsg("Sent ✓"); onSent?.({ subject: params.subject, body: params.body }); }).catch(() => setStatusMsg("Send failed — the draft is in your Gmail Drafts."));
       }, UNDO_SECONDS * 1000);
     } catch { setStatusMsg("Could not create the draft."); }
     finally { setBusy(false); }

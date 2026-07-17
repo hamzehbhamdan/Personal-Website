@@ -29,6 +29,7 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
 }) {
   const [showLog, setShowLog] = useState(false);
   const [showDraft, setShowDraft] = useState(false);
+  const [openRows, setOpenRows] = useState<Set<number>>(new Set()); // expanded timeline log rows
 
   const contact = getContact(db, id);
   if (!contact) return null;
@@ -55,12 +56,14 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
     onClose();
   };
 
-  // Auto-log an in-platform send as an "Email" interaction on this contact. Fires only after the send
-  // actually goes out (CheckinDraft calls this from the post-undo send callback), so a cancelled send
-  // logs nothing. State-mutation convention: derive from `prev`, never the captured `db`/`contact`.
-  const logSent = (subject: string) => {
+  // Auto-log an in-platform send as an "Email" interaction on this contact, recording the subject +
+  // full body (the date is the entry's own timestamp). Fires only after the send actually goes out
+  // (CheckinDraft calls this from the post-undo send callback), so a cancelled send logs nothing.
+  // State-mutation convention: derive from `prev`, never the captured `db`/`contact`.
+  const logSent = ({ subject, body }: { subject: string; body: string }) => {
     const date = new Date().toISOString();
-    const entry: LogEntry = { date, type: "Email", note: subject.trim() ? `Sent: ${subject.trim()}` : "Sent an email" };
+    const note = [subject.trim(), body.trim()].filter(Boolean).join("\n\n") || "Sent an email";
+    const entry: LogEntry = { date, type: "Email", note };
     setState((prev) => {
       const nextDb = normalizeDb(prev);
       return {
@@ -161,13 +164,28 @@ export function ContactDetailModal({ id, db, live, now, setState, onClose, onEdi
           <div className="text-[13px] text-stone-400">No synced emails or meetings with this person.</div>
         ) : (
           <div className="space-y-1.5">
-            {timeline.map((m, i) => (
-              <div key={i} className="flex items-baseline gap-2 text-[13px] text-stone-600">
-                <span className="w-[64px] shrink-0 text-stone-400">{fmtDate(m.date)}</span>
-                <span className="shrink-0">{tlIcon(m)}</span>
-                <span className="min-w-0 flex-1 truncate">{m.text}</span>
-              </div>
-            ))}
+            {timeline.map((m, i) => {
+              const expandable = m.type === "log";
+              const isOpen = expandable && openRows.has(i);
+              return (
+                <div key={i} className="flex items-baseline gap-2 text-[13px] text-stone-600">
+                  <span className="w-[64px] shrink-0 text-stone-400">{fmtDate(m.date)}</span>
+                  <span className="shrink-0">{tlIcon(m)}</span>
+                  {expandable ? (
+                    <button
+                      type="button"
+                      onClick={() => setOpenRows((prev) => { const n = new Set(prev); if (n.has(i)) n.delete(i); else n.add(i); return n; })}
+                      className={`min-w-0 flex-1 text-left ${isOpen ? "whitespace-pre-wrap break-words" : "truncate"}`}
+                      title={isOpen ? undefined : "Click to read the full logged entry"}
+                    >
+                      {m.text}
+                    </button>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate">{m.text}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
