@@ -5,11 +5,16 @@ const serif = { fontFamily: "var(--font-playfair), Georgia, serif" };
 // Module-level LIFO stack of open modals. Only the topmost handles Escape.
 let modalStack: symbol[] = [];
 
-export function Modal({ title, onClose, children, describedById }: {
+export function Modal({ title, onClose, children, describedById, size }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   describedById?: string;
+  // Additive, backward-compatible width knob (Task 18). Omitted ⇒ "default"
+  // (620px, unchanged) so all existing People callers are unaffected. "wide"
+  // (760px) mirrors the artifact's `.modal-card.wide` for dialogs that need
+  // more room (e.g. PickGoalModal's goal list).
+  size?: "default" | "wide";
 }) {
   const titleId = useId();
   // Keep the latest onClose in a ref so the mount-only effect never needs it as a dependency.
@@ -38,7 +43,7 @@ export function Modal({ title, onClose, children, describedById }: {
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={describedById}
-        className="w-full max-w-[620px] max-h-[88vh] flex flex-col rounded-[14px] border border-stone-200 bg-white"
+        className={`w-full ${size === "wide" ? "max-w-[760px]" : "max-w-[620px]"} max-h-[88vh] flex flex-col rounded-[14px] border border-stone-200 bg-white`}
       >
         <div className="flex items-center justify-between gap-3 px-[18px] py-[15px] border-b border-stone-200">
           <span id={titleId} className="text-[17px] font-medium text-stone-900" style={serif}>{title}</span>
