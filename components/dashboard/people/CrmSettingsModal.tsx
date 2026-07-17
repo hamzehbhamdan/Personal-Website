@@ -30,11 +30,12 @@ const inputCls = "w-full rounded-[6px] border border-stone-200 px-2 py-1.5 text-
  * from the `db` prop captured at render — EXCEPT the "Import backup" path, which is an
  * intentional full-data REPLACE (confirm-gated) and so discards `prev` entirely, per the plan.
  */
-export function CrmSettingsModal({ db, live, setState, onClose }: {
+export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: {
   db: CrmDB;
   live: LiveState;
   setState: (u: (prev: CrmDB) => CrmDB) => void;
   onClose: () => void;
+  googleStatus?: "connected" | "error" | null;
 }) {
   const [showTiers, setShowTiers] = useState(false);
 
@@ -208,6 +209,24 @@ export function CrmSettingsModal({ db, live, setState, onClose }: {
   return (
     <>
       <Modal title="Settings" onClose={onClose}>
+        <div className={sectionCls}>
+          <label className={labelCls}>Google</label>
+          <div className={noteCls}>
+            Connect Google to sync Gmail subjects + Calendar, and to enable check-in send and learn-my-voice. Reading happens server-side; nothing is shared beyond Google and Claude.
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-stone-500" style={mono}>
+              {live.connected ? "Connected ✓" : live.syncing ? "Connecting…" : "Not connected"}
+            </span>
+            <a href="/api/google/connect" className={live.connected ? btnGhost : btnPrimary} style={mono}>
+              {live.connected ? "Reconnect Google" : "Connect Google"}
+            </a>
+          </div>
+          {googleStatus === "error" && (
+            <div className="mt-2 text-[11.5px] text-[#A51C30]">Last connection attempt failed — try again.</div>
+          )}
+        </div>
+
         <div className={sectionCls}>
           <label className={labelCls}>Your voice</label>
           <div className="mt-1 text-[11.5px] leading-relaxed text-stone-500">

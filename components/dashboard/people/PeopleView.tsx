@@ -58,6 +58,7 @@ export function PeopleView() {
     const g = params.get("google");
     if (g === "connected" || g === "error") {
       setGoogleStatus(g);
+      setSettings(true); // surface the connect result in Settings › Google (where the control lives)
       params.delete("google");
       const qs = params.toString();
       window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
@@ -109,39 +110,6 @@ export function PeopleView() {
         }
       />
 
-      {!live.connected && !live.syncing && db.contacts.length > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400" style={mono}>
-            Connect Google to sync Gmail + Calendar. Showing saved data.
-          </p>
-          <a
-            href="/api/google/connect"
-            className="rounded-[8px] bg-[#A51C30] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-white hover:bg-[#8a1728]"
-            style={mono}
-          >
-            Connect Google
-          </a>
-        </div>
-      )}
-      {live.connected && (
-        <a
-          href="/api/google/connect"
-          className="mb-4 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-stone-400 underline decoration-stone-300 underline-offset-2 hover:text-[#A51C30]"
-          style={mono}
-        >
-          Reconnect Google
-        </a>
-      )}
-      {googleStatus === "connected" && (
-        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500" style={mono}>
-          Google connected ✓
-        </p>
-      )}
-      {googleStatus === "error" && (
-        <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>
-          Google connection failed — try again.
-        </p>
-      )}
 
       {db.contacts.length === 0 ? (
         <EmptyOnboarding
@@ -225,7 +193,7 @@ export function PeopleView() {
           onClose={() => setOpenGroup(null)}
         />
       )}
-      {settings && <CrmSettingsModal db={db} live={live} setState={setState} onClose={() => setSettings(false)} />}
+      {settings && <CrmSettingsModal db={db} live={live} setState={setState} onClose={() => setSettings(false)} googleStatus={googleStatus} />}
 
       <AskPanel db={db} stateOf={stateOf} now={now} />
     </div>
