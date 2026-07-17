@@ -40,28 +40,33 @@ export function GroupUpdateDraft({ group, db, live, now }: {
   const emails = [...new Set(members.map((m) => contactEmails(m)[0]).filter(Boolean))];
   const hasRecipients = members.length > 0 && emails.length > 0;
 
+  const voice = db.settings.voice;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [length, setLength] = useState<"short" | "long">("short");
   const [mode, setMode] = useState<SendMode>("bcc");
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
+  const [createdDraft, setCreatedDraft] = useState(false);
+
+  const generate = (opts?: { tone?: string; length?: "short" | "long" }) => {
+    setLoading(true); setError(null); setCreatedDraft(false);
+    let prompt = buildGroupUpdatePrompt(group.name, group.notes ?? "", members.map((m) => m.name), voice);
+    if (opts?.tone) prompt += ` Adjust the tone to be more ${opts.tone}.`;
+    if ((opts?.length ?? length) === "long") prompt += ` Make it a bit longer.`;
+    askAi("group_update", prompt)
+      .then((r) => setText(r.trim().replace(/^["']|["']$/g, "")))
+      .catch((err) => setError(err instanceof Error && err.message ? err.message : "Drafting is unavailable right now."))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     if (!hasRecipients) { setLoading(false); return; }
-    let alive = true;
-    setLoading(true);
-    setError(null);
-    askAi("group_update", buildGroupUpdatePrompt(group.name, group.notes ?? "", members.map((m) => m.name)))
-      .then((r) => { if (alive) setText(r.trim().replace(/^["']|["']$/g, "")); })
-      .catch((err) => {
-        if (!alive) return;
-        setError(err instanceof Error && err.message ? err.message : "Drafting is unavailable right now.");
-      })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    generate();
     // Runs once per mount (component is toggled in/out by the parent) — mirrors CheckinDraft.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -98,28 +103,47 @@ export function GroupUpdateDraft({ group, db, live, now }: {
       setSaveMsg(mode === "to"
         ? `Saved to Gmail drafts ✓ (TO all: ${r.to.join(", ")})`
         : `Saved to Gmail drafts ✓ (BCC group: ${r.bcc.join(", ")})`);
+      setCreatedDraft(true);
     })
       .catch(() => setSaveMsg("Could not save draft."))
       .finally(() => { setSaving(false); setConfirming(false); });
+  };
+
+  // The created draft already has BCC/TO/subject/body set server-side via the API, so opening the
+  // Gmail Drafts list surfaces the freshly-created, prefilled draft without ever putting recipients
+  // (BCC) in a URL. We intentionally open the Drafts list rather than a per-draft deep link because
+  // the draft-resource id returned by the API is not the Gmail message id a compose deep-link needs,
+  // and the Drafts-list URL is reliable across accounts.
+  const openInGmail = () => {
+    if (typeof window !== "undefined") window.open("https://mail.google.com/mail/u/0/#drafts", "_blank", "noopener,noreferrer");
   };
 
   return (
     <div className="mt-3 rounded-[10px] border border-stone-200 p-3">
       <textarea
         value={text}
-        onChange={(e) => { setText(e.target.value); setCopyMsg(null); }}
+        onChange={(e) => { setText(e.target.value); setCopyMsg(null); setCreatedDraft(false); }}
         rows={6}
         className="w-full rounded-[8px] border border-stone-200 p-2.5 text-[13px] text-stone-800 outline-none focus:border-[#A51C30]"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => generate()} className={btnGhost} style={mono}>Regenerate</button>
+        <button type="button" onClick={() => generate({ tone: "warmer" })} className={btnGhost} style={mono}>Warmer</button>
+        <button type="button" onClick={() => generate({ tone: "more casual" })} className={btnGhost} style={mono}>Casual</button>
+        <button type="button" onClick={() => { const n = length === "short" ? "long" : "short"; setLength(n); generate({ length: n }); }} className={btnGhost} style={mono}>
+          {length === "short" ? "Longer" : "Shorter"}
+        </button>
         <button type="button" onClick={handleCopy} className={btnGhost} style={mono}>
           Copy
         </button>
+        {copyMsg && <span className="text-[12px] text-stone-500">{copyMsg}</span>}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-2">
         <label className="flex items-center gap-1.5 text-[12px] text-stone-500">
           Send as
           <select
             value={mode}
-            onChange={(e) => { setMode(e.target.value as SendMode); setConfirming(false); }}
+            onChange={(e) => { setMode(e.target.value as SendMode); setConfirming(false); setCreatedDraft(false); }}
             className={selectCls}
           >
             <option value="bcc">BCC — private (recommended)</option>
@@ -131,7 +155,6 @@ export function GroupUpdateDraft({ group, db, live, now }: {
             Save to Gmail draft
           </button>
         )}
-        {copyMsg && <span className="text-[12px] text-stone-500">{copyMsg}</span>}
       </div>
       <div className="mt-1.5 text-[11.5px] text-stone-500">{hint}</div>
 
@@ -152,7 +175,16 @@ export function GroupUpdateDraft({ group, db, live, now }: {
         </div>
       )}
 
-      {saveMsg && <div className="mt-2 text-[12px] text-stone-600">{saveMsg}</div>}
+      {saveMsg && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-stone-600">
+          <span>{saveMsg}</span>
+          {createdDraft && (
+            <button type="button" onClick={openInGmail} className={btnPrimary} style={mono}>
+              Open in Gmail
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
