@@ -10,6 +10,8 @@ import { summaryCounts } from "@/lib/dashboard/people/select";
 import { AttentionList } from "./AttentionList";
 import { PeopleList } from "./PeopleList";
 import { GroupsList } from "./GroupsList";
+import { NetworkPanel } from "./NetworkPanel";
+import { LinkModal } from "./LinkModal";
 import { ContactDetailModal } from "./ContactDetailModal";
 import { ContactEditModal } from "./ContactEditModal";
 import { GroupEditModal } from "./GroupEditModal";
@@ -19,7 +21,7 @@ import { EmptyOnboarding } from "./EmptyOnboarding";
 import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
 import type { ViewIntent } from "@/lib/dashboard/nav";
 
-type Seg = "attention" | "people" | "groups";
+type Seg = "attention" | "people" | "groups" | "network";
 type GoogleStatus = "connected" | "error" | null;
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -50,6 +52,7 @@ export function PeopleView({
   const [editContact, setEditContact] = useState<{ id: string | null; prefill?: string } | null>(null);
   const [openGroup, setOpenGroup] = useState<string | "new" | null>(null);
   const [settings, setSettings] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
 
   // Read the ?google=connected|error status set by app/api/google/callback's redirect. Read via
   // window.location.search in an effect (not useSearchParams) so this component never requires a
@@ -156,6 +159,7 @@ export function PeopleView({
               { value: "attention", label: "Attention" },
               { value: "people", label: "People" },
               { value: "groups", label: `Groups${db.groups.length ? ` (${db.groups.length})` : ""}` },
+              { value: "network", label: "Network" },
             ]}
           />
 
@@ -180,6 +184,9 @@ export function PeopleView({
             )}
             {seg === "groups" && (
               <GroupsList db={db} now={now} live={live} onOpenGroup={setOpenGroup} onNewGroup={() => setOpenGroup("new")} />
+            )}
+            {seg === "network" && (
+              <NetworkPanel db={db} setState={setState} onOpenContact={setOpenContact} onOpenLink={() => setLinkOpen(true)} />
             )}
           </div>
         </>
@@ -217,6 +224,7 @@ export function PeopleView({
         />
       )}
       {settings && <CrmSettingsModal db={db} live={live} setState={setState} onClose={() => setSettings(false)} googleStatus={googleStatus} />}
+      {linkOpen && <LinkModal db={db} setState={setState} isOverdue={(c) => stateOf(c).overdue} onClose={() => setLinkOpen(false)} />}
 
       <AskPanel db={db} stateOf={stateOf} now={now} />
     </div>

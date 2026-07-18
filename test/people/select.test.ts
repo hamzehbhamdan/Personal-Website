@@ -8,7 +8,7 @@ import type { CrmDB } from "@/lib/dashboard/people/types";
 
 const NOW = new Date("2026-07-11T12:00:00Z");
 const db = (): CrmDB => ({
-  version: 1, dismissed: [], settings: { autoTags: false },
+  version: 1, dismissed: [], connections: [], settings: { autoTags: false },
   tiers: [{ name: "Friends", cadenceDays: 60, color: "#000" }, { name: "Inner circle", cadenceDays: 21, color: "#000" }],
   contacts: [
     { id: "a@x.com", name: "Amir Khan", emails: ["a@x.com"], phone: "+1", tier: "Friends", cadenceDays: 60, tags: ["hiking"], notes: "loves hiking", lastTouch: "2026-03-01T00:00:00Z", snoozeUntil: null, log: [] },

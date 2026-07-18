@@ -46,6 +46,9 @@ export interface VoiceProfile {
 }
 export interface CrmSettings { autoTags: boolean; voice?: VoiceProfile; }
 
+/** Undirected contact↔contact relationship. Canonical: a < b (see lib/dashboard/people/connections.ts). */
+export interface Edge { a: string; b: string; }
+
 export interface CrmDB {
   version: number;
   contacts: Contact[];
@@ -53,6 +56,7 @@ export interface CrmDB {
   dismissed: string[];
   tiers: Tier[];
   settings: CrmSettings;
+  connections: Edge[];
 }
 
 // ---- live (never persisted) interaction maps ----

@@ -1,6 +1,7 @@
 import { DEFAULT_TIERS } from "./tiers";
+import { pruneEdges } from "./connections";
 import type { CrmDB, CrmSettings, VoiceProfile } from "./types";
-export const emptyDb = (): CrmDB => ({ version: 1, contacts: [], groups: [], dismissed: [], tiers: DEFAULT_TIERS.map((t) => ({ ...t })), settings: { autoTags: false } });
+export const emptyDb = (): CrmDB => ({ version: 1, contacts: [], groups: [], dismissed: [], tiers: DEFAULT_TIERS.map((t) => ({ ...t })), settings: { autoTags: false }, connections: [] });
 
 function normalizeVoice(v: any): VoiceProfile | undefined {
   if (!v || typeof v !== "object") return undefined;
@@ -46,6 +47,10 @@ export function normalizeDb(raw: any): CrmDB {
   const settings: CrmSettings = { autoTags: !!rs.autoTags };
   const voice = normalizeVoice(rs.voice);
   if (voice) settings.voice = voice;
+  // connections must be threaded through EXPLICITLY — the return literal is the
+  // schema gate, so an unlisted top-level field would be dropped on every load.
+  // Prune to canonical, non-dangling, deduped edges over the current contacts.
+  const contactIds = new Set<string>(contacts.map((c: any) => c?.id).filter(Boolean));
   return {
     version: typeof r.version === "number" ? r.version : 1,
     contacts,
@@ -53,6 +58,7 @@ export function normalizeDb(raw: any): CrmDB {
     dismissed: Array.isArray(r.dismissed) ? [...r.dismissed] : [],
     tiers,
     settings,
+    connections: pruneEdges(r.connections, contactIds),
   };
 }
 export function validateBackup(obj: any): { ok: boolean; reason?: string } {

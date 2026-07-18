@@ -4,7 +4,7 @@ import { migrateTiers, tierCad, tierColor, tierNames, DEFAULT_TIERS } from "@/li
 import type { CrmDB } from "@/lib/dashboard/people/types";
 
 const base = (): CrmDB => ({
-  version: 1, dismissed: [], settings: { autoTags: false },
+  version: 1, dismissed: [], connections: [], settings: { autoTags: false },
   tiers: [{ name: "Inner circle", cadenceDays: 21, color: "#bf6129" }, { name: "College", cadenceDays: 45, color: "#6d7740" }],
   contacts: [
     { id: "a", name: "A", emails: [], tier: "College", tags: [], lastTouch: null, snoozeUntil: null, log: [] },

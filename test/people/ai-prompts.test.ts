@@ -4,7 +4,7 @@ import { state } from "@/lib/dashboard/people/state";
 import type { CrmDB } from "@/lib/dashboard/people/types";
 
 const NOW = new Date("2026-07-11T12:00:00Z");
-const db = (): CrmDB => ({ version: 1, dismissed: [], settings: { autoTags: false }, tiers: [{ name: "Friends", cadenceDays: 60, color: "#000" }], groups: [],
+const db = (): CrmDB => ({ version: 1, dismissed: [], connections: [], settings: { autoTags: false }, tiers: [{ name: "Friends", cadenceDays: 60, color: "#000" }], groups: [],
   contacts: [{ id: "a@x.com", name: "Amir", emails: ["amir@secret.com"], phone: "+1 555 999 8888", tier: "Friends", tags: ["gym"], notes: "n", lastTouch: null, snoozeUntil: null, log: [] }] });
 
 describe("ai prompts", () => {
