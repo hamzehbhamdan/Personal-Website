@@ -21,27 +21,6 @@
 create extension if not exists vector;
 
 -- ---------------------------------------------------------------
--- profiles — user settings, keyed by the auth user id.
--- ---------------------------------------------------------------
-create table if not exists public.profiles (
-  id uuid references auth.users on delete cascade primary key,
-  updated_at timestamptz default timezone('utc', now()) not null,
-  background text,
-  font text default 'var(--font-geist-sans)',
-  widgets jsonb default '["clock", "focus"]'::jsonb,
-  glass_opacity integer default 20,
-  glass_blur integer default 16,
-  theme text default 'glass',
-  primary_color text default '#ffffff',
-  theme_mode text default 'dark',
-  recent_backgrounds text[] default '{}'::text[]
-);
-alter table public.profiles enable row level security;
-drop policy if exists "owner_all_profiles" on public.profiles;
-create policy "owner_all_profiles" on public.profiles for all
-  using (auth.uid() = id) with check (auth.uid() = id);
-
--- ---------------------------------------------------------------
 -- projects
 -- ---------------------------------------------------------------
 create table if not exists public.projects (
@@ -173,52 +152,6 @@ revoke all on function public.match_documents(vector, double precision, int) fro
 grant execute on function public.match_documents(vector, double precision, int) to authenticated;
 
 -- ---------------------------------------------------------------
--- notes
--- ---------------------------------------------------------------
-create table if not exists public.notes (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users on delete cascade,
-  content text default '',
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-alter table public.notes enable row level security;
-drop policy if exists "owner_all_notes" on public.notes;
-create policy "owner_all_notes" on public.notes for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- ---------------------------------------------------------------
--- focus_sessions
--- ---------------------------------------------------------------
-create table if not exists public.focus_sessions (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users on delete cascade,
-  duration integer not null,                  -- seconds
-  created_at timestamptz default timezone('utc', now()) not null
-);
-alter table public.focus_sessions enable row level security;
-drop policy if exists "owner_all_focus_sessions" on public.focus_sessions;
-create policy "owner_all_focus_sessions" on public.focus_sessions for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- ---------------------------------------------------------------
--- neural_chats — AI transcripts.
--- ---------------------------------------------------------------
-create table if not exists public.neural_chats (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users on delete cascade,
-  title text default 'Untitled Transmission',
-  messages jsonb default '[]'::jsonb,
-  is_pinned boolean default false,
-  created_at timestamptz default timezone('utc', now()) not null,
-  updated_at timestamptz default timezone('utc', now()) not null
-);
-alter table public.neural_chats enable row level security;
-drop policy if exists "owner_all_neural_chats" on public.neural_chats;
-create policy "owner_all_neural_chats" on public.neural_chats for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- ---------------------------------------------------------------
 -- user_vector_stores — maps the owner to their OpenAI vector store ids.
 -- ---------------------------------------------------------------
 create table if not exists public.user_vector_stores (
@@ -253,25 +186,6 @@ create policy "owner_all_sprints" on public.sprints for all
 
 -- tasks.sprint_id (added after sprints exists).
 alter table public.tasks add column if not exists sprint_id uuid references public.sprints(id) on delete set null;
-
--- ---------------------------------------------------------------
--- calendar_events
--- ---------------------------------------------------------------
-create table if not exists public.calendar_events (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid not null references auth.users on delete cascade,
-  title text not null,
-  description text,
-  start_time timestamptz not null,
-  end_time timestamptz not null,
-  location text,
-  color text,
-  created_at timestamptz default timezone('utc', now()) not null
-);
-alter table public.calendar_events enable row level security;
-drop policy if exists "owner_all_calendar_events" on public.calendar_events;
-create policy "owner_all_calendar_events" on public.calendar_events for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------
 -- app_state — per-user, per-app JSONB state blob (lifeCRM, execCoach).

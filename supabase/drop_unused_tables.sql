@@ -1,33 +1,26 @@
 -- =============================================================
--- drop_unused_tables.sql — OPTIONAL cleanup of dead relational tables.
+-- drop_unused_tables.sql — remove 5 dead relational tables from the LIVE DB.
 --
--- ⚠ DESTRUCTIVE + IRREVERSIBLE. Run manually in the Supabase SQL editor,
--- and ONLY after STEP 1 confirms each table is empty. Claude cannot run this
--- for you (no access to your live DB) and did not execute it.
+-- Owner confirmed (2026-07): the pre-redesign dashboard was NEVER used in
+-- production and all 5 of these tables are EMPTY — no data to lose. (Corollary:
+-- `profiles` is empty despite an existing auth account, so there is no
+-- handle_new_user trigger to break by dropping it.)
 --
--- Context: the redesign moved live data into the `app_state` JSONB store, so a
--- number of the original relational tables are no longer read or written by any
--- current code path (verified by grepping every .from("<table>") / .rpc site).
+-- Run this ONCE in the Supabase SQL editor. Claude has no access to your live
+-- DB and did not run it. schema.sql has already been updated to stop defining
+-- these tables, so a fresh bootstrap won't recreate them.
 --
--- SCOPE DECISION (important):
---   These 5 tables are dropped because they are BOTH unused today AND unrelated
---   to the two features you want to re-integrate later:
---       profiles, notes, focus_sessions, neural_chats, calendar_events
+-- Unused by all current code (only the removed pre-redesign components ever
+-- referenced them; the live app persists to `app_state`):
+--     profiles, notes, focus_sessions, neural_chats, calendar_events
 --
---   DELIBERATELY PRESERVED (do NOT drop — the TaskBoard + contacts graph views
---   you plan to re-integrate depend on these, even though current code doesn't
---   query them yet):
---       tasks, projects, sprints, subtasks   (TaskBoard)
---       contacts, contact_connections        (contacts network graph)
---
---   LIVE — never touch:
---       documents, user_vector_stores, app_state, google_tokens
+-- PRESERVED (still in schema.sql): tasks, projects, sprints, subtasks,
+--   contacts, contact_connections — back the TaskBoard + contacts-graph views
+--   you plan to re-integrate (and tasks/contacts are read by /api/chat tools).
+-- LIVE — never touch: documents, user_vector_stores, app_state, google_tokens
 -- =============================================================
 
--- ---------------------------------------------------------------
--- STEP 1 — VERIFY EMPTY (run this first; expect 0 for every count).
--- If any count is > 0, STOP and export/inspect that table before dropping.
--- ---------------------------------------------------------------
+-- Optional final sanity check — expect 0 in every column before dropping.
 select
   (select count(*) from public.profiles)        as profiles,
   (select count(*) from public.notes)           as notes,
@@ -35,14 +28,11 @@ select
   (select count(*) from public.neural_chats)    as neural_chats,
   (select count(*) from public.calendar_events) as calendar_events;
 
--- ---------------------------------------------------------------
--- STEP 2 — DROP (only after STEP 1 shows all zeros).
--- Uncomment the block below to execute. No CASCADE: none of these are FK
--- targets of any preserved table, so a plain DROP is safe and will error out
--- (rather than silently cascade) if that assumption ever changes.
--- ---------------------------------------------------------------
--- drop table if exists public.profiles;
--- drop table if exists public.notes;
--- drop table if exists public.focus_sessions;
--- drop table if exists public.neural_chats;
--- drop table if exists public.calendar_events;
+-- Drop (confirmed empty). No CASCADE: none of these are FK targets of a
+-- preserved table, so a plain DROP is safe and will error out rather than
+-- silently cascade if that ever changes.
+drop table if exists public.profiles;
+drop table if exists public.notes;
+drop table if exists public.focus_sessions;
+drop table if exists public.neural_chats;
+drop table if exists public.calendar_events;
