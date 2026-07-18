@@ -10,8 +10,8 @@ function db(): CoachDB {
     version: 3, matters: "", memory: "", intakeDone: {}, planDone: {}, weekPlan: {},
     goals: [{ id: "g1", horizon: "month", period: "2026-07", title: "Ship", parentId: "", recurring: true, useManual: false, manualProgress: 0, notes: "" }],
     tasks: [
-      { id: "t1", goalId: "g1", week: prev, label: "Recurring task", pts: 2, note: "", tag: "", done: true, doneAt: "x", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
-      { id: "t2", goalId: "g1", week: prev, label: "Unfinished", pts: 3, note: "n", tag: "", done: false, doneAt: null, subs: [], collapsed: false, timeMs: 5000, timerStart: null, createdAt: "x" },
+      { id: "t1", goalId: "g1", week: prev, label: "Recurring task", pts: 2, note: "", tag: "", done: true, doneAt: "x", stage: "done", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
+      { id: "t2", goalId: "g1", week: prev, label: "Unfinished", pts: 3, note: "n", tag: "", done: false, doneAt: null, stage: "todo", subs: [], collapsed: false, timeMs: 5000, timerStart: null, createdAt: "x" },
     ],
   };
 }

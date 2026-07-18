@@ -4,7 +4,7 @@ import { periodRange } from "./periods";
 
 export const uid = (p = "x"): string => p + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
 
-/** v2->v3 migration. MUTATES `raw` (via normalize) — pass a structuredClone. */
+/** v2->v4 migration. MUTATES `raw` (via normalize) — pass a structuredClone. */
 export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachDB {
   const db = normalize(raw);
   const wk = periodRange("week", 0, today).key;
@@ -27,6 +27,10 @@ export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachD
     if (t.collapsed == null) t.collapsed = false;
     if (t.doneAt === undefined) t.doneAt = t.done ? new Date().toISOString() : null;
     if (t.createdAt == null) t.createdAt = new Date().toISOString();
+    // stage (v4): enforce the invariant stage==="done" ⇔ done===true. `done` wins;
+    // otherwise backfill/repair to "todo", preserving a valid mid-stage "doing".
+    if (t.done) t.stage = "done";
+    else if (t.stage !== "todo" && t.stage !== "doing") t.stage = "todo";
   });
   const board: any = db.board;
   if (board && Array.isArray(board.tasks)) {
@@ -39,12 +43,13 @@ export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachD
         pts: bt.subs && bt.subs.length ? 0 : +bt.pts || 1,
         note: bt.note || "", tag: bt.tag || secName[bt.sectionId] || "",
         done: !!bt.done, doneAt: bt.done ? new Date().toISOString() : null,
+        stage: bt.done ? "done" : "todo",
         subs, collapsed: false, timeMs: 0, timerStart: null, createdAt: new Date().toISOString(),
       };
       db.tasks.push(t);
     });
     delete db.board;
   }
-  db.version = 3;
+  db.version = 4;
   return db;
 }

@@ -1,5 +1,8 @@
 export type Horizon = "week" | "month" | "quarter" | "year";
 
+/** Kanban stage. Invariant: stage==="done" ⇔ done===true (enforced in migrate + applyStage). */
+export type TaskStage = "todo" | "doing" | "done";
+
 export interface Sub {
   id: string;
   label: string;
@@ -18,6 +21,7 @@ export interface Task {
   tag: string;
   done: boolean;
   doneAt: string | null;     // ISO
+  stage: TaskStage;          // kanban column; mirrors done (see TaskStage invariant)
   subs: Sub[];
   collapsed: boolean;        // persisted (coach.html:413)
   timeMs: number;            // accumulated tracked time

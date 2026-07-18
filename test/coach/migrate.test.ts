@@ -12,10 +12,10 @@ const old: any = {
     tasks: [{ id: "bt1", sectionId: "sec1", label: "Groceries", pts: 2, tag: "", note: "", done: false, subs: [{ id: "bs1", label: "Milk", pts: 1, done: false }] }] },
 };
 
-describe("migrate v2 -> v3", () => {
+describe("migrate v2 -> v4", () => {
   it("bumps version and drops board", () => {
     const db = migrate(structuredClone(old), TODAY);
-    expect(db.version).toBe(3);
+    expect(db.version).toBe(4);
     expect(db.board).toBeUndefined();
   });
   it("produces 3 tasks: 2 migrated + 1 board->unfiled", () => {
@@ -34,5 +34,39 @@ describe("migrate v2 -> v3", () => {
     const t1 = db.tasks.find((t) => t.label === "Trash")!;
     expect(t1.pts).toBe(1); expect(t1.timeMs).toBe(0); expect(t1.timerStart).toBe(null);
     expect(t1.week).toBe("W2026-07-06");             // null week -> current week key
+  });
+});
+
+describe("migrate v4 — Task.stage backfill + invariant", () => {
+  it("backfills stage from done for legacy tasks", () => {
+    const db = migrate(structuredClone(old), TODAY);
+    expect(db.tasks.find((t) => t.label === "Trash")!.stage).toBe("done");   // done:true
+    expect(db.tasks.find((t) => t.label === "Dishes")!.stage).toBe("todo");  // done:false
+    expect(db.tasks.find((t) => t.label === "Groceries")!.stage).toBe("todo"); // board task, done:false
+  });
+
+  it("enforces stage==='done' ⇔ done===true even against a contradictory stored stage", () => {
+    const bad: any = {
+      version: 3, matters: "", memory: "", intakeDone: {}, goals: [],
+      tasks: [
+        { id: "a", goalId: "", week: "W2026-07-06", label: "done-but-todo", pts: 1, note: "", tag: "",
+          done: true, doneAt: "x", stage: "todo", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
+        { id: "b", goalId: "", week: "W2026-07-06", label: "open-but-done", pts: 1, note: "", tag: "",
+          done: false, doneAt: null, stage: "done", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
+        { id: "c", goalId: "", week: "W2026-07-06", label: "in-progress", pts: 1, note: "", tag: "",
+          done: false, doneAt: null, stage: "doing", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
+      ],
+    };
+    const db = migrate(structuredClone(bad), TODAY);
+    expect(db.tasks.find((t) => t.id === "a")!.stage).toBe("done"); // done:true wins
+    expect(db.tasks.find((t) => t.id === "b")!.stage).toBe("todo"); // !done + stale "done" -> todo
+    expect(db.tasks.find((t) => t.id === "c")!.stage).toBe("doing"); // valid mid-stage preserved
+  });
+
+  it("is idempotent on stage", () => {
+    const once = migrate(structuredClone(old), TODAY);
+    const twice = migrate(structuredClone(once), TODAY);
+    expect(twice.tasks.map((t) => t.stage)).toEqual(once.tasks.map((t) => t.stage));
+    expect(twice.version).toBe(4);
   });
 });

@@ -5,7 +5,7 @@ import type { CoachDB } from "../../lib/dashboard/coach/types";
 const db: CoachDB = {
   version: 3, matters: "", memory: "", intakeDone: {}, planDone: {}, weekPlan: {},
   goals: [{ id: "g1", horizon: "month", period: "2026-07", title: "Ship board", parentId: "", recurring: false, useManual: false, manualProgress: 0, notes: "" }],
-  tasks: [{ id: "t1", goalId: "g1", week: "W", label: "Wire board", pts: 1, note: "", tag: "", done: false, doneAt: null,
+  tasks: [{ id: "t1", goalId: "g1", week: "W", label: "Wire board", pts: 1, note: "", tag: "", done: false, doneAt: null, stage: "todo",
     subs: [{ id: "s", label: "onboard flow", pts: 1, meta: "", done: false }], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" }],
 };
 

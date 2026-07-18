@@ -59,6 +59,7 @@ export function GoalSection({
         tag: "",
         done: false,
         doneAt: null,
+        stage: "todo",
         subs: [],
         collapsed: false,
         timeMs: 0,

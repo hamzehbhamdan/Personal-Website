@@ -3,7 +3,7 @@ import { startTimer, pauseTimer, resetTimer, fmtDur, fmtHM } from "../../lib/das
 import type { Task } from "../../lib/dashboard/coach/types";
 
 const mk = (id: string, over: Partial<Task> = {}): Task =>
-  ({ id, goalId: "", week: "W", label: id, pts: 1, note: "", tag: "", done: false, doneAt: null, subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x", ...over });
+  ({ id, goalId: "", week: "W", label: id, pts: 1, note: "", tag: "", done: false, doneAt: null, stage: "todo", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x", ...over });
 
 describe("timers (single-runner, pure)", () => {
   it("startTimer stops any other runner and starts the target", () => {

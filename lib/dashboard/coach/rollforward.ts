@@ -16,7 +16,7 @@ export interface RollForwardSelections { recurGoalIds: string[]; carryTaskIds: s
 const cloneSubs = (subs: Sub[] = []): Sub[] => subs.map((s) => ({ id: uid("s"), label: s.label, pts: s.pts, meta: s.meta, done: false }));
 const freshTask = (over: Partial<Task>): Task => ({
   id: uid("t"), goalId: "", week: "", label: "Task", pts: 1, note: "", tag: "", done: false, doneAt: null,
-  subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: new Date().toISOString(), ...over,
+  stage: "todo", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: new Date().toISOString(), ...over,
 });
 const ensurePlan = (db: CoachDB, wk: string, gid: string) => { if (gid) { (db.weekPlan[wk] ||= []); if (!db.weekPlan[wk].includes(gid)) db.weekPlan[wk].push(gid); } };
 

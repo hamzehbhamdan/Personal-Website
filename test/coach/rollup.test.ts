@@ -9,8 +9,8 @@ function scenario(t1Done: boolean): CoachDB {
     version: 3, matters: "", memory: "", intakeDone: {}, weekPlan: {}, planDone: {},
     goals: [g("y", "year", ""), g("q", "quarter", "y"), g("m", "month", "q")],
     tasks: [
-      { id: "t1", goalId: "m", week: "W", label: "Wire", pts: 3, note: "", tag: "", done: t1Done, doneAt: t1Done ? "x" : null, subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
-      { id: "t2", goalId: "m", week: "W", label: "Laundry", pts: 0, note: "", tag: "", done: false, doneAt: null,
+      { id: "t1", goalId: "m", week: "W", label: "Wire", pts: 3, note: "", tag: "", done: t1Done, doneAt: t1Done ? "x" : null, stage: t1Done ? "done" : "todo", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
+      { id: "t2", goalId: "m", week: "W", label: "Laundry", pts: 0, note: "", tag: "", done: false, doneAt: null, stage: "todo",
         subs: [{ id: "s1", label: "Fold", pts: 2, meta: "", done: true }, { id: "s2", label: "Put away", pts: 2, meta: "", done: false }],
         collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" },
     ],

@@ -186,6 +186,7 @@ export function GoalModal({
         tag: "",
         done: false,
         doneAt: null,
+        stage: "todo",
         subs: [],
         collapsed: false,
         timeMs: 0,

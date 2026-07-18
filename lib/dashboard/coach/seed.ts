@@ -1,7 +1,7 @@
 import type { CoachDB, Goal } from "./types";
 
 export function emptyCoachDB(): CoachDB {
-  return { version: 3, goals: [], tasks: [], matters: "", memory: "",
+  return { version: 4, goals: [], tasks: [], matters: "", memory: "",
     intakeDone: {}, weekPlan: {}, planDone: {} };
 }
 

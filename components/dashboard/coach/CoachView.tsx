@@ -20,6 +20,7 @@ import type { Overlay, JumpTo } from "./overlay";
 import { SearchOverlay } from "./SearchOverlay";
 import { WeekBoard } from "./WeekBoard";
 import { HigherHorizon } from "./HigherHorizon";
+import { BoardPanel } from "./BoardPanel";
 import { GoalModal } from "./GoalModal";
 import { TaskModal } from "./TaskModal";
 import { SubtaskModal } from "./SubtaskModal";
@@ -47,6 +48,11 @@ export function CoachView({
   const [horizon, setHorizon] = useState<Horizon>("week");
   const [offset, setOffset] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>({ kind: "none" });
+  // Top-level sub-view. "plan" = the goal/period surface (horizon + week board);
+  // "board" = the status kanban. `boardOffset` is the board's own week cursor
+  // (shared with Metrics in a later slice), independent of the Plan horizon/offset.
+  const [pane, setPane] = useState<"plan" | "board">("plan");
+  const [boardOffset, setBoardOffset] = useState(0);
   // Backing state for the search toggle (⌕) — SearchOverlay mounts below the
   // header while true (coach.html:198,204-207's `searchWrap`/`show`).
   const [searchOpen, setSearchOpen] = useState(false);
@@ -98,6 +104,7 @@ export function CoachView({
   }, [initialSelect, loaded]);
 
   const r = periodRange(horizon, offset, TODAY);
+  const boardWeek = periodRange("week", boardOffset, TODAY);
 
   if (!loaded) {
     return (
@@ -142,55 +149,88 @@ export function CoachView({
         }
       />
 
-      {searchOpen && (
-        <SearchOverlay db={db} today={TODAY} jumpTo={jumpTo} onClose={() => setSearchOpen(false)} />
-      )}
-
-      <Segmented<Horizon>
-        options={HORIZONS.map(([v, label]) => ({ value: v, label }))}
-        value={horizon}
-        onChange={(h) => {
-          setHorizon(h);
-          setOffset(0);
-        }}
-      />
-
-      <div className="mt-5">
-        <IntakeBanner
-          db={db}
-          horizon={horizon}
-          offset={offset}
-          today={TODAY}
-          onStart={(hs) => setOverlay({ kind: "intake", horizons: hs })}
+      <div className="mt-4">
+        <Segmented<"plan" | "board">
+          options={[
+            { value: "plan", label: "Plan" },
+            { value: "board", label: "Board" },
+          ]}
+          value={pane}
+          onChange={setPane}
         />
+      </div>
 
-        <PeriodBar
-          label={r.label}
-          now={offset === 0 ? "current " + horizon : offset > 0 ? "upcoming" : "past"}
-          db={db}
-          horizon={horizon}
-          offset={offset}
-          today={TODAY}
-          onPrev={() => setOffset((o) => o - 1)}
-          onNext={() => setOffset((o) => o + 1)}
-        />
+      {pane === "plan" ? (
+        <>
+          {searchOpen && (
+            <SearchOverlay db={db} today={TODAY} jumpTo={jumpTo} onClose={() => setSearchOpen(false)} />
+          )}
 
-        <div className="mt-6">
-          {horizon === "week" ? (
-            <WeekBoard db={db} offset={offset} today={TODAY} mutate={mutate} setOverlay={setOverlay} />
-          ) : (
-            <HigherHorizon
+          <div className="mt-4">
+            <Segmented<Horizon>
+              options={HORIZONS.map(([v, label]) => ({ value: v, label }))}
+              value={horizon}
+              onChange={(h) => {
+                setHorizon(h);
+                setOffset(0);
+              }}
+            />
+          </div>
+
+          <div className="mt-5">
+            <IntakeBanner
               db={db}
               horizon={horizon}
               offset={offset}
               today={TODAY}
-              mutate={mutate}
-              setOverlay={setOverlay}
-              jumpTo={jumpTo}
+              onStart={(hs) => setOverlay({ kind: "intake", horizons: hs })}
             />
-          )}
+
+            <PeriodBar
+              label={r.label}
+              now={offset === 0 ? "current " + horizon : offset > 0 ? "upcoming" : "past"}
+              db={db}
+              horizon={horizon}
+              offset={offset}
+              today={TODAY}
+              onPrev={() => setOffset((o) => o - 1)}
+              onNext={() => setOffset((o) => o + 1)}
+            />
+
+            <div className="mt-6">
+              {horizon === "week" ? (
+                <WeekBoard db={db} offset={offset} today={TODAY} mutate={mutate} setOverlay={setOverlay} />
+              ) : (
+                <HigherHorizon
+                  db={db}
+                  horizon={horizon}
+                  offset={offset}
+                  today={TODAY}
+                  mutate={mutate}
+                  setOverlay={setOverlay}
+                  jumpTo={jumpTo}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-5">
+          <PeriodBar
+            label={boardWeek.label}
+            now={boardOffset === 0 ? "current week" : boardOffset > 0 ? "upcoming" : "past"}
+            db={db}
+            horizon="week"
+            offset={boardOffset}
+            today={TODAY}
+            onPrev={() => setBoardOffset((o) => o - 1)}
+            onNext={() => setBoardOffset((o) => o + 1)}
+          />
+          <div className="mt-6">
+            <BoardPanel db={db} mutate={mutate} setOverlay={setOverlay} weekKey={boardWeek.key} />
+          </div>
         </div>
-      </div>
+      )}
 
       {overlay.kind === "goal" && (
         <GoalModal

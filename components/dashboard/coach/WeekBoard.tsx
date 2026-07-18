@@ -97,6 +97,7 @@ export function WeekBoard({
         tag: "",
         done: false,
         doneAt: null,
+        stage: "todo",
         subs: [],
         collapsed: false,
         timeMs: 0,
