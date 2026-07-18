@@ -21,6 +21,7 @@ import { SearchOverlay } from "./SearchOverlay";
 import { WeekBoard } from "./WeekBoard";
 import { HigherHorizon } from "./HigherHorizon";
 import { BoardPanel } from "./BoardPanel";
+import { MetricsPanel } from "./MetricsPanel";
 import { GoalModal } from "./GoalModal";
 import { TaskModal } from "./TaskModal";
 import { SubtaskModal } from "./SubtaskModal";
@@ -51,7 +52,7 @@ export function CoachView({
   // Top-level sub-view. "plan" = the goal/period surface (horizon + week board);
   // "board" = the status kanban. `boardOffset` is the board's own week cursor
   // (shared with Metrics in a later slice), independent of the Plan horizon/offset.
-  const [pane, setPane] = useState<"plan" | "board">("plan");
+  const [pane, setPane] = useState<"plan" | "board" | "metrics">("plan");
   const [boardOffset, setBoardOffset] = useState(0);
   // Backing state for the search toggle (⌕) — SearchOverlay mounts below the
   // header while true (coach.html:198,204-207's `searchWrap`/`show`).
@@ -150,10 +151,11 @@ export function CoachView({
       />
 
       <div className="mt-4">
-        <Segmented<"plan" | "board">
+        <Segmented<"plan" | "board" | "metrics">
           options={[
             { value: "plan", label: "Plan" },
             { value: "board", label: "Board" },
+            { value: "metrics", label: "Metrics" },
           ]}
           value={pane}
           onChange={setPane}
@@ -227,7 +229,11 @@ export function CoachView({
             onNext={() => setBoardOffset((o) => o + 1)}
           />
           <div className="mt-6">
-            <BoardPanel db={db} mutate={mutate} setOverlay={setOverlay} weekKey={boardWeek.key} />
+            {pane === "board" ? (
+              <BoardPanel db={db} mutate={mutate} setOverlay={setOverlay} weekKey={boardWeek.key} />
+            ) : (
+              <MetricsPanel db={db} weekKey={boardWeek.key} today={TODAY} />
+            )}
           </div>
         </div>
       )}
