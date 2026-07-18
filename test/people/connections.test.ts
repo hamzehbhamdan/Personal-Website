@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  canonEdge, edgeKey, hasEdge, addEdge, removeEdge, cliqueEdges, mergeClique, neighbors, pruneEdges,
+  canonEdge, edgeKey, hasEdge, addEdge, removeEdge, cliqueEdges, mergeClique, neighbors, pruneEdges, shortestPath,
 } from "../../lib/dashboard/people/connections";
 import { emptyDb, normalizeDb } from "../../lib/dashboard/people/backup";
 import type { Edge } from "../../lib/dashboard/people/types";
@@ -81,6 +81,25 @@ describe("pruneEdges", () => {
     const raw: any = [{ a: "b", b: "a" }, { a: "a", b: "x" }, { a: "a", b: "a" }, { a: "a", b: "b" }];
     const out = pruneEdges(raw, new Set(["a", "b"]));
     expect(keys(out)).toEqual(["a|b"]);
+  });
+});
+
+describe("shortestPath", () => {
+  const E = (pairs: [string, string][]): Edge[] => pairs.map(([a, b]) => canonEdge(a, b)!);
+
+  it("returns the inclusive node path by fewest hops", () => {
+    expect(shortestPath(E([["a", "b"], ["b", "c"]]), "a", "c")).toEqual(["a", "b", "c"]);
+  });
+  it("finds the shortest route among alternatives", () => {
+    const edges = E([["a", "b"], ["b", "c"], ["a", "c"], ["c", "d"]]);
+    expect(shortestPath(edges, "a", "d")).toEqual(["a", "c", "d"]);
+  });
+  it("is [from] when from === to", () => {
+    expect(shortestPath(E([["a", "b"]]), "a", "a")).toEqual(["a"]);
+  });
+  it("is null when disconnected or absent", () => {
+    expect(shortestPath(E([["a", "b"], ["c", "d"]]), "a", "d")).toBeNull();
+    expect(shortestPath(E([["a", "b"]]), "a", "z")).toBeNull();
   });
 });
 

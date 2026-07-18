@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CrmDB } from "@/lib/dashboard/people/types";
 import { step, seedPositions, type SimNode } from "@/lib/dashboard/people/graph-sim";
-import { edgeKey, neighbors, removeEdge } from "@/lib/dashboard/people/connections";
+import { canonEdge, edgeKey, neighbors, removeEdge, shortestPath } from "@/lib/dashboard/people/connections";
 import { tierColor } from "@/lib/dashboard/people/tiers";
 import { normalizeDb } from "@/lib/dashboard/people/backup";
 
@@ -11,10 +11,6 @@ const serif = { fontFamily: "var(--font-playfair), Georgia, serif" };
 const W = 920;
 const H = 560;
 const R = 21; // node radius
-
-function initial(name: string): string {
-  return (name.trim()[0] || "?").toUpperCase();
-}
 
 export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
   db: CrmDB;
@@ -29,6 +25,8 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
   const [nodes, setNodes] = useState<SimNode[]>([]);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
   const [hover, setHover] = useState<string | null>(null);
+  const [pathFrom, setPathFrom] = useState("");
+  const [pathTo, setPathTo] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; moved: boolean } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
@@ -64,10 +62,23 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
   }, [edges]);
 
   const posById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
-  const litSet = useMemo(() => {
-    if (!hover) return null;
-    return new Set([hover, ...neighbors(edges, hover)]);
-  }, [hover, edges]);
+  const hoverSet = useMemo(() => (hover ? new Set([hover, ...neighbors(edges, hover)]) : null), [hover, edges]);
+
+  // Shortest-path highlight (takes precedence over hover when a route exists).
+  const path = useMemo(
+    () => (pathFrom && pathTo && pathFrom !== pathTo ? shortestPath(edges, pathFrom, pathTo) : null),
+    [pathFrom, pathTo, edges],
+  );
+  const pathNodes = useMemo(() => (path ? new Set(path) : null), [path]);
+  const pathEdgeKeys = useMemo(() => {
+    const s = new Set<string>();
+    if (path) for (let i = 0; i < path.length - 1; i++) {
+      const e = canonEdge(path[i], path[i + 1]);
+      if (e) s.add(edgeKey(e));
+    }
+    return s;
+  }, [path]);
+  const pathQueried = !!(pathFrom && pathTo && pathFrom !== pathTo);
 
   function toGraph(clientX: number, clientY: number) {
     const rect = wrapRef.current!.getBoundingClientRect();
@@ -90,7 +101,7 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
     const id = drag.current.id;
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, x: p.x, y: p.y, vx: 0, vy: 0 } : n)));
   }
-  function onNodePointerUp(e: React.PointerEvent, id: string) {
+  function onNodePointerUp(id: string) {
     const wasMoved = drag.current?.moved;
     drag.current = null;
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: false } : n)));
@@ -121,6 +132,9 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
     });
   }
 
+  const nodeDim = (id: string) => (pathNodes ? !pathNodes.has(id) : hoverSet ? !hoverSet.has(id) : false);
+  const sorted = useMemo(() => [...contacts].sort((a, b) => a.name.localeCompare(b.name)), [contacts]);
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -143,6 +157,31 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
         </div>
       </div>
 
+      {contacts.length >= 2 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="font-mono uppercase tracking-[0.14em] text-stone-400" style={mono}>Shortest path</span>
+          <select value={pathFrom} onChange={(e) => setPathFrom(e.target.value)} className="rounded-[8px] border border-stone-200 bg-white px-2 py-1 text-[12px] text-stone-700">
+            <option value="">From…</option>
+            {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <span className="text-stone-400">→</span>
+          <select value={pathTo} onChange={(e) => setPathTo(e.target.value)} className="rounded-[8px] border border-stone-200 bg-white px-2 py-1 text-[12px] text-stone-700">
+            <option value="">To…</option>
+            {sorted.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {pathQueried && (
+            <span className={path ? "text-[#A51C30]" : "text-stone-400"}>
+              {path ? `${path.length - 1} degree${path.length - 1 === 1 ? "" : "s"} of separation` : "Not connected"}
+            </span>
+          )}
+          {(pathFrom || pathTo) && (
+            <button onClick={() => { setPathFrom(""); setPathTo(""); }} className="font-mono text-[10px] uppercase tracking-[0.1em] text-stone-400 hover:text-stone-600" style={mono}>
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {contacts.length === 0 ? (
         <div className="grid h-[300px] place-items-center rounded-[12px] border border-dashed border-stone-200 font-mono text-[11px] uppercase tracking-[0.16em] text-stone-300" style={mono}>
           No contacts yet
@@ -161,12 +200,14 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
               {edges.map((e) => {
                 const a = posById.get(e.a), b = posById.get(e.b);
                 if (!a || !b) return null;
-                const lit = !litSet || (litSet.has(e.a) && litSet.has(e.b));
+                const onPath = pathEdgeKeys.has(edgeKey(e));
+                const lit = pathNodes ? onPath : hoverSet ? hoverSet.has(e.a) && hoverSet.has(e.b) : true;
                 return (
                   <g key={edgeKey(e)}>
                     <line
                       x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                      stroke={lit ? "#d6cfc4" : "#ece8e1"} strokeWidth={1.5}
+                      stroke={onPath ? "#A51C30" : lit ? "#d6cfc4" : "#ece8e1"}
+                      strokeWidth={onPath ? 2.5 : 1.5}
                     />
                     <line
                       x1={a.x} y1={a.y} x2={b.x} y2={b.y}
@@ -182,30 +223,35 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
               const c = contacts.find((x) => x.id === n.id);
               if (!c) return null;
               const color = tierColor(db, c.tier);
-              const dim = litSet && !litSet.has(n.id);
+              const onPathNode = pathNodes?.has(n.id);
               return (
                 <div
                   key={n.id}
                   className="absolute flex cursor-grab select-none flex-col items-center active:cursor-grabbing"
-                  style={{ left: n.x - R, top: n.y - R, opacity: dim ? 0.25 : 1, transition: "opacity 120ms" }}
+                  style={{ left: n.x - R, top: n.y - R, width: R * 2, opacity: nodeDim(n.id) ? 0.22 : 1, transition: "opacity 120ms" }}
                   onPointerDown={(e) => onNodePointerDown(e, n.id)}
                   onPointerMove={onNodePointerMove}
-                  onPointerUp={(e) => onNodePointerUp(e, n.id)}
+                  onPointerUp={() => onNodePointerUp(n.id)}
                   onPointerEnter={() => setHover(n.id)}
                   onPointerLeave={() => setHover((h) => (h === n.id ? null : h))}
                 >
                   <div
-                    className="grid place-items-center rounded-full border-2 border-white text-[13px] text-white shadow-sm"
-                    style={{ width: R * 2, height: R * 2, background: color, ...serif }}
+                    className="grid place-items-center rounded-full text-[13px] text-white shadow-sm"
+                    style={{
+                      width: R * 2, height: R * 2, background: color, ...serif,
+                      border: onPathNode ? "2px solid #A51C30" : "2px solid #fff",
+                    }}
                   >
                     {c.avatarImg ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={c.avatarImg} alt="" className="h-full w-full rounded-full object-cover" />
                     ) : (
-                      initial(c.name)
+                      (c.name.trim()[0] || "?").toUpperCase()
                     )}
                   </div>
-                  <span className="mt-1 max-w-[92px] truncate text-center text-[10px] text-stone-600">{c.name}</span>
+                  <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 max-w-[120px] truncate whitespace-nowrap text-center text-[10px] text-stone-600">
+                    {c.name}
+                  </span>
                 </div>
               );
             })}

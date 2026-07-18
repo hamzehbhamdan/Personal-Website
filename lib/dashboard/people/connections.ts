@@ -58,6 +58,43 @@ export function mergeClique(edges: Edge[], ids: string[]): Edge[] {
   return out;
 }
 
+/** Fewest-hops path (inclusive of both endpoints) between two contacts via BFS,
+ *  or null if they aren't connected. `[from]` when from === to. */
+export function shortestPath(edges: Edge[], from: string, to: string): string[] | null {
+  if (from === to) return [from];
+  const adj = new Map<string, string[]>();
+  const link = (x: string, y: string) => {
+    const arr = adj.get(x);
+    if (arr) arr.push(y);
+    else adj.set(x, [y]);
+  };
+  for (const e of edges) {
+    link(e.a, e.b);
+    link(e.b, e.a);
+  }
+  if (!adj.has(from) || !adj.has(to)) return null;
+  const parent = new Map<string, string | null>([[from, null]]);
+  const queue: string[] = [from];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (cur === to) break;
+    for (const nb of adj.get(cur) ?? []) {
+      if (!parent.has(nb)) {
+        parent.set(nb, cur);
+        queue.push(nb);
+      }
+    }
+  }
+  if (!parent.has(to)) return null;
+  const path: string[] = [];
+  let node: string | null = to;
+  while (node != null) {
+    path.push(node);
+    node = parent.get(node) ?? null;
+  }
+  return path.reverse();
+}
+
 export function neighbors(edges: Edge[], id: string): string[] {
   const out: string[] = [];
   for (const e of edges) {
