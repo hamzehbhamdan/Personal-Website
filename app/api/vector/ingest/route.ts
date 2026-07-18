@@ -92,13 +92,14 @@ export async function POST(req: Request) {
 
         const embedding = embeddingResponse.data[0].embedding;
 
-        // Store in Supabase (RLS-scoped to the authed user)
+        // Store in Supabase (RLS-scoped to the authed user). Return the inserted
+        // id so a Brain note can link to its embedding (note.docId) for lifecycle.
         const { data, error } = await supabase.from("documents").insert({
             content: contentToEmbed,
             metadata,
             embedding,
             user_id: gate.userId,
-        });
+        }).select("id").single();
 
         if (error) {
             console.warn("vector: ingest document insert failed");
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, data, type: metadata.type });
+        return NextResponse.json({ success: true, id: (data as { id?: number } | null)?.id ?? null, type: metadata.type });
     } catch (error: any) {
         console.warn("vector: ingest failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });

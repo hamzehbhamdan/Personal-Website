@@ -7,6 +7,8 @@ import { HomeView } from "./HomeView";
 import { PeopleView } from "@/components/dashboard/people/PeopleView";
 import { CoachView } from "@/components/dashboard/coach/CoachView";
 import { CommandPalette } from "./CommandPalette";
+import { BrainProvider } from "@/components/dashboard/brain/BrainProvider";
+import { BrainView } from "@/components/dashboard/brain/BrainView";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { signout } from "@/app/dashboard/actions"; // A0: server action — HttpOnly cookies can't be cleared from JS
 import { cn } from "@/lib/utils";
@@ -20,10 +22,6 @@ const MOBILE_NAV: { key: ViewKey; label: string }[] = [
   { key: "coach", label: "Coach" },
   { key: "brain", label: "Brain" },
 ];
-
-function Placeholder({ name }: { name: string }) {
-  return <div className="p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">{name} — coming in the next milestone</div>;
-}
 
 export function DashboardShell() {
   const [view, setView] = useState<ViewKey>("home");
@@ -48,6 +46,7 @@ export function DashboardShell() {
   }, []);
 
   return (
+    <BrainProvider>
     <div className="flex h-screen w-full bg-[#f9f8f6]">
       {/* Desktop rail (md+). Below md it collapses into the mobile top bar + Sheet. */}
       <div className="hidden md:flex">
@@ -65,7 +64,7 @@ export function DashboardShell() {
           {view === "home" && <HomeView onNavigate={setView} />}
           {view === "people" && <PeopleView />}
           {view === "coach" && <CoachView />}
-          {view === "brain" && <Placeholder name="Brain" />}
+          {view === "brain" && <BrainView />}
         </main>
       </div>
 
@@ -109,5 +108,6 @@ export function DashboardShell() {
         }}
       />
     </div>
+    </BrainProvider>
   );
 }
