@@ -17,6 +17,7 @@ import { CrmSettingsModal } from "./CrmSettingsModal";
 import { AskPanel } from "./AskPanel";
 import { EmptyOnboarding } from "./EmptyOnboarding";
 import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
+import type { ViewIntent } from "@/lib/dashboard/nav";
 
 type Seg = "attention" | "people" | "groups";
 type GoogleStatus = "connected" | "error" | null;
@@ -35,7 +36,10 @@ const btnGhost =
  * CONVENTION — re-derive from `normalizeDb(prev)` inside the updater, never from this `db`
  * snapshot — the `onDismiss` inline updater below and every child modal follow this.
  */
-export function PeopleView() {
+export function PeopleView({
+  initialSelect = null,
+  onConsumed,
+}: { initialSelect?: Extract<ViewIntent, { view: "people" }> | null; onConsumed?: () => void } = {}) {
   const { state: raw, setState, loaded, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
   const db = useMemo(() => normalizeDb(raw), [raw]);
   const now = useMemo(() => new Date(), []);
@@ -64,6 +68,23 @@ export function PeopleView() {
       window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
     }
   }, []);
+
+  // ⌘K / search deep-link: open a specific contact, the add-contact form, or Settings.
+  useEffect(() => {
+    if (!initialSelect) return;
+    if (initialSelect.kind === "contact") {
+      if (db.contacts.some((c) => c.id === initialSelect.id)) {
+        setSeg("people");
+        setOpenContact(initialSelect.id);
+      }
+    } else if (initialSelect.kind === "newContact") {
+      setEditContact({ id: null });
+    } else if (initialSelect.kind === "settings") {
+      setSettings(true);
+    }
+    onConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelect]);
 
   const stateOf = (c: Contact) => computeState(c, live.gmail, live.cal, db, now);
   const counts = summaryCounts(db, stateOf);

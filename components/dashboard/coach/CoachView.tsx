@@ -5,13 +5,15 @@
 // the modal switch are wired here (Task 23) using WeekBoard/HigherHorizon (Tasks
 // 16–17) and the modal set (Tasks 18–22).
 "use client";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { ViewHeader, Segmented } from "@/components/dashboard/ui";
 import { useAppState } from "@/lib/dashboard/useAppState";
 import { emptyCoachDB } from "@/lib/dashboard/coach/seed";
 import { migrate } from "@/lib/dashboard/coach/migrate";
-import { periodRange, HORIZONS } from "@/lib/dashboard/coach/periods";
+import { periodRange, HORIZONS, findOffset } from "@/lib/dashboard/coach/periods";
+import { getGoal } from "@/lib/dashboard/coach/rollup";
 import type { CoachDB, Horizon } from "@/lib/dashboard/coach/types";
+import type { ViewIntent } from "@/lib/dashboard/nav";
 import { PeriodBar } from "./PeriodBar";
 import { IntakeBanner } from "./IntakeBanner";
 import type { Overlay, JumpTo } from "./overlay";
@@ -37,7 +39,10 @@ const iconBtn =
 
 const TODAY = new Date();
 
-export function CoachView() {
+export function CoachView({
+  initialSelect = null,
+  onConsumed,
+}: { initialSelect?: Extract<ViewIntent, { view: "coach" }> | null; onConsumed?: () => void } = {}) {
   const { state, setState, loaded } = useAppState<CoachDB>("execCoach", emptyCoachDB());
   const [horizon, setHorizon] = useState<Horizon>("week");
   const [offset, setOffset] = useState(0);
@@ -70,6 +75,26 @@ export function CoachView() {
     setHorizon(h);
     setOffset(o);
   }, []);
+
+  // ⌘K / search deep-link: jump to a goal's period + open its modal (tasks live on the week board).
+  useEffect(() => {
+    if (!initialSelect) return;
+    if (initialSelect.kind === "goal") {
+      const g = getGoal(db, initialSelect.id);
+      if (g) {
+        jumpTo(g.horizon, findOffset(g.horizon, g.period, TODAY));
+        setOverlay({ kind: "goal", id: g.id });
+      }
+    } else if (initialSelect.kind === "task") {
+      const t = db.tasks.find((x) => x.id === initialSelect.id);
+      if (t) {
+        jumpTo("week", findOffset("week", t.week, TODAY));
+        setOverlay({ kind: "task", id: t.id });
+      }
+    }
+    onConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelect]);
 
   const r = periodRange(horizon, offset, TODAY);
 
