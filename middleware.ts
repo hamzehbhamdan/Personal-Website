@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { gateResult } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
     // 1. Skip middleware for static assets, API routes, and Next.js internals
@@ -70,17 +71,19 @@ export async function middleware(request: NextRequest) {
     // (with any refreshed cookies). Does NOT weaken the gate for other paths.
     if (request.nextUrl.pathname.startsWith("/auth/")) return response;
 
-    // Page protection only.
+    // Page protection only. Fails CLOSED via the same gateResult() the API uses:
+    // if ALLOWED_EMAIL is unset OR the session email doesn't match, access is denied.
+    // (Previously the allow-list check was skipped when ALLOWED_EMAIL was unset, letting
+    // any authenticated Google account load the shell — now consistent with requireUser().)
     // NOTE: middleware does NOT run on /api (see matcher). API routes authenticate via requireUser().
     const isDashboard = request.nextUrl.pathname.startsWith("/dashboard") || subdomain === "my";
     if (isDashboard) {
-        if (!user) {
-            return NextResponse.redirect(new URL("/login", request.url));
-        }
-        const allowedEmail = process.env.ALLOWED_EMAIL;
-        if (allowedEmail && user.email !== allowedEmail) {
+        const gate = gateResult(user, process.env.ALLOWED_EMAIL);
+        if (!gate.ok) {
             const url = new URL("/login", request.url);
-            url.searchParams.set("message", "Unauthorized account");
+            // 403 = signed in but not the allow-listed account (or allow-list misconfigured);
+            // 401 = no session. Show the account message only for the former.
+            if (gate.status === 403) url.searchParams.set("message", "Unauthorized account");
             return NextResponse.redirect(url);
         }
     }

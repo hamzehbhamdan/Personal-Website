@@ -19,7 +19,10 @@ export function TeX({ children, display = false, className = "" }: TeXProps) {
         displayMode: display,
         throwOnError: false,
         strict: false,
-        trust: true,
+        // Default (false): disables trust-gated commands (\href, \includegraphics,
+        // \htmlData, …). Nothing here needs them, and it prevents HTML/JS injection
+        // via the dangerouslySetInnerHTML below if `children` ever becomes non-static.
+        trust: false,
         macros: {
           "\\E": "\\mathbb{E}",
           "\\R": "\\mathbb{R}",
