@@ -5,7 +5,8 @@ import { serif, mono } from "./styles";
 import type { HomeQuote, HomeSettings } from "@/lib/dashboard/home/types";
 
 /** Quote of the day — stable within a calendar day. */
-export function QuoteOfDay({ quotes, settings, now }: { quotes: HomeQuote[]; settings: HomeSettings; now: Date }) {
+export function QuoteOfDay({ quotes, settings, now }: { quotes: HomeQuote[]; settings: HomeSettings; now: Date | null }) {
+  if (!now) return null;
   const q = quoteForDay(quotes, settings, now);
   if (!q) return null;
   return (

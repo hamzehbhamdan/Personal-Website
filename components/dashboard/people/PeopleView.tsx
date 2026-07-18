@@ -70,8 +70,10 @@ export function PeopleView({
   }, []);
 
   // ⌘K / search deep-link: open a specific contact, the add-contact form, or Settings.
+  // Gate on `loaded` so a fresh mount (state not yet fetched) re-runs once contacts arrive
+  // instead of consuming the intent against an empty db and silently dropping it.
   useEffect(() => {
-    if (!initialSelect) return;
+    if (!initialSelect || !loaded) return;
     if (initialSelect.kind === "contact") {
       if (db.contacts.some((c) => c.id === initialSelect.id)) {
         setSeg("people");
@@ -84,7 +86,7 @@ export function PeopleView({
     }
     onConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSelect]);
+  }, [initialSelect, loaded]);
 
   const stateOf = (c: Contact) => computeState(c, live.gmail, live.cal, db, now);
   const counts = summaryCounts(db, stateOf);

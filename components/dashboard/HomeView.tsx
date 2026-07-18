@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { PageContainer, SectionHeader } from "./ui";
 import type { ViewKey } from "./ui";
 import { useAppState } from "@/lib/dashboard/useAppState";
@@ -23,6 +23,10 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   // Stable "now" for data snapshots so they don't recompute every clock tick.
   const snapNow = useMemo(() => new Date(), []);
   const key = useMemo(() => todayKey(snapNow), [snapNow]);
+  // Gate date-derived content past first paint so the prerendered HTML (build-time
+  // date) can't mismatch the client (avoids a QuoteOfDay hydration warning).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const { state: rawHome, setState } = useAppState<HomeState>("home", emptyHome());
   const home = useMemo(() => normalizeHome(rawHome), [rawHome]);
@@ -41,7 +45,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
           <Hero now={clock} name={home.settings.greetingName} />
         </section>
         <section className="min-w-0 md:col-span-2 lg:col-span-4">
-          <QuoteOfDay quotes={home.quotes} settings={home.settings} now={snapNow} />
+          <QuoteOfDay quotes={home.quotes} settings={home.settings} now={mounted ? snapNow : null} />
         </section>
 
         <div className="md:col-span-2 lg:col-span-12">
@@ -65,7 +69,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
           <SectionHeader index="03" label="Today" />
         </div>
         <section className="min-w-0 lg:col-span-4">
-          <DailyIntentions home={home} setHome={setState} nowKey={key} />
+          <DailyIntentions home={home} setHome={setState} />
         </section>
         <section className="min-w-0 lg:col-span-4">
           <ReachOutToday attention={people.attention} connected={people.connected} onNavigate={onNavigate} />

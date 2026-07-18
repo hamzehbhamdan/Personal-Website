@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
+import { allow } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
     const userId = gate.userId;
+    if (!allow(`${userId}:vector-files`, 60, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
     try {
         const { searchParams } = new URL(req.url);
         const storeId = searchParams.get("storeId");
@@ -58,6 +60,7 @@ export async function DELETE(req: Request) {
     const supabase = gate.supabase;
     const userId = gate.userId;
     try {
+        if (!allow(`${userId}:vector-files`, 60, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
         const { searchParams } = new URL(req.url);
         const storeId = searchParams.get("storeId");
         const fileId = searchParams.get("fileId");
@@ -86,6 +89,7 @@ export async function POST(req: Request) {
     const supabase = gate.supabase;
     const userId = gate.userId;
     try {
+        if (!allow(`${userId}:vector-files`, 30, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
         const formData = await req.formData();
         const files = formData.getAll("file") as File[];
         const storeId = formData.get("storeId") as string;

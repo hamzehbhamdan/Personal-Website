@@ -132,8 +132,11 @@ Be concise, professional, and slightly futuristic in tone.`;
 
         // If vector store is connected, use OpenAI Responses API with file_search
         if (params?.activeStoreId && await ownsStore(supabase, gate.userId, params.activeStoreId)) {
-            // Build input for Responses API
-            const inputContent = inputMessages[inputMessages.length - 1]?.content || "";
+            // Pass the FULL conversation (not just the last turn) so follow-ups keep context.
+            const responsesInput = (inputMessages as { role: string; content: unknown }[]).map((m) => ({
+                role: m.role,
+                content: String(m?.content ?? ""),
+            }));
 
             const responsesResponse = await fetch("https://api.openai.com/v1/responses", {
                 method: "POST",
@@ -143,7 +146,7 @@ Be concise, professional, and slightly futuristic in tone.`;
                 },
                 body: JSON.stringify({
                     model: "gpt-4-turbo",
-                    input: inputContent,
+                    input: responsesInput,
                     instructions: systemPrompt,
                     tools: [
                         {

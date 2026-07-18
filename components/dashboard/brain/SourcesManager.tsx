@@ -18,7 +18,7 @@ import {
 
 /** Manage OpenAI vector stores (file_search) + the pgvector searchable-memory corpus. */
 export function SourcesManager() {
-  const { doc, setSettings } = useBrain();
+  const { doc, setSettings, updateNote } = useBrain();
   const activeStoreId = doc.settings.activeStoreId;
   const [stores, setStores] = useState<VectorStore[]>([]);
   const [docs, setDocs] = useState<BrainDocument[]>([]);
@@ -90,6 +90,10 @@ export function SourcesManager() {
     try {
       await deleteDocument(id);
       setDocs((p) => p.filter((d) => d.id !== id));
+      // Reconcile: a note that pointed at this document is no longer searchable.
+      doc.notes.forEach((n) => {
+        if (n.docId === id) updateNote(n.id, { docId: null });
+      });
     } catch {
       toast.error("Delete failed");
     } finally {

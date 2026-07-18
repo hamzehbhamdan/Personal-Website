@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
+import { allow } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export async function GET() {
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
     const userId = gate.userId;
+    if (!allow(`${userId}:vector-stores`, 60, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
     try {
         // 1. Fetch user's store mappings from Supabase
         const { data: mappings, error: dbError } = await supabase
@@ -52,6 +54,7 @@ export async function POST(req: Request) {
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
     const userId = gate.userId;
+    if (!allow(`${userId}:vector-stores`, 30, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
     try {
         const { name } = await req.json();
 
@@ -89,6 +92,7 @@ export async function DELETE(req: Request) {
     if (!gate.ok) return gate.response;
     const supabase = gate.supabase;
     const userId = gate.userId;
+    if (!allow(`${userId}:vector-stores`, 30, 60_000)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");

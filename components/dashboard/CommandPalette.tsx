@@ -22,7 +22,6 @@ type Item =
   | { kind: "recent"; res: SearchResult };
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
-const RECENTS_KEY = "cmdk-recents";
 
 const typeLabel = (t: SearchResult["type"]) =>
   t === "contact" ? "Contact" : t === "goal" ? "Goal" : t === "task" ? "Task" : "Note";
@@ -69,15 +68,8 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    try {
-      const s = localStorage.getItem(RECENTS_KEY);
-      if (s) setRecents(JSON.parse(s));
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
+  // Recents are in-memory only (per session) — never persisted, so contact names /
+  // note first-lines don't linger in localStorage across sign-out.
   useEffect(() => {
     if (isOpen) {
       setQuery("");
@@ -139,13 +131,7 @@ export function CommandPalette({
   }, [items.length]);
 
   const addRecent = (res: SearchResult) => {
-    const next = [res, ...recents.filter((r) => !(r.id === res.id && r.type === res.type))].slice(0, 6);
-    setRecents(next);
-    try {
-      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+    setRecents((prev) => [res, ...prev.filter((r) => !(r.id === res.id && r.type === res.type))].slice(0, 6));
   };
 
   const run = (item: Item) => {

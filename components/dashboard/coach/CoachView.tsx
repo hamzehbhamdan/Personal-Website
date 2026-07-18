@@ -77,8 +77,9 @@ export function CoachView({
   }, []);
 
   // ⌘K / search deep-link: jump to a goal's period + open its modal (tasks live on the week board).
+  // Gate on `loaded` so a fresh mount re-runs once execCoach hydrates (getGoal would miss otherwise).
   useEffect(() => {
-    if (!initialSelect) return;
+    if (!initialSelect || !loaded) return;
     if (initialSelect.kind === "goal") {
       const g = getGoal(db, initialSelect.id);
       if (g) {
@@ -94,7 +95,7 @@ export function CoachView({
     }
     onConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSelect]);
+  }, [initialSelect, loaded]);
 
   const r = periodRange(horizon, offset, TODAY);
 

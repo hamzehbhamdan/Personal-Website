@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Plus, Check } from "lucide-react";
 import { Card, MonoLabel } from "@/components/dashboard/ui";
-import { normalizeHome } from "@/lib/dashboard/home/seed";
+import { normalizeHome, todayKey } from "@/lib/dashboard/home/seed";
 import { todaysIntentions, addIntention, toggleIntention, removeIntention } from "@/lib/dashboard/home/intentions";
 import type { HomeState } from "@/lib/dashboard/home/types";
 
@@ -10,17 +10,17 @@ import type { HomeState } from "@/lib/dashboard/home/types";
 export function DailyIntentions({
   home,
   setHome,
-  nowKey,
 }: {
   home: HomeState;
   setHome: (updater: (prev: HomeState) => HomeState) => void;
-  nowKey: string;
 }) {
   const [text, setText] = useState("");
-  const items = todaysIntentions(home, nowKey);
+  // Derive the day key from the live clock so intentions added after midnight file under the real day.
+  const key = todayKey(new Date());
+  const items = todaysIntentions(home, key);
   const add = () => {
     if (!text.trim()) return;
-    setHome((prev) => addIntention(normalizeHome(prev), text, nowKey));
+    setHome((prev) => addIntention(normalizeHome(prev), text, key));
     setText("");
   };
   return (

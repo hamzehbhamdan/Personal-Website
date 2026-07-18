@@ -11,7 +11,7 @@ import { NoteEditor } from "./NoteEditor";
 import { ChatPanel } from "./ChatPanel";
 import { ChatHistoryList } from "./ChatHistoryList";
 import { SourcesManager } from "./SourcesManager";
-import { ingestText, ragChat, listStores } from "@/lib/dashboard/brain/client";
+import { ingestText, ragChat, listStores, deleteDocument } from "@/lib/dashboard/brain/client";
 import { noteTitle, type BrainNote, type BrainChatMsg } from "@/lib/dashboard/brain/types";
 import { btnPrimary, mono } from "./styles";
 
@@ -57,7 +57,6 @@ export function BrainView() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [chatBusy, setChatBusy] = useState(false);
   const [indexingId, setIndexingId] = useState<string | null>(null);
-  const [captureFocus, setCaptureFocus] = useState(false);
   const [storeName, setStoreName] = useState<string | null>(null);
 
   const activeStoreId = doc.settings.activeStoreId;
@@ -114,7 +113,6 @@ export function BrainView() {
     } else if (intent.compose) {
       setEditor({ prefill: intent.draft });
     }
-    if (intent.tab === "capture") setCaptureFocus(true);
     if (intent.tab === "chat" && intent.draft) {
       const c = addChat();
       setActiveChatId(c.id);
@@ -145,6 +143,13 @@ export function BrainView() {
       addNote(data);
       if (editor?.fromCaptureId) deleteCapture(editor.fromCaptureId);
     }
+  }
+
+  // Deleting a note also removes its embedding so the searchable corpus stays in sync.
+  function handleDeleteNote(id: string) {
+    const n = doc.notes.find((x) => x.id === id);
+    if (n && typeof n.docId === "number") void deleteDocument(n.docId).catch(() => {});
+    deleteNote(id);
   }
 
   if (!loaded) {
@@ -185,7 +190,7 @@ export function BrainView() {
 
       {tab === "capture" && (
         <div className="space-y-5">
-          <CaptureBox onCapture={addCapture} autoFocus={captureFocus} />
+          <CaptureBox onCapture={addCapture} />
           <SectionHeader index="01" label="Inbox" />
           <CaptureInbox
             captures={doc.captures}
@@ -203,7 +208,7 @@ export function BrainView() {
           notes={doc.notes}
           indexingId={indexingId}
           onEdit={(n) => setEditor({ note: n })}
-          onDelete={deleteNote}
+          onDelete={handleDeleteNote}
           onTogglePin={togglePinNote}
           onMakeSearchable={makeSearchable}
         />
@@ -244,7 +249,7 @@ export function BrainView() {
           prefill={editor.prefill}
           allTags={allTags}
           onSave={saveNote}
-          onDelete={editor.note ? () => deleteNote(editor.note!.id) : undefined}
+          onDelete={editor.note ? () => handleDeleteNote(editor.note!.id) : undefined}
           onClose={() => setEditor(null)}
         />
       )}
