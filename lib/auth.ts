@@ -21,6 +21,10 @@ export function gateResult(user: GateUser, allowedEmail: string | undefined): Ga
  */
 export function isGatedPath(pathname: string, subdomain: string): boolean {
   const isDashboard = pathname.startsWith("/dashboard") || subdomain === "my";
-  const isAuthSurface = pathname === "/login" || pathname.startsWith("/auth");
+  // Segment-exact match: exempt /login, /auth, and /auth/* ONLY. A raw
+  // startsWith("/auth") would also exempt an unrelated /authors or /auth-debug
+  // route, silently un-gating it on my.* — reintroducing the access bug.
+  const isAuthSurface =
+    pathname === "/login" || pathname === "/auth" || pathname.startsWith("/auth/");
   return isDashboard && !isAuthSurface;
 }

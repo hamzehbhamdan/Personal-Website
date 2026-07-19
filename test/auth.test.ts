@@ -36,6 +36,13 @@ describe("isGatedPath", () => {
     expect(isGatedPath("/auth", "my")).toBe(false);          // no trailing slash
     expect(isGatedPath("/auth/callback", "my")).toBe(false);
   });
+  it("gates paths that merely START WITH the auth/login letters (segment-exact, not prefix)", () => {
+    // A raw startsWith("/auth") would wrongly exempt these from the gate.
+    expect(isGatedPath("/authors", "my")).toBe(true);
+    expect(isGatedPath("/auth-debug", "my")).toBe(true);
+    expect(isGatedPath("/dashboard/auth-debug", "www")).toBe(true);
+    expect(isGatedPath("/login-admin", "my")).toBe(true);
+  });
   it("leaves the public site ungated", () => {
     expect(isGatedPath("/", "www")).toBe(false);
     expect(isGatedPath("/blog", "hamzehhamdan")).toBe(false);
