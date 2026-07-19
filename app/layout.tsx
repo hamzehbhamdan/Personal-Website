@@ -21,7 +21,7 @@ const playfair = Playfair_Display({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const siteUrl = "https://www.hamzehhamdan.com";
+const siteUrl = "https://hamzehhamdan.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -81,9 +81,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  alternates: {
-    canonical: siteUrl,
   },
 };
 

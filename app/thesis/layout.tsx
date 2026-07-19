@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     description:
       "A factor-based map of U.S.–China market interdependence by Hamzeh Hamdan, Harvard College.",
   },
+  alternates: { canonical: "/thesis" },
 };
 
 export default function ThesisLayout({

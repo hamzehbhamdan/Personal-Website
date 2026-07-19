@@ -4,7 +4,7 @@ import { projects } from "@/lib/data"
 // Static so the route can be emitted by `output: export` (GitHub Pages).
 export const dynamic = "force-static"
 
-const siteUrl = "https://www.hamzehhamdan.com"
+const siteUrl = "https://hamzehhamdan.com"
 
 export default function sitemap(): MetadataRoute.Sitemap {
     const staticPages = [
