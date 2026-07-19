@@ -110,6 +110,10 @@ export function PeopleView({
       >
         Save failed — retry
       </button>
+    ) : status === "conflict" ? (
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>
+        Out of sync — reloaded
+      </span>
     ) : null;
 
   if (!loaded) {

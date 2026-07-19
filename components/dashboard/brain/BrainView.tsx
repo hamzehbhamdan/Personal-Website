@@ -31,6 +31,8 @@ const statusEl = (status: string) =>
     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-300" style={mono}>Saved</span>
   ) : status === "error" ? (
     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>Save failed</span>
+  ) : status === "conflict" ? (
+    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>Out of sync — reloaded</span>
   ) : null;
 
 export function BrainView() {

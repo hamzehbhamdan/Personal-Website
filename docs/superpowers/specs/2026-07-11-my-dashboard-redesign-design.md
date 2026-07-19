@@ -154,8 +154,8 @@ create policy "state_delete" on app_state for delete using (auth.uid() = user_id
 
 ### 5.2 State API
 
-- `GET /api/state?app=lifeCRM` → returns `data` for the authed user (empty seed if absent).
-- `PUT /api/state?app=lifeCRM` → upserts `data` (debounced client-side, ~500ms after mutations; last-write-wins by `updated_at`).
+- `GET /api/state?app=lifeCRM` → returns `{ data, version }` for the authed user (empty seed at version 0 if absent).
+- `PUT /api/state?app=lifeCRM` → optimistic-concurrency write: body carries `{ data, baseVersion }`; the server inserts at version 1 (baseVersion 0, on-conflict-do-nothing) or conditionally updates where the stored `version` still equals `baseVersion`, returning the new `version`. A stale base gets **409** — the client re-GETs, surfaces a "conflict" status, and never replays the losing payload (no more last-write-wins). Saves are debounced ~500ms, serialized latest-wins through a client queue, and flushed with a `keepalive` PUT on `pagehide` for bodies < ~60KB (keepalive's 64KB cap; larger docs may still lose the final debounce window on a hard tab close).
 - Client keeps the in-memory `DB` object (as today) and may mirror to `localStorage` **only as a fast-load cache**, reconciled against the server on load. Cache is never authoritative.
 
 ### 5.3 Backup/restore & CSV import
