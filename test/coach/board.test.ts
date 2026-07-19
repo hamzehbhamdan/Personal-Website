@@ -101,6 +101,26 @@ describe("applyStage with subtasks", () => {
   });
 });
 
+describe("applyStage + running timer (review #28)", () => {
+  const started = Date.parse("2026-07-17T11:00:00.000Z"); // 1h before NOW
+
+  it("dragging into Done banks elapsed time at doneAt's instant and stops the timer", () => {
+    const t = task({ stage: "doing", timerStart: started, timeMs: 5_000 });
+    applyStage(t, "done", NOW);
+    expect(t.timerStart).toBe(null);
+    expect(t.timeMs).toBe(5_000 + 3_600_000);
+    expect(t.done).toBe(true);
+    expect(t.doneAt).toBe(NOW);
+  });
+
+  it("todo/doing moves leave a running timer untouched", () => {
+    const t = task({ stage: "todo", timerStart: started, timeMs: 0 });
+    applyStage(t, "doing", NOW);
+    expect(t.timerStart).toBe(started);
+    expect(t.timeMs).toBe(0);
+  });
+});
+
 describe("syncDone", () => {
   it("all subs done: syncs done/stage/doneAt and pauses a running timer", () => {
     const t = task({

@@ -32,7 +32,7 @@ export function applyStage(t: Task, stage: TaskStage, nowISO: string): void {
     t.done = true;
     t.subs.forEach((s) => { s.done = true; });
     if (!t.doneAt) t.doneAt = nowISO;
-    if (t.timerStart) pauseTimer(t);
+    if (t.timerStart) pauseTimer(t, new Date(nowISO).getTime());
   } else {
     t.done = false;
     t.doneAt = null;
