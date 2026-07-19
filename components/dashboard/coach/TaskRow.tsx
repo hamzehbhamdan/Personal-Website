@@ -2,11 +2,13 @@
 //
 // Ports coach.html:399–409 (`taskHtml` markup) plus the two binding sites that
 // wire it up: `bindWeek` (:410–427, week board) and `bindExpandedTasks`
-// (:498–507, expanded higher-horizon goal cards). Verified against the source:
-// the two binding sites are byte-for-byte identical EXCEPT the subtask checkbox
-// (`data-subcheck`) — that is the only handler in this file that branches on
-// `surface`. Everything else (parent checkbox, collapse, timer controls, delete,
-// add-sub) is shared behavior regardless of which board mounts the row.
+// (:498–507, expanded higher-horizon goal cards). The two binding sites were
+// byte-for-byte identical EXCEPT the subtask checkbox (`data-subcheck`),
+// which in the original only recomputed doneAt/timer-pause on the week
+// surface — that divergence let a task's doneAt go stale on the expanded
+// surface (review #1) and has since been fixed: `toggleSubCheck` now routes
+// through `syncDone` for both surfaces, so no handler in this file branches
+// on `surface` anymore.
 //
 // Reused by the week board (Task 16) and the expanded higher-horizon goal cards
 // (Task 17) — neither mounts this component yet, so it only needs to typecheck
@@ -18,7 +20,7 @@ import type { Mutate } from "./overlay";
 import { taskDone, taskPts, taskTime } from "@/lib/dashboard/coach/rollup";
 import { fmtDur, pauseTimer, resetTimer, startTimer } from "@/lib/dashboard/coach/timers";
 import { uid } from "@/lib/dashboard/coach/migrate";
-import { stageForDone } from "@/lib/dashboard/coach/board";
+import { stageForDone, syncDone } from "@/lib/dashboard/coach/board";
 import { Badge, Card } from "@/components/dashboard/ui";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +104,9 @@ export function TaskRow({
   onEditSub,
 }: {
   task: Task;
+  // No longer branches row behavior (syncDone now applies uniformly on both
+  // surfaces — see toggleSubCheck) — kept in the signature so callers document
+  // which board mounts the row, matching `taskHtml`'s two binding sites.
   surface: "week" | "expanded";
   // Not read by this row's own markup (parity with `taskHtml`, which only takes
   // `t`) — carried so callers can pass the same `db` they already have on hand.
@@ -112,6 +117,7 @@ export function TaskRow({
   onEditSub: (taskId: string, subId: string) => void;
 }) {
   void db;
+  void surface;
   const [subDraft, setSubDraft] = useState("");
 
   const grp = task.subs.length > 0;
@@ -136,9 +142,10 @@ export function TaskRow({
     });
   }
 
-  // Subtask checkbox (`data-subcheck`) — the ONE surface divergence.
-  // week (coach.html:412): toggle, then recompute parent doneAt + auto-pause.
-  // expanded (coach.html:500): toggle only, no doneAt/auto-pause side effects.
+  // Subtask checkbox (`data-subcheck`). Both surfaces now recompute done /
+  // stage / doneAt / timer consistently via syncDone — keeps weekly
+  // doneAt-gated metrics (insights.ts) in sync with the board regardless of
+  // which surface the toggle happened on.
   function toggleSubCheck(subId: string) {
     mutate((draft) => {
       const t = findDraftTask(draft);
@@ -146,13 +153,7 @@ export function TaskRow({
       const s = t.subs.find((x) => x.id === subId);
       if (!s) return;
       s.done = !s.done;
-      const nowDone = taskDone(t);
-      t.done = nowDone;                          // raw flag mirrors effective done-ness
-      t.stage = stageForDone(nowDone, t.stage);  // board column follows (both surfaces)
-      if (surface === "week") {
-        if (nowDone && t.timerStart) pauseTimer(t);
-        t.doneAt = nowDone ? new Date().toISOString() : null;
-      }
+      syncDone(t, new Date().toISOString());
     });
   }
 
@@ -193,8 +194,7 @@ export function TaskRow({
       const t = findDraftTask(draft);
       if (!t) return;
       t.subs = t.subs.filter((x) => x.id !== subId);
-      t.done = taskDone(t);
-      t.stage = stageForDone(t.done, t.stage);
+      syncDone(t, new Date().toISOString());
     });
   }
 
@@ -205,8 +205,7 @@ export function TaskRow({
       const t = findDraftTask(draft);
       if (!t) return;
       t.subs.push({ id: uid("s"), label, pts: 1, meta: "", done: false });
-      t.done = taskDone(t);
-      t.stage = stageForDone(t.done, t.stage);
+      syncDone(t, new Date().toISOString());
     });
     setSubDraft("");
   }

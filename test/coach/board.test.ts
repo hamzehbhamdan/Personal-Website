@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyStage, STAGES, stageForDone } from "../../lib/dashboard/coach/board";
+import { applyStage, STAGES, stageForDone, syncDone } from "../../lib/dashboard/coach/board";
 import { taskDone } from "../../lib/dashboard/coach/rollup";
 import type { Task, Sub } from "../../lib/dashboard/coach/types";
 
@@ -91,5 +91,45 @@ describe("applyStage with subtasks", () => {
     applyStage(t, "doing", "2026-07-19T00:00:00Z");
     expect(t.subs[0].done).toBe(true); // partial progress preserved
     expect(t.stage).toBe("doing");
+  });
+
+  it("dragging a task with a running timer into Done pauses the timer", () => {
+    const t = task({ stage: "doing", done: false, timerStart: 1000, timeMs: 500 });
+    applyStage(t, "done", "2026-07-19T00:10:00Z");
+    expect(t.timerStart).toBeNull();
+    expect(t.timeMs).toBeGreaterThan(500);
+  });
+});
+
+describe("syncDone", () => {
+  it("all subs done: syncs done/stage/doneAt and pauses a running timer", () => {
+    const t = task({
+      stage: "todo", done: false, doneAt: null,
+      subs: [mkSub({ done: true }), mkSub({ done: true })],
+      timerStart: 1000, timeMs: 0,
+    });
+    syncDone(t, NOW);
+    expect(t.done).toBe(true);
+    expect(t.stage).toBe("done");
+    expect(t.doneAt).toBe(NOW);
+    expect(t.timerStart).toBeNull();
+  });
+
+  it("preserves an existing doneAt when already done", () => {
+    const prior = "2026-07-14T09:00:00.000Z";
+    const t = task({ stage: "done", done: true, doneAt: prior, subs: [mkSub({ done: true })] });
+    syncDone(t, NOW);
+    expect(t.doneAt).toBe(prior);
+  });
+
+  it("one undone sub: demotes out of done and clears doneAt", () => {
+    const t = task({
+      stage: "done", done: true, doneAt: "2026-07-14T09:00:00.000Z",
+      subs: [mkSub({ done: true }), mkSub({ done: false })],
+    });
+    syncDone(t, NOW);
+    expect(t.done).toBe(false);
+    expect(t.stage).toBe("todo");
+    expect(t.doneAt).toBeNull();
   });
 });

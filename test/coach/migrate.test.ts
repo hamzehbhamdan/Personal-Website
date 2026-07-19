@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { migrate } from "../../lib/dashboard/coach/migrate";
 import { taskPts } from "../../lib/dashboard/coach/rollup";
-import type { CoachDB, Sub, Task } from "../../lib/dashboard/coach/types";
+import type { CoachDB, Sub, Task, TaskStage } from "../../lib/dashboard/coach/types";
 
 const TODAY = new Date(2026, 6, 8);
 
@@ -96,6 +96,14 @@ describe("migrate v4 — Task.stage backfill + invariant", () => {
 
   it("demotes a Done-column task whose subs were left undone (report #5 scenario B)", () => {
     const db = mkDb({ tasks: [mkTask({ stage: "done", done: true, subs: [mkSub({ done: false })] })] });
+    const out = migrate(db, TODAY);
+    expect(out.tasks[0].stage).toBe("todo");
+    expect(out.tasks[0].done).toBe(false);
+  });
+
+  it("sanitizes a garbage stage on a not-done task to todo instead of passing it through", () => {
+    const raw = { ...mkTask({ done: false, subs: [] }), stage: "backlog" as unknown as TaskStage };
+    const db = mkDb({ tasks: [raw] });
     const out = migrate(db, TODAY);
     expect(out.tasks[0].stage).toBe("todo");
     expect(out.tasks[0].done).toBe(false);

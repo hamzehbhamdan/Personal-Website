@@ -1,4 +1,4 @@
-import type { CoachDB, Sub, Task } from "./types";
+import type { CoachDB, Sub, Task, TaskStage } from "./types";
 import { normalize } from "./seed";
 import { periodRange } from "./periods";
 import { taskDone } from "./rollup";
@@ -34,7 +34,11 @@ export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachD
     // where subs disagree with the stored `done`/`stage` self-heal on read.
     const effDone = taskDone(t);
     t.done = effDone;
-    t.stage = stageForDone(effDone, t.stage ?? (effDone ? "done" : "todo"));
+    const prevStage: TaskStage =
+      t.stage === "todo" || t.stage === "doing" || t.stage === "done"
+        ? t.stage
+        : effDone ? "done" : "todo";
+    t.stage = stageForDone(effDone, prevStage);
   });
   const board: any = db.board;
   if (board && Array.isArray(board.tasks)) {

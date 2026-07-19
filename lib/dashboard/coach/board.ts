@@ -1,4 +1,6 @@
 import type { Task, TaskStage } from "./types";
+import { taskDone } from "./rollup";
+import { pauseTimer } from "./timers";
 
 /** Kanban columns, left→right. `accent` colors the column header + card spine. */
 export const STAGES: { key: TaskStage; label: string; accent: string }[] = [
@@ -30,9 +32,24 @@ export function applyStage(t: Task, stage: TaskStage, nowISO: string): void {
     t.done = true;
     t.subs.forEach((s) => { s.done = true; });
     if (!t.doneAt) t.doneAt = nowISO;
+    if (t.timerStart) pauseTimer(t);
   } else {
     t.done = false;
     t.doneAt = null;
     if (leavingDone) t.subs.forEach((s) => { s.done = false; });
   }
+}
+
+/**
+ * Recompute a task's effective done-state after a sub or checkbox changed,
+ * keeping done / stage / doneAt / a running timer mutually consistent — the
+ * single source of truth for "completed anywhere" transitions. doneAt is set
+ * iff the task is effectively done, so the board and doneAt-gated metrics agree.
+ */
+export function syncDone(t: Task, nowISO: string): void {
+  const done = taskDone(t);
+  t.done = done;
+  t.stage = stageForDone(done, t.stage);
+  t.doneAt = done ? (t.doneAt ?? nowISO) : null;
+  if (done && t.timerStart) pauseTimer(t);
 }
