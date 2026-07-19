@@ -96,6 +96,6 @@ export function trimBrain(d: BrainDoc): BrainDoc {
     const unpinned = chats.filter((c) => !c.pinned).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     chats = [...pinned, ...unpinned].slice(0, MAX_CHATS);
   }
-  const captures = d.captures.length > MAX_CAPTURES ? d.captures.slice(-MAX_CAPTURES) : d.captures;
+  const captures = d.captures.length > MAX_CAPTURES ? d.captures.slice(0, MAX_CAPTURES) : d.captures;
   return { ...d, chats, captures };
 }

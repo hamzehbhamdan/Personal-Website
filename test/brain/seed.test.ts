@@ -87,11 +87,17 @@ describe("trimBrain", () => {
     expect(out.chats.some((c) => c.id === "pinned")).toBe(true);
   });
 
-  it("caps captures to the newest 200", () => {
-    const captures = Array.from({ length: 250 }, (_, i) => ({ id: `x${i}`, text: String(i), createdAt: "2026-01-01T00:00:00Z" }));
+  it("caps captures to the newest 200 (index 0 is newest — captures are prepended)", () => {
+    // Build app-shaped: descending recency, index 0 = newest ("249").
+    const captures = Array.from({ length: 250 }, (_, i) => ({
+      id: `x${249 - i}`,
+      text: String(249 - i),
+      createdAt: "2026-01-01T00:00:00Z",
+    }));
     const out = trimBrain({ ...emptyBrain(), captures });
     expect(out.captures).toHaveLength(200);
-    expect(out.captures[199].text).toBe("249");
+    expect(out.captures[0].text).toBe("249");    // newest survives
+    expect(out.captures[199].text).toBe("50");   // oldest 50 dropped
   });
 });
 
