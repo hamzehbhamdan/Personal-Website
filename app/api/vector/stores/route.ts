@@ -33,14 +33,8 @@ export async function GET() {
         const userStoreIds = mappings.map(m => m.vector_store_id);
 
         // 2. Fetch all from OpenAI and filter
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) {
-            console.warn("vector: stores GET vectorStores API unavailable");
-            return NextResponse.json({ error: "Server error" }, { status: 500 });
-        }
-
-        const vectorStoresList = await vsAPI.list();
-        const filteredStores = vectorStoresList.data.filter((s: any) => userStoreIds.includes(s.id));
+        const vectorStoresList = await openai.vectorStores.list();
+        const filteredStores = vectorStoresList.data.filter((s) => userStoreIds.includes(s.id));
 
         return NextResponse.json(filteredStores);
     } catch (error: any) {
@@ -59,13 +53,7 @@ export async function POST(req: Request) {
         const { name } = await req.json();
 
         // 1. Create in OpenAI
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) {
-            console.warn("vector: stores POST vectorStores API unavailable");
-            return NextResponse.json({ error: "Server error" }, { status: 500 });
-        }
-
-        const vectorStore = await vsAPI.create({
+        const vectorStore = await openai.vectorStores.create({
             name: name || "New Cognitive Cluster",
         });
 
@@ -101,10 +89,12 @@ export async function DELETE(req: Request) {
         // Verify the caller owns this store before touching OpenAI (prevents IDOR).
         if (!(await ownsStore(supabase, userId, id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        // 1. Delete from OpenAI
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (vsAPI) {
-            await vsAPI.del(id);
+        // 1. Delete from OpenAI. 404 = already gone remotely; still clean up
+        //    the mapping row so the UI stops listing a ghost store.
+        try {
+            await openai.vectorStores.delete(id);
+        } catch (err) {
+            if ((err as { status?: number })?.status !== 404) throw err;
         }
 
         // 2. Delete from Supabase mapping

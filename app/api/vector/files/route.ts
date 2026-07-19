@@ -24,11 +24,8 @@ export async function GET(req: Request) {
         // Verify the caller owns this store before touching OpenAI.
         if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) return NextResponse.json({ error: "Server error" }, { status: 500 });
-
         // 1. Get files linked to the vector store
-        const filesList = await vsAPI.files.list(storeId);
+        const filesList = await openai.vectorStores.files.list(storeId);
         const vectorFiles = filesList.data;
 
         // 2. Enrich with actual file details (filename, etc) from Files API
@@ -70,12 +67,13 @@ export async function DELETE(req: Request) {
         // Verify the caller owns this store before touching OpenAI.
         if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) {
-            return NextResponse.json({ error: "Server error" }, { status: 500 });
+        // v6 signature: delete(fileID, { vector_store_id }). 404-tolerant so an
+        // already-detached file doesn't strand the UI.
+        try {
+            await openai.vectorStores.files.delete(fileId, { vector_store_id: storeId });
+        } catch (err) {
+            if ((err as { status?: number })?.status !== 404) throw err;
         }
-
-        await vsAPI.files.del(storeId, fileId);
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.warn("vector: files DELETE failed");
@@ -101,9 +99,6 @@ export async function POST(req: Request) {
         // Verify the caller owns this store before touching OpenAI.
         if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
-        if (!vsAPI) return NextResponse.json({ error: "Server error" }, { status: 500 });
-
         const uploadedFiles: any[] = [];
 
         await Promise.all(files.map(async (file) => {
@@ -117,7 +112,7 @@ export async function POST(req: Request) {
             });
 
             // 2. Attach to Vector Store
-            const vsFile = await vsAPI.files.create(storeId, {
+            const vsFile = await openai.vectorStores.files.create(storeId, {
                 file_id: openaiFile.id
             });
 
