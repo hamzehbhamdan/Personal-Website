@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gateResult } from "../lib/auth";
+import { gateResult, isGatedPath } from "../lib/auth";
 
 const ALLOWED = "owner@example.com";
 
@@ -21,5 +21,23 @@ describe("gateResult", () => {
   });
   it("403 when user has no email even if allow-list is whitespace (fail closed)", () => {
     expect(gateResult({ id: "u1", email: null }, "   ")).toEqual({ ok: false, status: 403 });
+  });
+});
+
+describe("isGatedPath", () => {
+  it("gates /dashboard on any host", () => {
+    expect(isGatedPath("/dashboard", "www")).toBe(true);
+    expect(isGatedPath("/dashboard/settings", "hamzehhamdan")).toBe(true);
+  });
+  it("gates every my.* path EXCEPT the auth surfaces (the way in must stay reachable)", () => {
+    expect(isGatedPath("/", "my")).toBe(true);
+    expect(isGatedPath("/anything", "my")).toBe(true);
+    expect(isGatedPath("/login", "my")).toBe(false);
+    expect(isGatedPath("/auth", "my")).toBe(false);          // no trailing slash
+    expect(isGatedPath("/auth/callback", "my")).toBe(false);
+  });
+  it("leaves the public site ungated", () => {
+    expect(isGatedPath("/", "www")).toBe(false);
+    expect(isGatedPath("/blog", "hamzehhamdan")).toBe(false);
   });
 });

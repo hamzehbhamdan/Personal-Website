@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { gateResult } from "@/lib/auth";
+import { gateResult, isGatedPath } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
     // 1. Skip middleware for static assets, API routes, and Next.js internals
@@ -76,8 +76,9 @@ export async function middleware(request: NextRequest) {
     // (Previously the allow-list check was skipped when ALLOWED_EMAIL was unset, letting
     // any authenticated Google account load the shell — now consistent with requireUser().)
     // NOTE: middleware does NOT run on /api (see matcher). API routes authenticate via requireUser().
-    const isDashboard = request.nextUrl.pathname.startsWith("/dashboard") || subdomain === "my";
-    if (isDashboard) {
+    // /login and /auth/* stay reachable unauthenticated (see isGatedPath) —
+    // gating them redirect-loops any logged-out browser on my.*.
+    if (isGatedPath(request.nextUrl.pathname, subdomain)) {
         const gate = gateResult(user, process.env.ALLOWED_EMAIL);
         if (!gate.ok) {
             const url = new URL("/login", request.url);
