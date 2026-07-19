@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "@/lib/dashboard/useAppState";
-import { ViewHeader, Segmented } from "@/components/dashboard/ui";
+import { ViewHeader, Segmented, LoadState } from "@/components/dashboard/ui";
 import { useLiveInteractions } from "./useLiveInteractions";
 import { emptyDb, normalizeDb } from "@/lib/dashboard/people/backup";
 import { state as computeState } from "@/lib/dashboard/people/state";
@@ -115,14 +115,7 @@ export function PeopleView({
   if (!loaded) {
     return (
       <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">
-        {loadError ? (
-          <>
-            Couldn&apos;t load your data.{" "}
-            <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
-          </>
-        ) : (
-          "Loading…"
-        )}
+        <LoadState loadError={loadError} retryLoad={retryLoad} />
       </div>
     );
   }

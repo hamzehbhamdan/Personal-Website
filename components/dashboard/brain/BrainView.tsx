@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import { PageContainer, ViewHeader, Segmented, SectionHeader } from "@/components/dashboard/ui";
+import { PageContainer, ViewHeader, Segmented, SectionHeader, LoadState } from "@/components/dashboard/ui";
 import { useBrain, type BrainTab } from "./BrainProvider";
 import { CaptureBox } from "./CaptureBox";
 import { CaptureInbox } from "./CaptureInbox";
@@ -160,14 +160,7 @@ export function BrainView() {
     return (
       <PageContainer>
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400" style={mono}>
-          {loadError ? (
-            <>
-              Couldn&apos;t load your data.{" "}
-              <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
-            </>
-          ) : (
-            "Loading…"
-          )}
+          <LoadState loadError={loadError} retryLoad={retryLoad} />
         </div>
       </PageContainer>
     );

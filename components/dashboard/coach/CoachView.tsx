@@ -6,7 +6,7 @@
 // 16–17) and the modal set (Tasks 18–22).
 "use client";
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { ViewHeader, Segmented } from "@/components/dashboard/ui";
+import { ViewHeader, Segmented, LoadState } from "@/components/dashboard/ui";
 import { useAppState } from "@/lib/dashboard/useAppState";
 import { emptyCoachDB } from "@/lib/dashboard/coach/seed";
 import { migrate } from "@/lib/dashboard/coach/migrate";
@@ -110,14 +110,7 @@ export function CoachView({
   if (!loaded) {
     return (
       <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">
-        {loadError ? (
-          <>
-            Couldn&apos;t load your data.{" "}
-            <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
-          </>
-        ) : (
-          "Loading…"
-        )}
+        <LoadState loadError={loadError} retryLoad={retryLoad} />
       </div>
     );
   }
