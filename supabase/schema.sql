@@ -194,6 +194,9 @@ create table if not exists public.app_state (
   user_id    uuid not null references auth.users(id) on delete cascade,
   app        text not null check (app in ('lifeCRM','execCoach','home','brain')),
   data       jsonb not null default '{}',
+  -- Optimistic-lock token. The API inserts at 1 and bumps on every update;
+  -- 0 is reserved for "row does not exist" (see migrations/2026-07-19-app-state-version.sql).
+  version    bigint not null default 0,
   updated_at timestamptz not null default now(),
   primary key (user_id, app)
 );
