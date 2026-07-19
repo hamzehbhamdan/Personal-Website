@@ -1,5 +1,5 @@
 import type { CoachDB, Goal } from "./types";
-import { periodRange, type PeriodRange } from "./periods";
+import { parseDayKey, periodRange, type PeriodRange } from "./periods";
 import { getGoal, subtree, taskPts, taskDonePts, taskDone, taskTime, progressOf } from "./rollup";
 
 export type InsScope = "week" | "month" | "quarter" | "year" | "all";
@@ -17,7 +17,7 @@ function insTasks(db: CoachDB, scope: InsScope, today: Date) {
   const r = scopeRange(scope, today);
   if (!r) return db.tasks.slice();
   if (scope === "week") return db.tasks.filter((t) => t.week === r.key);
-  return db.tasks.filter((t) => { if (!/^W/.test(t.week)) return false; const d = new Date(t.week.slice(1)); return d >= r.start && d <= r.end; });
+  return db.tasks.filter((t) => { if (!/^W/.test(t.week)) return false; const d = parseDayKey(t.week.slice(1)); return d >= r.start && d <= r.end; });
 }
 
 export function computeInsights(db: CoachDB, scope: InsScope, today: Date = new Date()): Insights {

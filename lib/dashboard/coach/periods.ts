@@ -12,7 +12,9 @@ export function periodRange(h: Horizon, off = 0, today: Date = new Date()): Peri
     const dow = (d.getDay() + 6) % 7;
     const start = new Date(d); start.setDate(d.getDate() - dow + off * 7);
     const end = new Date(start); end.setDate(start.getDate() + 6);
-    return { key: "W" + start.toISOString().slice(0, 10),
+    // Key from LOCAL date parts — toISOString() keyed the UTC day, which is
+    // the Sunday date in every ahead-of-UTC timezone (review #63).
+    return { key: "W" + start.getFullYear() + "-" + String(start.getMonth() + 1).padStart(2, "0") + "-" + String(start.getDate()).padStart(2, "0"),
       label: start.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " – " +
              end.toLocaleDateString("en-US", { month: "short", day: "numeric" }), start, end };
   }
@@ -40,12 +42,23 @@ export function elapsedFrac(r: PeriodRange, today: Date = new Date()): number {
   return (t - r.start.getTime()) / ((r.end.getTime() + 86400000) - r.start.getTime());
 }
 
+/**
+ * Parse a "YYYY-MM-DD" day key into LOCAL midnight. Never use
+ * `new Date("YYYY-MM-DD")` on period keys — the ES spec parses date-only
+ * strings as UTC midnight, which is the previous local calendar day in every
+ * behind-UTC timezone (review #29/#30/#32).
+ */
+export function parseDayKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function periodLabelOf(g: Pick<Goal, "period">): string {
   const p = g.period;
   if (/^\d{4}$/.test(p)) return p;
   if (/^\d{4}-Q\d$/.test(p)) return p.slice(5) + " " + p.slice(0, 4);
   if (/^\d{4}-\d{2}$/.test(p)) { const [y, m] = p.split("-"); return new Date(+y, +m - 1).toLocaleDateString("en-US", { month: "short", year: "numeric" }); }
-  if (/^W/.test(p)) { const s = new Date(p.slice(1)); const e = new Date(s); e.setDate(s.getDate() + 6);
+  if (/^W/.test(p)) { const s = parseDayKey(p.slice(1)); const e = new Date(s); e.setDate(s.getDate() + 6);
     return s.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + "–" + e.toLocaleDateString("en-US", { day: "numeric" }); }
   return p || "";
 }

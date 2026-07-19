@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { periodRange, elapsedFrac, periodLabelOf, findOffset, NEXTUP, NEXTDOWN } from "../../lib/dashboard/coach/periods";
+import { periodRange, elapsedFrac, periodLabelOf, parseDayKey, findOffset, NEXTUP, NEXTDOWN } from "../../lib/dashboard/coach/periods";
 
 const TODAY = new Date(2026, 6, 8); // Wed Jul 8 2026 (local, UTC-pinned in CI)
 
@@ -45,5 +45,12 @@ describe("periodLabelOf / findOffset / ladders", () => {
   it("ladder maps", () => {
     expect(NEXTUP.week).toBe("month"); expect(NEXTUP.year).toBe(null);
     expect(NEXTDOWN.year).toBe("quarter"); expect(NEXTDOWN.week).toBe(null);
+  });
+  it("labels a week period key (regression #32 — previously untested branch)", () => {
+    expect(periodLabelOf({ period: "W2026-07-06" })).toBe("Jul 6–12");
+  });
+  it("parseDayKey returns local midnight of the key's day", () => {
+    const d = parseDayKey("2026-07-06");
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([2026, 6, 6, 0]);
   });
 });
