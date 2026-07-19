@@ -91,7 +91,40 @@ describe("SaveQueue", () => {
     q.submit(2);          // newer snapshot arrives while 1 is stuck
     d1.resolve();
     await tick(); await tick(); await tick();
+    expect(sent).toEqual([1, 2]);                    // no duplicate chained PUT of 2
     expect(sent[sent.length - 1]).toBe(2);           // newest wins on the wire
     expect(statuses[statuses.length - 1]).toBe("saved");
+  });
+
+  it("coalesces many rapid mid-flight submits into at most one follow-up send", async () => {
+    const d1 = deferred();
+    const sent: number[] = [];
+    const q = new SaveQueue<number>(async (doc) => {
+      sent.push(doc);
+      if (doc === 0) await d1.promise; // first send stalls
+    }, () => {});
+    q.submit(0);
+    await tick();
+    for (let i = 1; i <= 10; i++) q.submit(i); // 10 rapid submits while 0 is in flight
+    d1.resolve();
+    await tick(); await tick();
+    expect(sent).toEqual([0, 10]); // exactly one follow-up, carrying the NEWEST snapshot
+  });
+
+  it("reports the final send's status when a chained send fails after an earlier one succeeded", async () => {
+    const d1 = deferred();
+    const statuses: string[] = [];
+    let n = 0;
+    const q = new SaveQueue<number>(async () => {
+      n++;
+      if (n === 1) { await d1.promise; return; } // first send: succeeds (after stalling)
+      throw new Error("chained send fails");     // second (chained) send: fails both attempts
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick();
+    q.submit(2); // arrives mid-flight → will chain after the first send settles
+    d1.resolve();
+    await tick(); await tick(); await tick();
+    expect(statuses[statuses.length - 1]).toBe("error");
   });
 });

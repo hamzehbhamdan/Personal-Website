@@ -32,21 +32,25 @@ export class SaveQueue<T> {
   private async send(): Promise<void> {
     this.inFlight = true;
     this.onStatus("saving");
-    let ok: boolean;
-    try {
-      await this.putFn(this.latest as T);
-      ok = true;
-    } catch {
+    let ok = false;
+    // Up to two attempts (one send + one retry). Clear `dirty` at the START of
+    // each attempt so it means strictly "a newer snapshot arrived AFTER we
+    // began sending the current one". The retry re-reads this.latest and so
+    // already carries any snapshot submitted before it; without this per-attempt
+    // reset, that snapshot would also (wrongly) trigger a redundant chained PUT
+    // of an identical value — violating the exactly-one-follow-up guarantee.
+    for (let attempt = 0; attempt < 2 && !ok; attempt++) {
+      this.dirty = false;
       try {
-        await this.putFn(this.latest as T); // one retry — re-reads newest
+        await this.putFn(this.latest as T);
         ok = true;
       } catch {
-        ok = false;
+        // fall through: retry (attempt 1) or give up after the retry fails
       }
     }
     if (this.dirty) {
-      this.dirty = false;
-      return this.send(); // newer snapshot arrived mid-flight — chain it
+      // A snapshot arrived during the last await and has NOT been sent yet.
+      return this.send(); // chain exactly one follow-up send of the newest doc
     }
     this.inFlight = false;
     this.onStatus(ok ? "saved" : "error");
