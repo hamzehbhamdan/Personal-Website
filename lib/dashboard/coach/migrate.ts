@@ -44,10 +44,18 @@ export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachD
   if (board && Array.isArray(board.tasks)) {
     const secName: Record<string, string> = {};
     (board.sections || []).forEach((s: any) => { secName[s.id] = s.name; });
-    board.tasks.forEach((bt: any) => {
-      const subs: Sub[] = (bt.subs || []).map((s: any) => ({ id: uid("s"), label: s.label, pts: +s.pts || 0, meta: s.meta || "", done: !!s.done }));
+    board.tasks.forEach((bt: any, i: number) => {
+      // Deterministic ids derived from the legacy board item (review #31):
+      // migrate() runs on every render AND inside every mutate(), so until the
+      // migration is persisted, random uid()s make the rendered ids never match
+      // the draft's (first click on a converted task no-ops) or the server
+      // search index. "bt-" cannot collide with uid()'s "t…"/"s…" ids; sub ids
+      // are scoped to the parent because legacy sub ids may repeat across
+      // tasks; array indices cover items with no id.
+      const btId = "bt-" + (bt.id ?? String(i));
+      const subs: Sub[] = (bt.subs || []).map((s: any, j: number) => ({ id: btId + "-s-" + (s.id ?? String(j)), label: s.label, pts: +s.pts || 0, meta: s.meta || "", done: !!s.done }));
       const t: Task = {
-        id: uid("t"), goalId: "", week: wk, label: bt.label || "Task",
+        id: btId, goalId: "", week: wk, label: bt.label || "Task",
         pts: bt.subs && bt.subs.length ? 0 : +bt.pts || 1,
         note: bt.note || "", tag: bt.tag || secName[bt.sectionId] || "",
         done: !!bt.done, doneAt: bt.done ? new Date().toISOString() : null,

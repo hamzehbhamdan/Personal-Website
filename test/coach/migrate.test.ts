@@ -109,3 +109,25 @@ describe("migrate v4 — Task.stage backfill + invariant", () => {
     expect(out.tasks[0].done).toBe(false);
   });
 });
+
+describe("migrate — board id determinism (review #31)", () => {
+  it("mints identical ids on repeated migration of the same unpersisted doc", () => {
+    const a = migrate(structuredClone(old), TODAY);
+    const b = migrate(structuredClone(old), TODAY);
+    const gA = a.tasks.find((t) => t.label === "Groceries")!;
+    const gB = b.tasks.find((t) => t.label === "Groceries")!;
+    expect(gA.id).toBe(gB.id);                    // random uid() would differ per call
+    expect(gA.id).toBe("bt-bt1");                 // derived from the source item id
+    expect(gA.subs.map((s) => s.id)).toEqual(gB.subs.map((s) => s.id));
+    expect(gA.subs[0].id).toBe("bt-bt1-s-bs1");   // sub ids scoped to the parent
+  });
+  it("falls back to array indices when a legacy board item has no id", () => {
+    const raw = structuredClone(old);
+    delete raw.board.tasks[0].id;
+    delete raw.board.tasks[0].subs[0].id;
+    const db = migrate(raw, TODAY);
+    const g = db.tasks.find((t) => t.label === "Groceries")!;
+    expect(g.id).toBe("bt-0");
+    expect(g.subs[0].id).toBe("bt-0-s-0");
+  });
+});
