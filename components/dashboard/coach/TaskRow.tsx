@@ -193,6 +193,8 @@ export function TaskRow({
       const t = findDraftTask(draft);
       if (!t) return;
       t.subs = t.subs.filter((x) => x.id !== subId);
+      t.done = taskDone(t);
+      t.stage = stageForDone(t.done, t.stage);
     });
   }
 
@@ -203,6 +205,8 @@ export function TaskRow({
       const t = findDraftTask(draft);
       if (!t) return;
       t.subs.push({ id: uid("s"), label, pts: 1, meta: "", done: false });
+      t.done = taskDone(t);
+      t.stage = stageForDone(t.done, t.stage);
     });
     setSubDraft("");
   }
