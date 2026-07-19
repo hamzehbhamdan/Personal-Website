@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Modal } from "@/components/dashboard/ui";
 import { cn } from "@/lib/utils";
 import { AvatarEditor } from "@/components/dashboard/people/AvatarEditor";
@@ -77,6 +77,9 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
 
   const [suggesting, setSuggesting] = useState(false);
   const [suggestMsg, setSuggestMsg] = useState<string | null>(null);
+
+  const initialRef = useRef(JSON.stringify(form));
+  const dirty = JSON.stringify(form) !== initialRef.current;
 
   function handleTierChange(newTier: string) {
     setForm((f) => ({
@@ -198,7 +201,11 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
   const title = contact ? `Edit ${contact.name}` : "Add contact";
 
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal
+      title={title}
+      onClose={onClose}
+      confirmClose={() => !dirty || window.confirm("Discard unsaved changes to this contact?")}
+    >
       <div className="mb-3">
         <label className={labelCls}>Name</label>
         <input

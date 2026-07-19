@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Sparkles, Loader2, Trash2 } from "lucide-react";
 import { Modal } from "@/components/dashboard/ui";
 import { TagInput } from "./TagInput";
@@ -29,6 +29,9 @@ export function NoteEditor({
   const [suggesting, setSuggesting] = useState(false);
   const [suggested, setSuggested] = useState<string[]>([]);
 
+  const initialRef = useRef(JSON.stringify({ title, text, tags }));
+  const dirty = JSON.stringify({ title, text, tags }) !== initialRef.current;
+
   const suggestTags = async () => {
     if (!text.trim()) return;
     setSuggesting(true);
@@ -57,7 +60,12 @@ export function NoteEditor({
   };
 
   return (
-    <Modal title={note ? "Edit note" : "New note"} onClose={onClose} size="wide">
+    <Modal
+      title={note ? "Edit note" : "New note"}
+      onClose={onClose}
+      size="wide"
+      confirmClose={() => !dirty || window.confirm("Discard unsaved changes to this note?")}
+    >
       <div className="space-y-3">
         <input
           value={title}
