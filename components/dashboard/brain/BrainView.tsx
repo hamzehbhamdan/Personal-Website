@@ -37,6 +37,8 @@ export function BrainView() {
   const {
     doc,
     loaded,
+    loadError,
+    retryLoad,
     status,
     addCapture,
     deleteCapture,
@@ -103,9 +105,11 @@ export function BrainView() {
     }
   }
 
-  // Deep-link intent (from ⌘K / Home). Consume once.
+  // Deep-link intent (from ⌘K / Home). Consume once — but only after the doc
+  // has hydrated: a noteId can't resolve and a chat send would run against
+  // the empty seed before then.
   useEffect(() => {
-    if (!intent) return;
+    if (!intent || !loaded) return;
     setTab(intent.tab);
     if (intent.noteId) {
       const n = doc.notes.find((x) => x.id === intent.noteId);
@@ -120,7 +124,7 @@ export function BrainView() {
     }
     consumeIntent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intent]);
+  }, [intent, loaded]);
 
   async function makeSearchable(n: BrainNote) {
     if (typeof n.docId === "number") return;
@@ -155,7 +159,16 @@ export function BrainView() {
   if (!loaded) {
     return (
       <PageContainer>
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400" style={mono}>Loading…</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400" style={mono}>
+          {loadError ? (
+            <>
+              Couldn&apos;t load your data.{" "}
+              <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
+            </>
+          ) : (
+            "Loading…"
+          )}
+        </div>
       </PageContainer>
     );
   }

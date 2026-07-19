@@ -45,7 +45,7 @@ export function CoachView({
   initialSelect = null,
   onConsumed,
 }: { initialSelect?: Extract<ViewIntent, { view: "coach" }> | null; onConsumed?: () => void } = {}) {
-  const { state, setState, loaded } = useAppState<CoachDB>("execCoach", emptyCoachDB());
+  const { state, setState, loaded, loadError, retryLoad } = useAppState<CoachDB>("execCoach", emptyCoachDB());
   const [horizon, setHorizon] = useState<Horizon>("week");
   const [offset, setOffset] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>({ kind: "none" });
@@ -109,7 +109,16 @@ export function CoachView({
 
   if (!loaded) {
     return (
-      <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
+      <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">
+        {loadError ? (
+          <>
+            Couldn&apos;t load your data.{" "}
+            <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
+          </>
+        ) : (
+          "Loading…"
+        )}
+      </div>
     );
   }
 

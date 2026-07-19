@@ -20,6 +20,8 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface BrainContextValue {
   doc: BrainDoc;
   loaded: boolean;
+  loadError: boolean;
+  retryLoad: () => void;
   status: SaveStatus;
   addCapture: (text: string) => void;
   deleteCapture: (id: string) => void;
@@ -47,7 +49,7 @@ export function useBrain(): BrainContextValue {
 }
 
 export function BrainProvider({ children }: { children: React.ReactNode }) {
-  const { state, setState, loaded, status } = useAppState<BrainDoc>("brain", emptyBrain());
+  const { state, setState, loaded, loadError, retryLoad, status } = useAppState<BrainDoc>("brain", emptyBrain());
   const doc = useMemo(() => normalizeBrain(state), [state]);
   const [intent, setIntent] = useState<BrainIntent | null>(null);
 
@@ -149,6 +151,8 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
     () => ({
       doc,
       loaded,
+      loadError,
+      retryLoad,
       status,
       addCapture,
       deleteCapture,
@@ -166,7 +170,7 @@ export function BrainProvider({ children }: { children: React.ReactNode }) {
       requestOpen,
       consumeIntent,
     }),
-    [doc, loaded, status, addCapture, deleteCapture, addNote, updateNote, deleteNote, togglePinNote, addChat, appendChatMsg, renameChat, deleteChat, togglePinChat, setSettings, intent, requestOpen, consumeIntent],
+    [doc, loaded, loadError, retryLoad, status, addCapture, deleteCapture, addNote, updateNote, deleteNote, togglePinNote, addChat, appendChatMsg, renameChat, deleteChat, togglePinChat, setSettings, intent, requestOpen, consumeIntent],
   );
 
   return <BrainContext.Provider value={value}>{children}</BrainContext.Provider>;

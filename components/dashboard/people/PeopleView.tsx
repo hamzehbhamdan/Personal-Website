@@ -42,7 +42,7 @@ export function PeopleView({
   initialSelect = null,
   onConsumed,
 }: { initialSelect?: Extract<ViewIntent, { view: "people" }> | null; onConsumed?: () => void } = {}) {
-  const { state: raw, setState, loaded, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
+  const { state: raw, setState, loaded, loadError, retryLoad, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
   const db = useMemo(() => normalizeDb(raw), [raw]);
   const now = useMemo(() => new Date(), []);
   const live = useLiveInteractions(now);
@@ -114,7 +114,16 @@ export function PeopleView({
 
   if (!loaded) {
     return (
-      <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">Loading…</div>
+      <div className="mx-auto w-full max-w-reading p-7 md:p-8 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-400">
+        {loadError ? (
+          <>
+            Couldn&apos;t load your data.{" "}
+            <button onClick={retryLoad} className="underline text-[#A51C30]">Retry</button>
+          </>
+        ) : (
+          "Loading…"
+        )}
+      </div>
     );
   }
 
