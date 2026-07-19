@@ -1,6 +1,6 @@
 // test/state-sync.test.ts
 import { describe, it, expect } from "vitest";
-import { SaveQueue, replayPending } from "@/lib/dashboard/state-sync";
+import { SaveQueue, replayPending, ConflictError } from "@/lib/dashboard/state-sync";
 
 function deferred<T = void>() {
   let resolve!: (v: T) => void;
@@ -126,5 +126,80 @@ describe("SaveQueue", () => {
     d1.resolve();
     await tick(); await tick(); await tick();
     expect(statuses[statuses.length - 1]).toBe("error");
+  });
+});
+
+describe("SaveQueue optimistic locking", () => {
+  it("threads the advancing version into each send", async () => {
+    const bases: number[] = [];
+    const q = new SaveQueue<number>(async (_doc, base) => { bases.push(base); return base + 1; }, () => {});
+    q.setBase(5);                 // from the initial GET
+    q.submit(1);
+    await tick();
+    q.submit(2);
+    await tick(); await tick();
+    expect(bases).toEqual([5, 6]); // second send uses the version the first resolved
+    expect(q.baseVersion).toBe(7);
+  });
+
+  it("a conflict stops the chain without a retry and reports 'conflict'", async () => {
+    let sends = 0;
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async () => { sends++; throw new ConflictError(); }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick(); await tick();
+    expect(sends).toBe(1);        // a stale base is never blindly resent
+    expect(statuses).toEqual(["saving", "conflict"]);
+  });
+
+  it("a conflict drops the mid-flight dirty snapshot instead of resending it", async () => {
+    const d1 = deferred();
+    let sends = 0;
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async () => {
+      sends++;
+      await d1.promise;
+      throw new ConflictError();
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick();
+    q.submit(2);                  // arrives while 1 is in flight
+    d1.resolve();
+    await tick(); await tick(); await tick();
+    expect(sends).toBe(1);        // 2 would carry the same stale base → dropped
+    expect(statuses[statuses.length - 1]).toBe("conflict");
+  });
+
+  it("a network failure whose retry hits a conflict reports 'conflict'", async () => {
+    let attempts = 0;
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async () => {
+      attempts++;
+      if (attempts === 1) throw new Error("network down");
+      throw new ConflictError();
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick(); await tick();
+    expect(attempts).toBe(2);     // generic failure still gets its one retry
+    expect(statuses).toEqual(["saving", "conflict"]);
+  });
+
+  it("recovers after a conflict once the base is refreshed", async () => {
+    let fail = true;
+    const bases: number[] = [];
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async (_d, base) => {
+      if (fail) { fail = false; throw new ConflictError(); }
+      bases.push(base);
+      return base + 1;
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick(); await tick();
+    expect(statuses[statuses.length - 1]).toBe("conflict");
+    q.setBase(9);                 // owner re-GET stored the fresh server version
+    q.submit(2);
+    await tick(); await tick();
+    expect(bases).toEqual([9]);
+    expect(statuses[statuses.length - 1]).toBe("saved");
   });
 });

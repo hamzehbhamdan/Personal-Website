@@ -4,6 +4,7 @@
 // capture both mutate the same in-memory doc — no extra route, no autosave race.
 import { createContext, useContext, useCallback, useMemo, useState } from "react";
 import { useAppState } from "@/lib/dashboard/useAppState";
+import type { SaveStatus as SyncSaveStatus } from "@/lib/dashboard/state-sync";
 import { emptyBrain, normalizeBrain, trimBrain, uid, nowIso } from "@/lib/dashboard/brain/seed";
 import type { BrainDoc, BrainNote, BrainChat, BrainChatMsg, BrainSettings } from "@/lib/dashboard/brain/types";
 
@@ -15,7 +16,7 @@ export interface BrainIntent {
   draft?: string; // prefill text for compose (notes) or auto-send (chat)
 }
 
-type SaveStatus = "idle" | "saving" | "saved" | "error";
+type SaveStatus = "idle" | SyncSaveStatus;
 
 interface BrainContextValue {
   doc: BrainDoc;
