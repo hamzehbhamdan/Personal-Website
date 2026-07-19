@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { applyStage, STAGES } from "../../lib/dashboard/coach/board";
-import type { Task } from "../../lib/dashboard/coach/types";
+import { applyStage, STAGES, stageForDone } from "../../lib/dashboard/coach/board";
+import { taskDone } from "../../lib/dashboard/coach/rollup";
+import type { Task, Sub } from "../../lib/dashboard/coach/types";
 
 const NOW = "2026-07-17T12:00:00.000Z";
 function task(over: Partial<Task> = {}): Task {
@@ -9,6 +10,11 @@ function task(over: Partial<Task> = {}): Task {
     done: false, doneAt: null, subs: [], collapsed: false, timeMs: 0, timerStart: null,
     createdAt: "2026-07-13T00:00:00.000Z", stage: "todo", ...over,
   };
+}
+
+let subN = 0;
+function mkSub(over: Partial<Sub> = {}): Sub {
+  return { id: `sub${subN++}`, label: "sub", pts: 1, meta: "", done: false, ...over };
 }
 
 describe("STAGES", () => {
@@ -48,5 +54,42 @@ describe("applyStage", () => {
     expect(t.stage).toBe("todo");
     expect(t.done).toBe(false);
     expect(t.doneAt).toBe(null);
+  });
+});
+
+describe("stageForDone", () => {
+  it("done always maps to the done column", () => {
+    expect(stageForDone(true, "todo")).toBe("done");
+    expect(stageForDone(true, "doing")).toBe("done");
+    expect(stageForDone(true, "done")).toBe("done");
+  });
+  it("un-done leaves an in-progress task in place and only demotes out of done", () => {
+    expect(stageForDone(false, "doing")).toBe("doing");
+    expect(stageForDone(false, "todo")).toBe("todo");
+    expect(stageForDone(false, "done")).toBe("todo");
+  });
+});
+
+describe("applyStage with subtasks", () => {
+  it("dragging a subbed task into Done marks every sub done (taskDone agrees)", () => {
+    const t = task({ stage: "todo", done: false, subs: [mkSub({ done: false }), mkSub({ done: true })] });
+    applyStage(t, "done", "2026-07-19T00:00:00Z");
+    expect(t.subs.every((s) => s.done)).toBe(true);
+    expect(taskDone(t)).toBe(true);
+    expect(t.stage).toBe("done");
+  });
+  it("dragging a subbed task out of Done un-marks every sub (taskDone agrees)", () => {
+    const t = task({ stage: "done", done: true, subs: [mkSub({ done: true }), mkSub({ done: true })] });
+    applyStage(t, "doing", "2026-07-19T00:00:00Z");
+    expect(t.subs.some((s) => s.done)).toBe(false);
+    expect(taskDone(t)).toBe(false);
+    expect(t.done).toBe(false);
+    expect(t.doneAt).toBeNull();
+  });
+  it("a todo→doing move must NOT wipe partially-checked subs", () => {
+    const t = task({ stage: "todo", done: false, subs: [mkSub({ done: true }), mkSub({ done: false })] });
+    applyStage(t, "doing", "2026-07-19T00:00:00Z");
+    expect(t.subs[0].done).toBe(true); // partial progress preserved
+    expect(t.stage).toBe("doing");
   });
 });
