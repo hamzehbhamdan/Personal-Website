@@ -1,6 +1,8 @@
 import type { CoachDB, Sub, Task } from "./types";
 import { normalize } from "./seed";
 import { periodRange } from "./periods";
+import { taskDone } from "./rollup";
+import { stageForDone } from "./board";
 
 export const uid = (p = "x"): string => p + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
 
@@ -27,10 +29,12 @@ export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachD
     if (t.collapsed == null) t.collapsed = false;
     if (t.doneAt === undefined) t.doneAt = t.done ? new Date().toISOString() : null;
     if (t.createdAt == null) t.createdAt = new Date().toISOString();
-    // stage (v4): enforce the invariant stage==="done" ⇔ done===true. `done` wins;
-    // otherwise backfill/repair to "todo", preserving a valid mid-stage "doing".
-    if (t.done) t.stage = "done";
-    else if (t.stage !== "todo" && t.stage !== "doing") t.stage = "todo";
+    // stage (v4): enforce the invariant stage==="done" ⇔ done===true, keyed off
+    // EFFECTIVE done-ness (taskDone, which rolls up from subs) so legacy docs
+    // where subs disagree with the stored `done`/`stage` self-heal on read.
+    const effDone = taskDone(t);
+    t.done = effDone;
+    t.stage = stageForDone(effDone, t.stage ?? (effDone ? "done" : "todo"));
   });
   const board: any = db.board;
   if (board && Array.isArray(board.tasks)) {

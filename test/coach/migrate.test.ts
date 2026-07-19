@@ -1,8 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { migrate } from "../../lib/dashboard/coach/migrate";
 import { taskPts } from "../../lib/dashboard/coach/rollup";
+import type { CoachDB, Sub, Task } from "../../lib/dashboard/coach/types";
 
 const TODAY = new Date(2026, 6, 8);
+
+let n = 0;
+function mkSub(over: Partial<Sub> = {}): Sub {
+  return { id: `s${n++}`, label: "s", pts: 1, meta: "", done: false, ...over };
+}
+function mkTask(over: Partial<Task> = {}): Task {
+  return {
+    id: `t${n++}`, goalId: "", week: "", label: "T", pts: 1, note: "", tag: "",
+    done: false, doneAt: null, stage: "todo", subs: [], collapsed: false,
+    timeMs: 0, timerStart: null, createdAt: "x", ...over,
+  };
+}
+function mkDb(over: Partial<CoachDB> = {}): Partial<CoachDB> {
+  return { version: 4, goals: [], tasks: [], ...over };
+}
 
 const old: any = {
   version: 2, matters: "stuff", memory: "notes", intakeDone: {},
@@ -68,5 +84,20 @@ describe("migrate v4 — Task.stage backfill + invariant", () => {
     const twice = migrate(structuredClone(once), TODAY);
     expect(twice.tasks.map((t) => t.stage)).toEqual(once.tasks.map((t) => t.stage));
     expect(twice.version).toBe(4);
+  });
+
+  it("repairs a task whose subs are all done but whose stage is stale", () => {
+    // legacy doc state produced by the pre-fix UI (report #5 scenario A)
+    const db = mkDb({ tasks: [mkTask({ stage: "todo", done: false, subs: [mkSub({ done: true }), mkSub({ done: true })] })] });
+    const out = migrate(db, TODAY);
+    expect(out.tasks[0].stage).toBe("done");
+    expect(out.tasks[0].done).toBe(true);
+  });
+
+  it("demotes a Done-column task whose subs were left undone (report #5 scenario B)", () => {
+    const db = mkDb({ tasks: [mkTask({ stage: "done", done: true, subs: [mkSub({ done: false })] })] });
+    const out = migrate(db, TODAY);
+    expect(out.tasks[0].stage).toBe("todo");
+    expect(out.tasks[0].done).toBe(false);
   });
 });

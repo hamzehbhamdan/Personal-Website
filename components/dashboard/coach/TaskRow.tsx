@@ -18,6 +18,7 @@ import type { Mutate } from "./overlay";
 import { taskDone, taskPts, taskTime } from "@/lib/dashboard/coach/rollup";
 import { fmtDur, pauseTimer, resetTimer, startTimer } from "@/lib/dashboard/coach/timers";
 import { uid } from "@/lib/dashboard/coach/migrate";
+import { stageForDone } from "@/lib/dashboard/coach/board";
 import { Badge, Card } from "@/components/dashboard/ui";
 import { cn } from "@/lib/utils";
 
@@ -127,12 +128,10 @@ export function TaskRow({
       const t = findDraftTask(draft);
       if (!t) return;
       const nd = !taskDone(t);
-      if (t.subs.length > 0) {
-        t.subs.forEach((s) => { s.done = nd; });
-      } else {
-        t.done = nd;
-        t.doneAt = nd ? new Date().toISOString() : null;
-      }
+      t.subs.forEach((s) => { s.done = nd; });
+      t.done = nd;
+      t.doneAt = nd ? new Date().toISOString() : null;
+      t.stage = stageForDone(nd, t.stage);
       if (nd && t.timerStart) pauseTimer(t);
     });
   }
@@ -147,9 +146,12 @@ export function TaskRow({
       const s = t.subs.find((x) => x.id === subId);
       if (!s) return;
       s.done = !s.done;
+      const nowDone = taskDone(t);
+      t.done = nowDone;                          // raw flag mirrors effective done-ness
+      t.stage = stageForDone(nowDone, t.stage);  // board column follows (both surfaces)
       if (surface === "week") {
-        if (taskDone(t) && t.timerStart) pauseTimer(t);
-        t.doneAt = taskDone(t) ? new Date().toISOString() : null;
+        if (nowDone && t.timerStart) pauseTimer(t);
+        t.doneAt = nowDone ? new Date().toISOString() : null;
       }
     });
   }
