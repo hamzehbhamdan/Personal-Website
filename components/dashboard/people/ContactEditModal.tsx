@@ -78,8 +78,13 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
   const [suggesting, setSuggesting] = useState(false);
   const [suggestMsg, setSuggestMsg] = useState<string | null>(null);
 
-  const initialRef = useRef(JSON.stringify(form));
-  const dirty = JSON.stringify(form) !== initialRef.current;
+  // Include group-membership edits (checkedGroups) in the dirty check, not just
+  // the text form — otherwise a group-only change is silently discarded on close.
+  const snapshot = () => JSON.stringify({ form, groups: [...checkedGroups].sort() });
+  const initialRef = useRef(snapshot());
+  const dirty = snapshot() !== initialRef.current;
+  // Single guard shared by the Modal (backdrop/Escape/×) AND the Cancel button.
+  const confirmClose = () => !dirty || window.confirm("Discard unsaved changes to this contact?");
 
   function handleTierChange(newTier: string) {
     setForm((f) => ({
@@ -204,7 +209,7 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
     <Modal
       title={title}
       onClose={onClose}
-      confirmClose={() => !dirty || window.confirm("Discard unsaved changes to this contact?")}
+      confirmClose={confirmClose}
     >
       <div className="mb-3">
         <label className={labelCls}>Name</label>
@@ -335,7 +340,7 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
             Delete
           </button>
         )}
-        <button type="button" onClick={onClose} className={btnGhost} style={mono}>
+        <button type="button" onClick={() => { if (confirmClose()) onClose(); }} className={btnGhost} style={mono}>
           Cancel
         </button>
       </div>

@@ -31,6 +31,8 @@ export function NoteEditor({
 
   const initialRef = useRef(JSON.stringify({ title, text, tags }));
   const dirty = JSON.stringify({ title, text, tags }) !== initialRef.current;
+  // Single guard shared by the Modal (backdrop/Escape/×) AND the Cancel button.
+  const confirmClose = () => !dirty || window.confirm("Discard unsaved changes to this note?");
 
   const suggestTags = async () => {
     if (!text.trim()) return;
@@ -64,7 +66,7 @@ export function NoteEditor({
       title={note ? "Edit note" : "New note"}
       onClose={onClose}
       size="wide"
-      confirmClose={() => !dirty || window.confirm("Discard unsaved changes to this note?")}
+      confirmClose={confirmClose}
     >
       <div className="space-y-3">
         <input
@@ -116,7 +118,7 @@ export function NoteEditor({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onClose} className={btnGhost} style={mono}>
+            <button type="button" onClick={() => { if (confirmClose()) onClose(); }} className={btnGhost} style={mono}>
               Cancel
             </button>
             <button type="button" onClick={save} disabled={!text.trim()} className={btnPrimary} style={mono}>
