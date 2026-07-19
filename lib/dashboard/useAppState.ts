@@ -59,11 +59,20 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
     fetch(`/api/state?app=${appRef.current}`)
       .then((r) => { if (!r.ok) throw new Error(`load failed: ${r.status}`); return r.json(); })
       .then((j) => {
-        if (!alive || !aliveRef.current) return;
         const base = j.data && Object.keys(j.data).length ? (j.data as T) : seedRef.current;
         const pending = pendingRef.current;
         pendingRef.current = [];
         const merged = replayPending(base, pending);
+        if (!alive || !aliveRef.current) {
+          // Component unmounted before the GET resolved (e.g. a quick
+          // edit-then-navigate on a per-view hook). Don't touch React state,
+          // but pre-load edits must STILL reach the server exactly once —
+          // otherwise the buffered edit is silently dropped. The queue's PUT
+          // is React-free and its onStatus is guarded by aliveRef, so this is
+          // safe post-unmount.
+          if (pending.length) queueRef.current?.submit(merged);
+          return;
+        }
         loadedRef.current = true;
         latestRef.current = merged;
         setState(merged);
