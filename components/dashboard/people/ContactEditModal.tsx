@@ -191,6 +191,7 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
   // group's members list (port crm.html:474).
   function handleDelete() {
     if (!contact) return;
+    if (!window.confirm(`Delete ${contact.name} and their full interaction log? This can't be undone.`)) return;
     const id = contact.id;
     setState((prev) => {
       const nextDb = normalizeDb(prev);

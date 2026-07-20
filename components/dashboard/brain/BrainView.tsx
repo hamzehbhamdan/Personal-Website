@@ -152,10 +152,20 @@ export function BrainView() {
   }
 
   // Deleting a note also removes its embedding so the searchable corpus stays in sync.
+  // Confirm-gated (finding #21): covers both NoteCard's hover trash and the editor's Delete.
   function handleDeleteNote(id: string) {
     const n = doc.notes.find((x) => x.id === id);
+    const label = n ? `"${noteTitle(n)}"` : "this note";
+    if (!window.confirm(`Delete note ${label}? This can't be undone.`)) return;
     if (n && typeof n.docId === "number") void deleteDocument(n.docId).catch(() => {});
     deleteNote(id);
+  }
+
+  // Confirm-gated (finding #21): ChatHistoryList's trash erases the whole conversation.
+  function handleDeleteChat(id: string) {
+    if (!window.confirm("Delete this chat? This can't be undone.")) return;
+    deleteChat(id);
+    if (activeChatId === id) setActiveChatId(null);
   }
 
   if (!loaded) {
@@ -240,10 +250,7 @@ export function BrainView() {
               activeId={activeChatId}
               onSelect={setActiveChatId}
               onTogglePin={togglePinChat}
-              onDelete={(id) => {
-                deleteChat(id);
-                if (activeChatId === id) setActiveChatId(null);
-              }}
+              onDelete={handleDeleteChat}
             />
           </div>
         </div>

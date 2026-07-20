@@ -167,6 +167,7 @@ export function GroupEditModal({ id, db, live, now, setState, onClose }: {
   }
 
   function handleDelete() {
+    if (!window.confirm(`Delete group "${existing?.name ?? (form.name.trim() || "this group")}"? Members stay as contacts; the group's notes and cadence are lost.`)) return;
     setState((prev) => {
       const nextDb = normalizeDb(prev);
       return { ...nextDb, groups: nextDb.groups.filter((g) => g.id !== groupId) };

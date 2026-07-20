@@ -59,12 +59,14 @@ export function SourcesManager() {
       setBusy(false);
     }
   };
-  const removeStore = async (id: string) => {
+  const removeStore = async (s: VectorStore) => {
+    // Confirm-gated (finding #21): deletes the OpenAI store and orphans its uploaded files.
+    if (!window.confirm(`Delete source "${s.name || s.id}" and its uploaded files? This can't be undone.`)) return;
     setBusy(true);
     try {
-      await deleteStore(id);
-      setStores((p) => p.filter((s) => s.id !== id));
-      if (activeStoreId === id) setSettings({ activeStoreId: null });
+      await deleteStore(s.id);
+      setStores((p) => p.filter((x) => x.id !== s.id));
+      if (activeStoreId === s.id) setSettings({ activeStoreId: null });
     } catch {
       toast.error("Delete failed");
     } finally {
@@ -85,14 +87,16 @@ export function SourcesManager() {
       if (fileRef.current) fileRef.current.value = "";
     }
   };
-  const removeDoc = async (id: number) => {
+  const removeDoc = async (d: BrainDocument) => {
+    // Confirm-gated (finding #21): hard-deletes the pgvector row server-side.
+    if (!window.confirm(`Remove "${d.title}" from searchable memory? This can't be undone.`)) return;
     setBusy(true);
     try {
-      await deleteDocument(id);
-      setDocs((p) => p.filter((d) => d.id !== id));
+      await deleteDocument(d.id);
+      setDocs((p) => p.filter((x) => x.id !== d.id));
       // Reconcile: a note that pointed at this document is no longer searchable.
       doc.notes.forEach((n) => {
-        if (n.docId === id) updateNote(n.id, { docId: null });
+        if (n.docId === d.id) updateNote(n.id, { docId: null });
       });
     } catch {
       toast.error("Delete failed");
@@ -158,7 +162,7 @@ export function SourcesManager() {
                       )}
                       <button
                         type="button"
-                        onClick={() => removeStore(s.id)}
+                        onClick={() => removeStore(s)}
                         title="Delete source"
                         className="grid size-7 place-items-center rounded-md text-stone-400 hover:text-[#A51C30]"
                       >
@@ -193,7 +197,7 @@ export function SourcesManager() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeDoc(d.id)}
+                  onClick={() => removeDoc(d)}
                   title="Remove from memory"
                   className="grid size-7 shrink-0 place-items-center rounded-md text-stone-400 hover:text-[#A51C30]"
                 >
