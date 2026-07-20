@@ -11,11 +11,13 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-type UploadedVectorFile = Omit<OpenAI.VectorStores.VectorStoreFile, "status"> & {
-    filename: string;
-    bytes: number;
-    status: "uploaded";
-};
+type UploadedVectorFile =
+    | (Omit<OpenAI.VectorStores.VectorStoreFile, "status"> & {
+          filename: string;
+          bytes: number;
+          status: "uploaded";
+      })
+    | { filename: string; status: "failed" };
 
 export async function GET(req: Request) {
     const gate = await requireUser(req);
@@ -111,7 +113,9 @@ export async function POST(req: Request) {
         const ALLOWED = ["application/pdf", "text/plain", "text/markdown"]; // no images: vector stores can't index them
         if (files.length > MAX_FILES) return NextResponse.json({ error: `Max ${MAX_FILES} files per upload` }, { status: 400 });
 
-        const uploadedFiles: UploadedVectorFile[] = [];
+        // Pre-validate the WHOLE batch before any upload starts. A rejected batch must have
+        // zero side effects — otherwise a 4xx response could still leave an earlier file in
+        // the batch already billed-and-attached on OpenAI's side.
         for (const file of files) {
             if (file.size > MAX_BYTES) return NextResponse.json({ error: `"${file.name}" exceeds 15MB` }, { status: 413 });
             const head = Buffer.from(await file.slice(0, 16).arrayBuffer());
@@ -119,20 +123,32 @@ export async function POST(req: Request) {
             if (!sniff || !ALLOWED.includes(sniff)) {
                 return NextResponse.json({ error: `"${file.name}" is an unsupported type for retrieval` }, { status: 415 });
             }
+        }
 
-            // Upload to OpenAI Files first...
-            const openaiFile = await openai.files.create({ file, purpose: "assistants" });
+        // All files passed validation — upload sequentially. A per-file failure (upload or
+        // attach) is recorded and the loop continues; it never aborts files that already
+        // succeeded, and it never throws out to the bare 500 handler below.
+        const results: UploadedVectorFile[] = [];
+        let anyFailed = false;
+        for (const file of files) {
+            let openaiFile: OpenAI.Files.FileObject | undefined;
             try {
-                // ...then attach; on attach failure, delete the orphaned billed File so nothing is left dangling.
+                openaiFile = await openai.files.create({ file, purpose: "assistants" });
                 const vsFile = await openai.vectorStores.files.create(storeId, { file_id: openaiFile.id });
-                uploadedFiles.push({ ...vsFile, filename: file.name, bytes: openaiFile.bytes, status: "uploaded" });
-            } catch (attachErr) {
-                await openai.files.delete(openaiFile.id).catch(() => {}); // best-effort reclaim; a transient delete failure is non-fatal
-                throw attachErr;
+                results.push({ ...vsFile, filename: file.name, bytes: openaiFile.bytes, status: "uploaded" });
+            } catch {
+                // Reclaim the billed OpenAI File if it was created but never attached; best-effort, non-fatal.
+                if (openaiFile) await openai.files.delete(openaiFile.id).catch(() => {});
+                console.warn(`vector: files POST failed for "${file.name}"`);
+                results.push({ filename: file.name, status: "failed" });
+                anyFailed = true;
             }
         }
 
-        return NextResponse.json({ success: true, count: uploadedFiles.length, files: uploadedFiles });
+        const count = results.filter((r) => r.status === "uploaded").length;
+        // 207: at least one file in the batch failed but others may have succeeded — the
+        // per-file `files` array carries the breakdown so the caller never has to guess.
+        return NextResponse.json({ success: !anyFailed, count, files: results }, { status: anyFailed ? 207 : 200 });
     } catch (error: any) {
         console.warn("vector: files POST failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });

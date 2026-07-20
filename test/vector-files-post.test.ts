@@ -109,24 +109,67 @@ describe("POST /api/vector/files", () => {
     expect(attachOrder).toBeLessThan(secondCreateOrder);
   });
 
-  it("best-effort deletes the orphaned OpenAI file when the vector-store attach fails", async () => {
-    filesCreate.mockResolvedValue({ id: "file_orphan", bytes: 10, filename: "a.txt" });
-    vsFilesCreate.mockRejectedValue(new Error("attach failed"));
+  it("rejects a batch where a LATER file is over-size, atomically — nothing is uploaded", async () => {
+    const ok1 = makeFile("a.txt", "hello world one");
+    const big = makeFile("big.txt", new Uint8Array(15 * 1024 * 1024 + 1));
+    const res = await POST(makeRequest([ok1, big]));
 
-    const res = await POST(makeRequest([makeFile("a.txt", "hello world")]));
-
-    expect(res.status).toBe(500);
-    expect(filesDelete).toHaveBeenCalledWith("file_orphan");
+    expect(res.status).toBe(413);
+    expect(filesCreate).not.toHaveBeenCalled();
+    expect(vsFilesCreate).not.toHaveBeenCalled();
   });
 
-  it("a transient cleanup-delete failure doesn't crash the request (still 500s cleanly)", async () => {
+  it("rejects a batch where a LATER file has a bad sniff, atomically — nothing is uploaded", async () => {
+    const ok1 = makeFile("a.txt", "hello world one");
+    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const badSniff = makeFile("image.png", pngBytes, "image/png");
+    const res = await POST(makeRequest([ok1, badSniff]));
+
+    expect(res.status).toBe(415);
+    expect(filesCreate).not.toHaveBeenCalled();
+    expect(vsFilesCreate).not.toHaveBeenCalled();
+  });
+
+  it("best-effort deletes the orphaned OpenAI file when the vector-store attach fails, and reports it failed without aborting the batch", async () => {
+    filesCreate.mockImplementation(async (params: { file: File }) => ({
+      id: `file_${params.file.name}`,
+      bytes: 10,
+      filename: params.file.name,
+    }));
+    vsFilesCreate.mockImplementation(async (_storeId: string, body: { file_id: string }) => {
+      if (body.file_id === "file_bad.txt") throw new Error("attach failed");
+      return { id: body.file_id, object: "vector_store.file" };
+    });
+
+    const good1 = makeFile("good1.txt", "hello world one");
+    const bad = makeFile("bad.txt", "hello world two");
+    const good2 = makeFile("good2.txt", "hello world three");
+    const res = await POST(makeRequest([good1, bad, good2]));
+
+    // Partial success must not be a bare 500 — the caller needs the per-file breakdown.
+    expect(res.status).not.toBe(500);
+    expect(filesDelete).toHaveBeenCalledWith("file_bad.txt");
+    const body = await res.json();
+    expect(body.files.map((f: { filename: string; status: string }) => [f.filename, f.status])).toEqual([
+      ["good1.txt", "uploaded"],
+      ["bad.txt", "failed"],
+      ["good2.txt", "uploaded"],
+    ]);
+    // All three were attempted — count reflects only the successes.
+    expect(filesCreate).toHaveBeenCalledTimes(3);
+    expect(body.count).toBe(2);
+  });
+
+  it("a transient cleanup-delete failure doesn't crash the request and the file is still reported failed", async () => {
     filesCreate.mockResolvedValue({ id: "file_orphan2", bytes: 10, filename: "a.txt" });
     vsFilesCreate.mockRejectedValue(new Error("attach failed"));
     filesDelete.mockRejectedValue(new Error("delete also failed"));
 
     const res = await POST(makeRequest([makeFile("a.txt", "hello world")]));
 
-    expect(res.status).toBe(500);
+    expect(res.status).not.toBe(500);
     expect(filesDelete).toHaveBeenCalledWith("file_orphan2");
+    const body = await res.json();
+    expect(body.files).toEqual([{ filename: "a.txt", status: "failed" }]);
   });
 });
