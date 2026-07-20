@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { unsetHorizons, addProposedGoals, intakeSystemPrompt, ctx } from "../../lib/dashboard/coach/intake";
 import { emptyCoachDB } from "../../lib/dashboard/coach/seed";
+import type { ProposedGoal } from "../../lib/dashboard/coach/parse";
 
 const TODAY = new Date(2026, 6, 8);
 
@@ -41,6 +42,16 @@ describe("addProposedGoals (top-down laddering)", () => {
     expect(db.intakeDone["year:2026"]).toBe(true);
     expect(db.intakeDone["quarter:2026-Q3"]).toBe(true);   // opened but un-proposed — still marked
     expect(db.intakeDone["month:2026-07"]).toBe(true);
+  });
+  it("skips proposed goals with a missing or non-string title instead of throwing", () => {
+    const db = emptyCoachDB();
+    const proposed: ProposedGoal[] = [
+      { horizon: "year", title: "Ship v2", laddersTo: null },
+      { horizon: "quarter", laddersTo: "Ship v2" } as unknown as ProposedGoal,   // no title — must be skipped, not crash
+      { horizon: "month", title: 42 as unknown as string, laddersTo: null },     // non-string title — skipped
+    ];
+    expect(() => addProposedGoals(db, proposed, ["year"], TODAY)).not.toThrow();
+    expect(db.goals.map((g) => g.title)).toEqual(["Ship v2"]);
   });
 });
 

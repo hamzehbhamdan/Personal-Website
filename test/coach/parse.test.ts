@@ -18,6 +18,15 @@ describe("parseGoalsBlock", () => {
     const { goals, text } = parseGoalsBlock("just talking");
     expect(goals).toEqual([]); expect(text).toBe("just talking");
   });
+  it("filters out items with a missing or non-string title, keeping well-shaped ones", () => {
+    const raw = 'Here:\n```goals\n[{"horizon":"year","title":"Y","laddersTo":null},{"horizon":"quarter","laddersTo":"Y"},{"horizon":"month","title":42,"laddersTo":null}]\n```\nDone.';
+    const { goals } = parseGoalsBlock(raw);
+    expect(goals).toEqual([{ horizon: "year", title: "Y", laddersTo: null }]);
+  });
+  it("returns goals: [] for a non-array or malformed goals block", () => {
+    expect(parseGoalsBlock("```goals\n{\"not\":\"an array\"}\n```").goals).toEqual([]);
+    expect(parseGoalsBlock("```goals\nnot json\n```").goals).toEqual([]);
+  });
 });
 
 describe("parseSuggestedTasks", () => {

@@ -23,6 +23,7 @@ export function addProposedGoals(db: CoachDB, proposed: ProposedGoal[], horizons
   const titleToId: Record<string, string> = {};
   db.goals.forEach((g) => { titleToId[g.title.toLowerCase()] = g.id; });
   picks.forEach((g) => {
+    if (typeof g.title !== "string" || !g.title.trim()) return; // skip malformed AI proposal
     const h = (order[g.horizon] != null ? g.horizon : "month") as Horizon;
     const per = periodRange(h, 0, today).key;
     let parentId = "";

@@ -7,18 +7,32 @@ export function parseList(text: string | null): string[] {
 }
 
 export interface ProposedGoal { horizon: string; title: string; laddersTo: string | null; }
+function isWellShapedGoal(x: unknown): x is ProposedGoal {
+  if (!x || typeof x !== "object") return false;
+  const { title, horizon } = x as Record<string, unknown>;
+  return typeof title === "string" && !!title.trim() && typeof horizon === "string";
+}
 export function parseGoalsBlock(text: string): { goals: ProposedGoal[]; text: string } {
   const m = text.match(/```goals\s*([\s\S]*?)```/i);
   let goals: ProposedGoal[] = [];
   if (m) {
-    try { const arr = JSON.parse(m[1].trim()); if (Array.isArray(arr)) goals = arr; } catch {}
+    try { const arr = JSON.parse(m[1].trim()); if (Array.isArray(arr)) goals = arr.filter(isWellShapedGoal); } catch {}
     text = text.replace(/```goals[\s\S]*?```/i, "").trim();
   }
   return { goals, text: text || "Here are some goals to consider below." };
 }
 
 export interface SuggestedTask { goal?: string; label: string; pts?: number; }
+function isWellShapedTask(x: unknown): x is SuggestedTask {
+  if (!x || typeof x !== "object") return false;
+  const { label } = x as Record<string, unknown>;
+  return typeof label === "string" && !!label.trim();
+}
 export function parseSuggestedTasks(text: string | null): SuggestedTask[] {
   if (!text) return [];
-  try { const a = text.indexOf("["), b = text.lastIndexOf("]"); const arr = JSON.parse(text.slice(a, b + 1)); return Array.isArray(arr) ? arr : []; } catch { return []; }
+  try {
+    const a = text.indexOf("["), b = text.lastIndexOf("]");
+    const arr = JSON.parse(text.slice(a, b + 1));
+    return Array.isArray(arr) ? arr.filter(isWellShapedTask) : [];
+  } catch { return []; }
 }
