@@ -24,7 +24,11 @@ export function usePeopleSnapshot(now: Date) {
     };
   }, []);
   const db = useMemo(() => normalizeDb(raw ?? {}), [raw]);
-  const live = useLiveInteractions(now);
+  const savedEmails = useMemo(
+    () => new Set(db.contacts.flatMap((c) => (c.emails || []).map((e) => e.toLowerCase()))),
+    [db],
+  );
+  const live = useLiveInteractions(now, savedEmails);
   const stateOf = useMemo(
     () => (c: Contact) => computeState(c, live.gmail, live.cal, db, now),
     [live.gmail, live.cal, db, now],

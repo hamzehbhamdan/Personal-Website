@@ -80,4 +80,41 @@ describe("interaction maps", () => {
     expect(validOrder).toEqual(["newer", "older"]); // valid rows keep correct instant order despite the NaN row
     expect(tl.some((i) => i.text === "Call — bad")).toBe(true); // malformed row still present, not dropped
   });
+
+  describe("saved-contact gate bypasses isPerson (#66)", () => {
+    it("keeps activity for a saved contact whose address trips an isPerson heuristic", () => {
+      const rows: GmailHeaderRow[] = [{ from: "hamdanhamzeh0@gmail.com", to: ["team@bigco.com"], date: "2026-05-01T00:00:00Z", subject: "hi", mailbox: "sent" }];
+      // "team" is a BADWORDS_ROLE_EXACT local-part → isPerson("team@bigco.com") is false.
+      const withoutSaved = buildGmailMap(rows, new Date("2026-06-01"));
+      expect(withoutSaved["team@bigco.com"]).toBeUndefined(); // dropped by heuristic today
+      const withSaved = buildGmailMap(rows, new Date("2026-06-01"), new Set(["team@bigco.com"]));
+      expect(withSaved["team@bigco.com"]?.count).toBe(1); // saved → kept
+    });
+
+    it("still filters a non-saved spammy address (unchanged default behavior)", () => {
+      const rows: GmailHeaderRow[] = [{ from: "noreply@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-06-10T00:00:00Z", subject: "ad", mailbox: "inbox" }];
+      const g = buildGmailMap(rows, NOW, new Set(["someoneelse@x.com"]));
+      expect(g["noreply@x.com"]).toBeUndefined();
+    });
+
+    it("leaves a normal person address unaffected by the saved set", () => {
+      const rows: GmailHeaderRow[] = [{ from: "amir@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-06-10T00:00:00Z", subject: "hi", mailbox: "inbox" }];
+      const withoutSaved = buildGmailMap(rows, NOW);
+      const withSaved = buildGmailMap(rows, NOW, new Set(["amir@x.com"]));
+      expect(withoutSaved["amir@x.com"]?.count).toBe(1);
+      expect(withSaved["amir@x.com"]?.count).toBe(1);
+    });
+
+    it("buildCalMap keeps a saved attendee that trips isPerson, and preserves instant ordering (#37) once kept", () => {
+      const evs: CalendarEvent[] = [
+        { summary: "all-day", start: "2026-06-22", attendees: [{ email: "team@bigco.com" }] },              // 00:00 on the 22nd
+        { summary: "late", start: "2026-06-21T23:00:00-05:00", attendees: [{ email: "team@bigco.com" }] },   // = 04:00Z on the 22nd — LATER past
+      ];
+      const withoutSaved = buildCalMap(evs, NOW);
+      expect(withoutSaved["team@bigco.com"]).toBeUndefined(); // dropped by heuristic today
+      const withSaved = buildCalMap(evs, NOW, new Set(["team@bigco.com"]));
+      // Instant ordering (not string ordering) must still pick "late" as lastPast, per #37.
+      expect(withSaved["team@bigco.com"].lastPast).toBe("2026-06-21T23:00:00-05:00");
+    });
+  });
 });

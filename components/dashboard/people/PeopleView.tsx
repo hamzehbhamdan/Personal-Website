@@ -46,7 +46,11 @@ export function PeopleView({
   const { state: raw, setState, loaded, loadError, retryLoad, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
   const db = useMemo(() => normalizeDb(raw), [raw]);
   const now = useToday();
-  const live = useLiveInteractions(now);
+  const savedEmails = useMemo(
+    () => new Set(db.contacts.flatMap((c) => (c.emails || []).map((e) => e.toLowerCase()))),
+    [db],
+  );
+  const live = useLiveInteractions(now, savedEmails);
 
   const [seg, setSeg] = useState<Seg>("attention");
   const [openContact, setOpenContact] = useState<string | null>(null);

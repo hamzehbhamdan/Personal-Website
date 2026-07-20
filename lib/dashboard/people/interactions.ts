@@ -5,27 +5,32 @@ import type { GmailMap, CalMap, GmailHeaderRow, CalendarEvent, Contact, Interact
 export const LOG_ICON: Record<string, string> = { "Call": "📞", "Text / message": "💬", "In person": "🤝", "Email": "✉️", "Video call": "📹", "Other": "📝" };
 export const contactEmails = (c: Contact) => (c.emails || []).map(lc);
 
-function addMsg(map: GmailMap, email: string, msg: GmailMsg) {
-  const e = lc(email); if (!isPerson(e)) return;
+function addMsg(map: GmailMap, email: string, msg: GmailMsg, saved: Set<string>) {
+  const e = lc(email); if (!saved.has(e) && !isPerson(e)) return;
   const g = map[e] || (map[e] = { last: null, lastDir: null, count: 0, msgs: [] });
   g.count++; g.msgs.push(msg);
   if (!g.last || toEpochMs(msg.date) > toEpochMs(g.last)) { g.last = msg.date; g.lastDir = msg.dir; }
 }
 
-/** Port of ingestThreads (crm.html:274), snippet DROPPED. `now` filters future-dated rows. */
-export function buildGmailMap(rows: GmailHeaderRow[], now: Date): GmailMap {
+/**
+ * Port of ingestThreads (crm.html:274), snippet DROPPED. `now` filters future-dated rows.
+ * `saved` (default empty) is the set of lowercased saved-contact addresses — an address in
+ * this set is always treated as a person, bypassing the `isPerson` spam heuristic, since
+ * being a saved contact is itself an explicit human signal (review #66).
+ */
+export function buildGmailMap(rows: GmailHeaderRow[], now: Date, saved: Set<string> = new Set()): GmailMap {
   const map: GmailMap = {};
   rows.forEach((m) => {
     const d = m.date; if (!d || new Date(d) > now) return;
     const sender = lc(m.from); const tos = (m.to || []).map(lc);
-    if (isMine(sender)) tos.forEach((o) => addMsg(map, o, { date: d, dir: "out", subject: m.subject || "" }));
-    else addMsg(map, sender, { date: d, dir: "in", subject: m.subject || "" });
+    if (isMine(sender)) tos.forEach((o) => addMsg(map, o, { date: d, dir: "out", subject: m.subject || "" }, saved));
+    else addMsg(map, sender, { date: d, dir: "in", subject: m.subject || "" }, saved);
   });
   return map;
 }
 
-/** Port of ingestEvents (crm.html:275). */
-export function buildCalMap(events: CalendarEvent[], now: Date): CalMap {
+/** Port of ingestEvents (crm.html:275). `saved` — see buildGmailMap (review #66). */
+export function buildCalMap(events: CalendarEvent[], now: Date, saved: Set<string> = new Set()): CalMap {
   const map: CalMap = {};
   events.forEach((ev) => {
     const start = ev.start; if (!start) return;
@@ -33,7 +38,7 @@ export function buildCalMap(events: CalendarEvent[], now: Date): CalMap {
     // ORIGINAL start string (review #37).
     const whenMs = toEpochMs(start); const summary = ev.summary || "(busy)";
     (ev.attendees || []).forEach((a) => {
-      const e = lc(a.email); if (a.self || isMine(e) || !isPerson(e)) return;
+      const e = lc(a.email); if (a.self || isMine(e) || (!saved.has(e) && !isPerson(e))) return;
       const c = map[e] || (map[e] = { lastPast: null, next: null, events: [] });
       c.events.push({ date: start, summary });
       if (whenMs <= now.getTime()) { if (!c.lastPast || whenMs > toEpochMs(c.lastPast)) c.lastPast = start; }
