@@ -15,3 +15,45 @@ export function parseAiRequest(body: unknown): ParseResult {
   const model = typeof b.model === "string" && (MODELS as readonly string[]).includes(b.model) ? b.model : undefined;
   return { ok: true, value: { task: b.task, prompt: b.prompt, system, model } };
 }
+
+// ── /api/chat ingress validation (report #14) ──
+// Validates only what the CLIENT sends (BrainChatMsg in lib/dashboard/brain/types.ts
+// is role: "user" | "assistant"). The chat route's internal tool loop appends its own
+// system/assistant/tool messages AFTER this gate and is deliberately exempt.
+export const MAX_CHAT_MESSAGES = 100; // client persists up to MAX_MSGS=80 (lib/dashboard/brain/seed.ts:4)
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type ChatRequest = { messages: ChatMessage[]; retrievalCount: number; activeStoreId?: string };
+export type ChatParseResult = { ok: true; value: ChatRequest } | { ok: false; reason: string };
+
+// Same semantics as clampInt in lib/dashboard/brain/seed.ts:26-29.
+function clampInt(v: unknown, min: number, max: number, dflt: number): number {
+  const n = typeof v === "number" && Number.isFinite(v) ? Math.round(v) : dflt;
+  return Math.min(max, Math.max(min, n));
+}
+
+export function parseChatRequest(body: unknown): ChatParseResult {
+  if (!body || typeof body !== "object") return { ok: false, reason: "bad body" };
+  const b = body as Record<string, unknown>;
+  if (!Array.isArray(b.messages) || b.messages.length === 0) return { ok: false, reason: "missing messages" };
+  if (b.messages.length > MAX_CHAT_MESSAGES) return { ok: false, reason: "too many messages" };
+
+  const messages: ChatMessage[] = [];
+  let totalChars = 0;
+  for (const raw of b.messages) {
+    if (!raw || typeof raw !== "object") return { ok: false, reason: "bad message" };
+    const m = raw as Record<string, unknown>;
+    const role = m.role;
+    const content = m.content;
+    if (role !== "user" && role !== "assistant") return { ok: false, reason: "bad role" };
+    if (typeof content !== "string") return { ok: false, reason: "bad content" };
+    totalChars += content.length;
+    if (totalChars > MAX_PROMPT) return { ok: false, reason: "messages too large" };
+    messages.push({ role, content });
+  }
+
+  const params = b.params && typeof b.params === "object" ? (b.params as Record<string, unknown>) : {};
+  const retrievalCount = clampInt(params.retrievalCount, 1, 20, 5);
+  const activeStoreId = typeof params.activeStoreId === "string" && params.activeStoreId.length > 0 ? params.activeStoreId : undefined;
+  return { ok: true, value: { messages, retrievalCount, activeStoreId } };
+}
