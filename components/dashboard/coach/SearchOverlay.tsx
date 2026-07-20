@@ -18,6 +18,7 @@ import { runSearch } from "@/lib/dashboard/coach/search";
 import { findOffset } from "@/lib/dashboard/coach/periods";
 import { getGoal, progressOf } from "@/lib/dashboard/coach/rollup";
 import { Badge } from "@/components/dashboard/ui";
+import { focusRingInset } from "./a11y";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
 
@@ -77,32 +78,36 @@ export function SearchOverlay({
           ) : (
             <>
               {goals.map((g) => (
-                <div
+                <button
                   key={g.id}
+                  type="button"
                   onClick={() => jumpToGoal(g.id)}
-                  className="flex cursor-pointer items-center gap-2.5 border-b border-stone-200 px-3 py-2.5 text-[13px] last:border-b-0 hover:bg-stone-50"
+                  aria-label={`Jump to goal: ${g.title}`}
+                  className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-stone-200 px-3 py-2.5 text-left text-[13px] last:border-b-0 hover:bg-stone-50 focus-visible:bg-stone-50 ${focusRingInset}`}
                 >
                   <Badge>{g.horizon} goal</Badge>
                   <span className="flex-1 text-stone-800">{g.title}</span>
                   <span className="text-[11px] text-stone-400" style={mono}>
                     {progressOf(db, g)}%
                   </span>
-                </div>
+                </button>
               ))}
               {tasks.map((t) => {
                 const g = t.goalId ? getGoal(db, t.goalId) : undefined;
                 return (
-                  <div
+                  <button
                     key={t.id}
+                    type="button"
                     onClick={() => jumpToTask(t.week)}
-                    className="flex cursor-pointer items-center gap-2.5 border-b border-stone-200 px-3 py-2.5 text-[13px] last:border-b-0 hover:bg-stone-50"
+                    aria-label={`Jump to task: ${t.label}`}
+                    className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-stone-200 px-3 py-2.5 text-left text-[13px] last:border-b-0 hover:bg-stone-50 focus-visible:bg-stone-50 ${focusRingInset}`}
                   >
                     <Badge>task</Badge>
                     <span className="flex-1 text-stone-800">{t.label}</span>
                     <span className="text-[11px] text-stone-400" style={mono}>
                       {g ? g.title : "Unfiled"}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </>
