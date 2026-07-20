@@ -84,6 +84,19 @@ export function GroupEditModal({ id, db, live, now, setState, onClose }: {
     () => new Set(existing?.members || [])
   );
 
+  // Dirty tracking for the close guard (mirrors ContactEditModal's pattern): snapshot the
+  // initial form + membership on mount; FormState is flat JSON-safe data so stringify is a
+  // stable value comparison. handleSave/handleDelete call onClose() directly (guard bypassed).
+  // Uses useState (not useRef) for the immutable initial snapshot: it's never reassigned after
+  // mount, but reading it every render satisfies the react-hooks/refs rule (refs must not be
+  // read during render) while a plain lazy-initialized state value is exactly meant for this.
+  const membersKey = (s: Set<string>) => [...s].sort().join(",");
+  const snapshot = () => JSON.stringify({ form, members: membersKey(checkedMembers) });
+  const [initialSnapshot] = useState(() => snapshot());
+  const dirty = snapshot() !== initialSnapshot;
+  // Single guard shared by the Modal (backdrop/Escape/×) AND the Cancel button.
+  const confirmClose = () => !dirty || window.confirm("Discard unsaved changes to this group?");
+
   const [showDraft, setShowDraft] = useState(false);
 
   function handleRuleKindChange(kind: RuleKind) {
@@ -198,7 +211,7 @@ export function GroupEditModal({ id, db, live, now, setState, onClose }: {
   const sortedContacts = [...db.contacts].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal title={title} onClose={onClose} confirmClose={confirmClose}>
       <div className="mb-3">
         <label className={labelCls}>Group name</label>
         <input
@@ -352,7 +365,7 @@ export function GroupEditModal({ id, db, live, now, setState, onClose }: {
             Delete
           </button>
         )}
-        <button type="button" onClick={onClose} className={btnGhost} style={mono}>
+        <button type="button" onClick={() => { if (confirmClose()) onClose(); }} className={btnGhost} style={mono}>
           Cancel
         </button>
       </div>

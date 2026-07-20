@@ -131,7 +131,11 @@ export function LearnVoiceModal({ db, setState, onClose }: { db: CrmDB; setState
   };
 
   return (
-    <Modal title="Learn my voice from sent mail" onClose={onClose}>
+    <Modal
+      title="Learn my voice from sent mail"
+      onClose={onClose}
+      confirmClose={() => !summary.trim() || window.confirm("Discard the distilled voice summary? It hasn't been saved.")}
+    >
       <div className="flex flex-col gap-3">
         <div className="text-[12px] text-stone-500">
           Pick up to {MAX} of your sent emails and I&apos;ll distill your writing voice from them. It loads your most recent sent mail below — add a recipient to find emails to a specific person, type a keyword to narrow the list, or click an email to read it. The text of the emails you pick goes to Claude only for this step and is never stored — only the summary is kept.

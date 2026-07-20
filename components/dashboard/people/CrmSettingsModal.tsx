@@ -51,6 +51,13 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
   }));
   const [voiceSavedMsg, setVoiceSavedMsg] = useState<string | null>(null);
 
+  // Close guard covers the only unsaved local state in this modal: the voice form.
+  // Baseline advances on "Save voice" so closing after a save never prompts. Uses useState (not
+  // useRef) so the baseline can be read during render without tripping react-hooks/refs, and
+  // updated via setInitialVoice rather than a ref mutation.
+  const [initialVoice, setInitialVoice] = useState(() => JSON.stringify(voiceForm));
+  const voiceDirty = JSON.stringify(voiceForm) !== initialVoice;
+
   function handleAddExample() {
     setVoiceForm((f) => (f.examples.length >= 3 ? f : { ...f, examples: [...f.examples, ""] }));
   }
@@ -78,6 +85,7 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
       };
       return { ...d, settings: { ...d.settings, voice } };
     });
+    setInitialVoice(JSON.stringify(voiceForm));
     setVoiceSavedMsg("Voice saved ✓");
     setTimeout(() => setVoiceSavedMsg(null), 2500);
   }
@@ -210,7 +218,11 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
 
   return (
     <>
-      <Modal title="Settings" onClose={onClose}>
+      <Modal
+        title="Settings"
+        onClose={onClose}
+        confirmClose={() => !voiceDirty || window.confirm("Discard unsaved voice changes?")}
+      >
         <div className={sectionCls}>
           <label className={labelCls}>Google</label>
           <div className={noteCls}>
