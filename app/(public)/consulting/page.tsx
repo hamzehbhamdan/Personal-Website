@@ -254,11 +254,12 @@ export default function ConsultingPage() {
         if (intake["bot-field"]) return
         setIntakeStatus("submitting")
         try {
-            await fetch("/netlify-forms.html", {
+            const res = await fetch("/netlify-forms.html", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({ "form-name": "consulting-intake", ...intake }).toString(),
             })
+            if (!res.ok) throw new Error(`Form POST failed: ${res.status}`)
             setIntakeStatus("success")
             setIntake(intakeInitial)
         } catch {
