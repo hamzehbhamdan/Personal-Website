@@ -29,14 +29,24 @@ function normalizeVoice(v: any): VoiceProfile | undefined {
  */
 export function normalizeDb(raw: any): CrmDB {
   const r = raw && typeof raw === "object" ? raw : {};
-  const contacts = (Array.isArray(r.contacts) ? r.contacts : []).map((c: any) => ({
-    ...c,
-    emails: Array.isArray(c?.emails) ? [...c.emails] : [],
-    tags: Array.isArray(c?.tags) ? [...c.tags] : [],
-    log: Array.isArray(c?.log) ? c.log.map((l: any) => ({ ...l })) : [],
-    lastTouch: c?.lastTouch === undefined ? null : c.lastTouch,
-    snoozeUntil: c?.snoozeUntil === undefined ? null : c.snoozeUntil,
-  }));
+  // Schema gate for the fields every view dereferences (review #35): drop rows without a
+  // usable id (unkeyable — would break getContact, edge pruning, and React keys) and coerce
+  // name/tier to strings so .localeCompare/.trim() sites can never throw. Deterministic and
+  // idempotent: a second pass drops nothing and re-coercion is a no-op. Nameless contacts
+  // are KEPT (coerced to ""), preserving their edges (see connections.test.ts).
+  const contacts = (Array.isArray(r.contacts) ? r.contacts : [])
+    .filter((c: unknown) => !!c && typeof c === "object" && String((c as Record<string, unknown>).id ?? "") !== "")
+    .map((c: any) => ({
+      ...c,
+      id: String(c.id),
+      name: String(c.name ?? ""),
+      tier: String(c.tier ?? ""),
+      emails: Array.isArray(c.emails) ? [...c.emails] : [],
+      tags: Array.isArray(c.tags) ? [...c.tags] : [],
+      log: Array.isArray(c.log) ? c.log.map((l: any) => ({ ...l })) : [],
+      lastTouch: c.lastTouch === undefined ? null : c.lastTouch,
+      snoozeUntil: c.snoozeUntil === undefined ? null : c.snoozeUntil,
+    }));
   const groups = (Array.isArray(r.groups) ? r.groups : []).map((g: any) => ({
     ...g,
     members: Array.isArray(g?.members) ? [...g.members] : [],
@@ -63,5 +73,16 @@ export function normalizeDb(raw: any): CrmDB {
 }
 export function validateBackup(obj: any): { ok: boolean; reason?: string } {
   if (!obj || typeof obj !== "object" || !Array.isArray(obj.contacts)) return { ok: false, reason: "not a CRM backup" };
+  // Import gate (review #35): every contact must be an object with a usable string id —
+  // normalizeDb silently DROPS offending rows, so reject up front rather than restore a
+  // backup that would lose contacts. Names are NOT required: normalizeDb coerces them,
+  // and requiring one would reject otherwise-usable foreign backups.
+  if (obj.contacts.some((c: unknown) => {
+    if (!c || typeof c !== "object") return true;
+    const id = (c as Record<string, unknown>).id;
+    return typeof id !== "string" || !id;
+  })) {
+    return { ok: false, reason: "contacts missing ids" };
+  }
   return { ok: true };
 }

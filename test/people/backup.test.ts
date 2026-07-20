@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { normalizeDb, emptyDb } from "@/lib/dashboard/people/backup";
+import { normalizeDb, emptyDb, validateBackup } from "@/lib/dashboard/people/backup";
+import { filterSortContacts } from "@/lib/dashboard/people/select";
+import type { ContactState } from "@/lib/dashboard/people/types";
 
 describe("normalizeDb — voice migration", () => {
   it("carries a voice profile through a normalize round-trip", () => {
@@ -39,5 +41,35 @@ describe("normalizeDb — voice migration", () => {
     expect(normalizeDb({ settings: { autoTags: true } }).settings.autoTags).toBe(true);
     expect(normalizeDb({ settings: {} }).settings.autoTags).toBe(false);
     expect(normalizeDb({}).settings.autoTags).toBe(false);
+  });
+});
+
+describe("normalizeDb + validateBackup — malformed backups stay views-safe (#35)", () => {
+  const stateStub = (): ContactState => ({ last: null, days: null, cad: 90, overdue: false, soon: false, snoozed: false, oweReply: false, calNext: null, bdayIn: null });
+
+  it("validateBackup rejects contacts without usable string ids", () => {
+    expect(validateBackup({ contacts: [{}] })).toEqual({ ok: false, reason: "contacts missing ids" });
+    expect(validateBackup({ contacts: [null] }).ok).toBe(false);
+    expect(validateBackup({ contacts: [{ id: "" }] }).ok).toBe(false);
+    expect(validateBackup({ contacts: [{ id: 5 }] }).ok).toBe(false);
+    expect(validateBackup({ contacts: [{ id: "a" }] }).ok).toBe(true);
+    expect(validateBackup({ contacts: [] }).ok).toBe(true); // unchanged contract (csv.test.ts pins this too)
+  });
+  it("normalizeDb drops id-less rows and coerces name/tier so no view dereference can throw", () => {
+    const d = normalizeDb({ contacts: [{}, null, "junk", { id: "a" }, { id: "b", name: 7, tier: null }], connections: [{ a: "a", b: "b" }, { a: "a", b: "ghost" }] });
+    expect(d.contacts.map((c) => c.id)).toEqual(["a", "b"]);
+    expect(d.contacts.every((c) => typeof c.name === "string" && typeof c.tier === "string")).toBe(true);
+    expect(d.contacts[1].name).toBe("7");
+    expect(d.connections).toEqual([{ a: "a", b: "b" }]); // edges between surviving ids kept
+    // the reported crash sites: name sort (select.ts:31 localeCompare) and name.trim() (NetworkPanel:249)
+    expect(() => filterSortContacts(d, stateStub, { tier: "all", tag: "all", sort: "name", q: "" })).not.toThrow();
+    expect(() => d.contacts.map((c) => c.name.trim())).not.toThrow();
+  });
+  it("stays idempotent + pure with the gate in place", () => {
+    const raw = { contacts: [{}, { id: "a", name: "A", tier: "Friends" }] };
+    const snap = JSON.stringify(raw);
+    const once = normalizeDb(raw);
+    expect(normalizeDb(once)).toEqual(once); // second pass drops/changes nothing
+    expect(JSON.stringify(raw)).toBe(snap);  // input untouched
   });
 });
