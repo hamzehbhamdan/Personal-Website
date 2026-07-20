@@ -210,6 +210,8 @@ Confirmed by direct trace through /Users/hamzehhamdan/Desktop/Hamzeh/Projects/pe
 
 ### 13. `app/(public)/contact/page.tsx:48` — Contact and consulting-intake forms report success without checking response.ok, so a failed Netlify form POST still shows "Message Sent!" and the lead is silently lost.
 
+> **FIXED** (Stage 2, commit 2613526) — Contact + consulting-intake forms now `throw` on `!res.ok` before showing success, so a failed Netlify POST surfaces the error UI (form data preserved) instead of a false "Message Sent!".
+
 *Category: data-loss · Area: public-site*
 
 **Problem.** `await fetch("/netlify-forms.html", {method:"POST",...})` only rejects on network failure; a 404/405/500 (Netlify Forms disabled, form-name mismatch after a rename, plan limit hit) resolves normally, and line 60 sets status "success" and clears the form. The visitor believes the message was delivered when it never was. Identical pattern in app/(public)/consulting/page.tsx:257-263 for the consulting-intake form — paying-lead inquiries can vanish with a success screen.
@@ -223,6 +225,8 @@ Confirmed by reading the code. app/(public)/contact/page.tsx:48-64: `await fetch
 </details>
 
 ### 14. `app/api/chat/route.ts:76` — Chat route performs zero validation on the request body: unbounded messages size/count, unvalidated roles, and an unvalidated params.retrievalCount, unlike the 40k cap enforced on /api/ai.
+
+> **FIXED** (Stage 2, commits 4096e75, 26a3d21) — `parseChatRequest` validates the /api/chat body (messages array of {role:user|assistant, content}, cap 100 msgs / 40k chars, retrievalCount clamped [1,20]); route returns 400 before any OpenAI/DB call; internal tool messages are not re-validated.
 
 *Category: cost-amplification · Area: api-ai-vector-state*
 
@@ -238,6 +242,8 @@ Confirmed by tracing the code; no hidden guard refutes it. (1) app/api/chat/rout
 
 ### 15. `app/api/google/callback/route.ts:11` — OAuth `state` is the static user id, not a random single-use nonce, weakening CSRF protection on account linking.
 
+> **FIXED** (Stage 2, commits 1bd2d53, 3c554d4) — OAuth account-linking now uses a random single-use `crypto.randomUUID()` state nonce in an httpOnly+secure+sameSite=lax cookie; the callback verifies and clears it (single-use, cleared on all paths) and the guessable `state===userId` check was removed.
+
 *Category: security · Area: api-google-gmail*
 
 **Problem.** authUrl (lib/google.ts:10-24) sets `state = gate.userId` and the callback only checks `state !== gate.userId`. Because the app is single-user (ALLOWED_EMAIL), gate.userId is a constant that never rotates, so `state` provides none of the per-request, session-bound, single-use protection a real OAuth state nonce gives. Attack: an attacker who learns the owner's Supabase user UUID (it never changes, and can leak via Referer, browser history, a shared/observed callback URL, or logs) can craft `/api/google/callback?code=<ATTACKER_CODE>&state=<OWNER_UUID>` and get the owner to load it while authenticated (requireUser passes on the owner's own cookie). storeRefreshToken then persists the ATTACKER's refresh token under the owner's user_id. Afterward the owner's 'read my Gmail'/calendar calls read the attacker's mailbox, and drafts the owner composes are created in — and, via /api/gmail/send, delivered from — the attacker's account, exfiltrating the owner's composed content. A proper random, session-stored, single-use state would make the crafted URL non-replayable.
@@ -251,6 +257,8 @@ Confirmed by reading the real code. connect/route.ts:8 sets state=gate.userId, a
 </details>
 
 ### 16. `app/api/state/route.ts:25` — PUT /api/state is a whole-document last-write-wins upsert with no version/conflict check, so a second tab or device silently wipes changes made elsewhere.
+
+> **FIXED** (Stage 2, commits 3f27ceb, 0dcbef2, 9858c7e, e3c3e2a, 2158df1, 9e930e3, 4475c7a) — `app_state.version` optimistic-lock column; GET returns {data,version}, PUT is a conditional insert/update returning 409 on stale base; SaveQueue threads the version + short-circuits on ConflictError; useAppState re-GETs on conflict and preserves in-flight edits via an edit-overlay; a "conflict" status is surfaced.
 
 *Category: data-loss · Area: api-ai-vector-state*
 
@@ -281,6 +289,8 @@ Refutation candidates checked and rejected: no guard in callers/middleware; no D
 
 ### 17. `app/api/state/route.ts:26` — Whole-document upsert with no version/updated_at check means two open tabs are last-write-wins: any save from a stale tab silently discards everything the other tab wrote.
 
+> **FIXED** (Stage 2, commits 3f27ceb, 0dcbef2, 9858c7e, e3c3e2a, 2158df1) — Duplicate of #16; fixed by the same optimistic-locking work (409 on stale base replaces the unconditional whole-document upsert).
+
 *Category: data-loss · Area: lib-people*
 
 **Problem.** Each tab GETs the doc once on mount and thereafter PUTs its full in-memory copy. Scenario: dashboard open in tab A and tab B; tab A adds a contact and logs interactions (saved); tab B, still holding the state it loaded earlier, dismisses one suggestion -> tab B's PUT replaces the entire lifeCRM document, deleting tab A's new contact and logs with no error shown anywhere. The upsert sets updated_at but never compares it.
@@ -294,6 +304,8 @@ The mechanism is real and confirmed in code: app/api/state/route.ts:25-26 upsert
 </details>
 
 ### 18. `app/api/vector/stores/route.ts:42` — Stores GET only inspects the first page of vsAPI.list() (default 20), so mapped stores silently vanish once the OpenAI account has more than 20 vector stores.
+
+> **FIXED** (Stage 2, commit f3a7ed4) — Stores GET now retrieves each mapped store id via `openai.vectorStores.retrieve` gathered with `Promise.allSettled` (immune to the first-page 20-store limit); a 404 self-heals the stale mapping row.
 
 *Category: correctness · Area: api-ai-vector-state*
 
@@ -309,6 +321,8 @@ Confirmed by tracing the installed SDK (openai@6.17.0). `await vsAPI.list()` at 
 
 ### 19. `app/sitemap.ts:7` — siteUrl uses the www host but the live site 301-redirects www to the apex domain, so every sitemap URL, the robots.txt sitemap pointer, canonical, and og:url point at redirecting URLs.
 
+> **FIXED** (Stage 2, commit 3f27ceb / Stage 1) — Sitemap and robots.ts already emit the apex host `https://hamzehhamdan.com` (landed in Stage 1); Stage-2 Task 2F.3 confirmed this is a no-op — no `www.` host remains.
+
 *Category: seo · Area: public-site*
 
 **Problem.** Live-verified: https://www.hamzehhamdan.com/* returns 301 → https://hamzehhamdan.com/*. The deployed sitemap.xml lists only https://www.hamzehhamdan.com/... URLs; Google treats sitemap entries that redirect as errors and the declared canonical host never serves content directly. Same constant is duplicated in app/layout.tsx:24, app/robots.ts:6, and the OG image routes.
@@ -322,6 +336,8 @@ Confirmed by reading the code and re-verifying live behavior. Source: app/sitema
 </details>
 
 ### 20. `app/sitemap.ts:10` — Sitemap omits /blog, /playground, /consulting/blog, and all 8 blog + 5 consulting-blog post URLs while including every project page.
+
+> **FIXED** (Stage 2, commit ae0b177) — Sitemap now includes /blog, /playground, /consulting/blog and every blog + consulting-blog post URL (correct route shapes, apex host, content-agnostic count).
 
 *Category: seo · Area: public-site*
 
@@ -337,6 +353,8 @@ Verified directly: app/sitemap.ts:10-22 contains only /, /projects, /contact, /c
 
 ### 21. `components/dashboard/brain/SourcesManager.tsx:62` — Destructive deletes are single-click with no confirmation and no undo: vector stores (with all uploaded files), indexed documents, notes, chats, and whole contacts.
 
+> **FIXED** (Stage 2, commit baf972f) — Every single-click destructive delete (vector-store, document, note, chat, contact, group) is now gated behind a `window.confirm` that blocks the delete on cancel.
+
 *Category: data-loss · Area: components-people-brain*
 
 **Problem.** removeStore (line 62) permanently deletes an OpenAI vector store and its uploaded files server-side from a small trash icon adjacent to the upload icon; removeDoc (line 88) same for indexed documents. NoteCard's hover trash (NoteCard.tsx) deletes the note AND its embedding via BrainView.handleDeleteNote; ChatHistoryList's trash deletes a whole chat; ContactEditModal.handleDelete (ContactEditModal.tsx:184) erases a contact including its full interaction log. None ask for confirmation, while the codebase does confirm for strictly less destructive actions (NetworkPanel edge removal uses window.confirm, backup import is confirm-gated) — so one stray click on a 28px icon is unrecoverable data loss, and with the debounced full-replace persistence there is no server-side history to restore from.
@@ -350,6 +368,8 @@ Every claim traced in real code. SourcesManager.tsx:62 removeStore and :88 remov
 </details>
 
 ### 22. `components/dashboard/coach/CoachView.tsx:42` — TODAY is a module-level `new Date()` frozen at first page load, so a dashboard tab left open across a week (or month/quarter/year) boundary files all new tasks and rollforward plans into the previous period.
+
+> **FIXED** (Stage 2, commits 1e316e6, 87790ad) — The module/mount-frozen `new Date()` "today" is replaced by a live `useToday()` hook (recomputes on visibilitychange/focus + a re-arming midnight timer) in CoachView, PeopleView, and HomeView, so date-anchored state refreshes at the day boundary.
 
 *Category: correctness · Area: lib-coach*
 
@@ -365,6 +385,8 @@ Confirmed by tracing the actual code. CoachView.tsx:42 declares `const TODAY = n
 
 ### 23. `components/dashboard/coach/CoachView.tsx:42` — `TODAY` is frozen at module-load time, so a dashboard tab left open past midnight (especially across the Sunday->Monday week rollover) files new tasks into the previous week and mislabels the current period until a full reload.
 
+> **FIXED** (Stage 2, commits 1e316e6, 87790ad) — Duplicate of #22; fixed by the same `useToday()` migration across the coach, people, and home surfaces.
+
 *Category: correctness · Area: components-coach*
 
 **Problem.** `const TODAY = new Date()` is evaluated once when the bundle loads and is threaded into every periodRange/migrate/rollforward/intake call. Scenario: open the dashboard Sunday evening, keep the tab open, add a quick task Monday morning -> WeekBoard's `wk = periodRange("week", 0, TODAY)` is still last week, so the task lands on last week's board; PeriodBar shows last week as "current week"; "✦ Plan this week" plans and marks planDone for the already-finished week; streak/intakeDone keys also target the stale period. Nothing recomputes until a hard reload.
@@ -378,6 +400,8 @@ Confirmed by reading the code. `components/dashboard/coach/CoachView.tsx:42` dec
 </details>
 
 ### 24. `components/dashboard/coach/TaskRow.tsx:242` — The primary edit affordances across the coach UI are click-only spans/divs with no keyboard or screen-reader access: task labels, subtask labels, goal titles, goal chips, search results, and kanban cards cannot be opened without a mouse.
+
+> **FIXED** (Stage 2, commits 3545044, 55aa8ea, 31ff554, 25aa1a1) — Click-only coach edit affordances (TaskRow task/subtask labels, GoalSection/GoalCard titles + parent link + child chips, SearchOverlay result rows) are now keyboard-accessible `<button>`s with a shared focus ring; kanban cards get a dedicated drag handle + a keyboard-openable button.
 
 *Category: accessibility · Area: components-coach*
 
@@ -393,6 +417,8 @@ Every cited site checks out in the actual code. TaskRow.tsx:241 (task label) and
 
 ### 25. `components/dashboard/home/PlanMyDayBriefing.tsx:27` — "Plan my day" computes open time from HomeView's mount-time timestamp, not the actual click time, so plans made hours after page load schedule work into hours that have already passed.
 
+> **FIXED** (Stage 2, commit 5c34ee1) — "Plan my day" now computes `new Date()` at click time (first statement in the click handler) instead of a mount-time snapshot.
+
 *Category: correctness · Area: components-shell-home*
 
 **Problem.** HomeView freezes `snapNow = useMemo(() => new Date(), [])` at mount and passes it as `now`. The visible Hero clock keeps ticking (useClock), implying freshness, but run() uses the stale `now` for windowStart in computeOpenBlocks, the day range of the calendar fetch, and the "current time" label sent to the AI. Concrete scenario: dashboard left open on Home since 9:00; user clicks "Plan my day" at 15:00 -> the AI is told it is 9:00 and proposes blocks from 9:00-15:00 that already elapsed; after midnight it fetches and plans yesterday's calendar entirely. The same frozen timestamp makes HomeView.tsx:25's `key` (used for todaysOpenIntentions fed to this component), TodayAgenda's event window, and QuoteOfDay stale after midnight — inconsistently, DailyIntentions.tsx:19 already derives its key from `new Date()` per render.
@@ -406,6 +432,8 @@ Verified in code: HomeView.tsx:24 freezes snapNow at mount (useMemo(() => new Da
 </details>
 
 ### 26. `components/dashboard/people/CheckinDraft.tsx:58` — Closing the contact modal during the 15s undo window silently cancels an email the user explicitly confirmed sending, with no warning that it was never sent.
+
+> **FIXED** (Stage 2, commits 8424773, 4b2fddb, 6579173, 4acb9ff) — The check-in send is scheduled via a module-level scheduler that survives modal unmount (confirmed sends no longer cancelled by closing the modal); an Undo toast (per-contact id, replaced on reschedule) controls it; per-contact dedupe prevents double-sends; the composer re-enables after the send fires.
 
 *Category: correctness · Area: components-people-brain*
 
@@ -421,6 +449,8 @@ Confirmed by tracing the actual code. CheckinDraft.tsx:80-84 schedules the real 
 
 ### 27. `components/dashboard/people/NetworkPanel.tsx:52` — The relaxation loop calls setNodes on every animation frame forever with no convergence check, and the render body does contacts.find per node, making the Network tab O(n^2) per frame at 60fps even when the layout is static.
 
+> **FIXED** (Stage 2, commits 1f25a6f, 2b9ded6) — The NetworkPanel force-graph now sleeps when it converges (displacement < epsilon for N frames) and wakes on drag/data/edge change, and replaces the per-frame O(n) `contacts.find` with an O(1) Map lookup.
+
 *Category: perf · Area: lib-people*
 
 **Problem.** The rAF effect (lines 49-62) clones all nodes and re-renders every frame indefinitely; step() is O(n^2) all-pairs, and line 223 `contacts.find((x) => x.id === n.id)` inside the node map adds another O(n^2) per render, plus React reconciliation of n absolutely-positioned divs. With a realistic CSV import of 300-500 contacts that is ~10^5-10^6 operations per frame forever — the tab pegs a CPU core, drops frames, and drains laptop/phone battery even after the simulation has visibly settled (friction 0.92 means it converges within a few hundred frames but never stops rendering).
@@ -434,6 +464,8 @@ Confirmed by reading the code. NetworkPanel.tsx:49-62 schedules requestAnimation
 </details>
 
 ### 28. `lib/dashboard/coach/board.ts:16` — Dragging a task with a running timer into the Done column does not pause the timer, unlike completing it via checkbox, so tracked time keeps accruing on a finished task indefinitely.
+
+> **FIXED** (Stage 2, commit 66396d8) — Dragging a running-timer task into Done now banks the elapsed time at the done instant (`pauseTimer(t, new Date(nowISO).getTime())`) rather than at wall-clock.
 
 *Category: correctness · Area: components-coach*
 
@@ -449,6 +481,8 @@ Confirmed by tracing the actual code. (1) `applyStage` (lib/dashboard/coach/boar
 
 ### 29. `lib/dashboard/coach/insights.ts:20` — insTasks compares a UTC-parsed week-key date against local-midnight period boundaries, silently dropping an entire week of tasks from month/quarter/year insights whenever the period starts on a Monday (in timezones behind UTC).
 
+> **FIXED** (Stage 2, commit c156633) — Week keys are parsed via `parseDayKey` (local-midnight `new Date(y,m-1,d)`) instead of `new Date("YYYY-MM-DD")` (UTC), fixing the day-shift in negative-offset timezones.
+
 *Category: correctness · Area: lib-coach*
 
 **Problem.** new Date(t.week.slice(1)) parses 'W2026-06-01' as Jun 1 00:00 UTC = May 31 19:00 CDT, which is < r.start (Jun 1 00:00 local) for the '2026-06' month scope — and it is also > r.end of May, so the week belongs to NO month. June 1, 2026 is a real Monday, so this June, computeInsights at month scope will exclude all tasks of week W2026-06-01 from totalMs/pts/donePts/rows in the owner's Chicago timezone. Same bug hits quarter/year scopes whenever they start on a Monday (e.g. Q1 2024). insights.test.ts only exercises week scope in UTC CI, so this is invisible to the suite.
@@ -462,6 +496,8 @@ Confirmed by executing the exact filter logic under TZ=America/Chicago: for week
 </details>
 
 ### 30. `lib/dashboard/coach/insights.ts:20` — InsightsModal's Month/Quarter/Year scopes silently drop an entire week of tasks whenever the period starts on a Monday, because the week key is parsed as UTC but compared against local-time period bounds.
+
+> **FIXED** (Stage 2, commit c156633) — Duplicate of #29; fixed by the same `parseDayKey` local-time convention.
 
 *Category: correctness · Area: components-coach*
 
@@ -477,6 +513,8 @@ Reproduced end-to-end with the actual modules under TZ=America/Chicago. periodRa
 
 ### 31. `lib/dashboard/coach/migrate.ts:42` — The board->tasks conversion mints fresh uid()s on every migrate() call, so migration is not idempotent on ids: until the migration is persisted, the ids rendered in the UI never match the ids in any freshly-migrated draft or in the server search index.
 
+> **FIXED** (Stage 2, commit 22b932f) — Board→task migration derives deterministic ids (`bt-<id>` / `<id>-s-<sub>`) from the source item id, so re-running the migration is idempotent (no duplicate tasks).
+
 *Category: correctness · Area: lib-coach*
 
 **Problem.** CoachView renders db = migrate(clone(state)) (ids A) but every mutate() re-runs migrate on prev (ids B) before applying the callback (CoachView.tsx:63-73). For a user with legacy `board` data, the FIRST interaction with a converted board task (checkbox, timer, edit — all use findDraftTask by the rendered id A) silently no-ops because the draft only contains id B; the save then swaps all board-task ids under any open modal. Independently, app/api/search/route.ts:74 migrates per-request, returning task ids that will never exist in the client's doc, so clicking a search result for a board-converted task deep-links to a nonexistent id (CoachView.tsx:97) and does nothing. Memory notes say the legacy TaskBoard data is being kept for reintegration, so this path is live.
@@ -491,6 +529,8 @@ Confirmed by tracing the actual code. (1) uid() (lib/dashboard/coach/migrate.ts:
 
 ### 32. `lib/dashboard/coach/periods.ts:48` — periodLabelOf parses week keys with new Date('YYYY-MM-DD') (UTC midnight) but formats with toLocaleDateString (local), so in any timezone behind UTC — including the owner's America/Chicago — every week goal's label is off by one day.
 
+> **FIXED** (Stage 2, commit c156633) — `periodLabelOf` and week-key generation both route through the local-time `parseDayKey`, so generation and parse are symmetric (no off-by-one label).
+
 *Category: correctness · Area: lib-coach*
 
 **Problem.** For period 'W2026-07-06', new Date('2026-07-06') is Jul 6 00:00 UTC = Jul 5 19:00 CDT, so the label renders 'Jul 5–11' instead of 'Jul 6–12'. This wrong span is shown in GoalModal's ladder picker (components/dashboard/coach/GoalModal.tsx:235) and is fed to the AI as each goal's `period` in intake.ts ctx() line 74, so the coach chat reasons about the wrong week. periodRange's own label (line 16, pure local math) shows the correct 'Jul 6 – Jul 12', so the two labels visibly disagree in the same UI. Tests only cover the year/quarter/month branches (test/coach/periods.test.ts:36-40); the /^W/ branch is untested and only passes in UTC-pinned CI anyway.
@@ -504,6 +544,8 @@ Confirmed by reading the code and empirically reproducing it. lib/dashboard/coac
 </details>
 
 ### 33. `lib/dashboard/coach/rollforward.ts:27` — applyRollForward duplicates every unfinished task that belongs to a recurring goal, because the recurring-goal clone and the carry-over clone both copy it — and the RollForwardModal defaults BOTH checkboxes to checked.
+
+> **FIXED** (Stage 2, commit 21bd7bb) — Roll-forward no longer double-clones a task whose goal is being recurred, and re-applying is idempotent via a `sourceId` stamped into each clone.
 
 *Category: correctness · Area: lib-coach*
 
@@ -546,6 +588,8 @@ Fix assessment: the suggested fix (skip ids in sel.carryTaskIds inside the recur
 
 ### 34. `lib/dashboard/coach/rollforward.ts:27` — Applying the default "Plan this week" selections duplicates every unfinished task that belongs to a recurring goal, and re-opening/re-applying the modal later duplicates the whole plan again.
 
+> **FIXED** (Stage 2, commit 21bd7bb) — Duplicate of #33; fixed by the same `sourceId`-keyed no-double-clone / idempotent roll-forward.
+
 *Category: correctness · Area: components-coach*
 
 **Problem.** RollForwardModal defaults every row checked (recurChecked = all recurring goals, carryChecked = all unfinished prev-week tasks). applyRollForward's recurring-goal loop clones ALL of last week's tasks for that goal (`t.week === prev && t.goalId === id` — including the unfinished ones), then the carry loop clones the same unfinished tasks a second time. Scenario: goal G is recurring, task T (goalId=G, not done) exists last week; open "✦ Plan this week" and click Apply with defaults -> this week gets TWO fresh copies of T. test/coach/rollforward.test.ts only asserts `.some(...)` so it cannot catch the double-clone. Additionally nothing reads `planDone[wk]` to gate the button or the modal, so opening "Plan this week" again on Wednesday and clicking Apply clones every recurring/carry task yet again — the carry source tasks still live in last week and are still not done.
@@ -559,6 +603,8 @@ CONFIRMED by direct trace. (1) Double-clone: lib/dashboard/coach/rollforward.ts:
 </details>
 
 ### 35. `lib/dashboard/people/backup.ts:32` — normalizeDb (the declared 'schema gate') does not enforce id/name/tier on contacts and validateBackup only checks that `contacts` is an array, so restoring a malformed backup persistently crashes the People and Network tabs.
+
+> **FIXED** (Stage 2, commits 999ccd9, bcc7ada) — `normalizeDb` drops id-less/non-object contacts (coercing name/tier so nameless rows survive) and `validateBackup` shape-gates the import with a visible error; the id gate now matches normalizeDb's coercion (numeric ids accepted).
 
 *Category: correctness · Area: lib-people*
 
@@ -574,6 +620,8 @@ Traced end-to-end in the real code. (1) validateBackup (lib/dashboard/people/bac
 
 ### 36. `lib/dashboard/people/csv.ts:37` — Re-importing a CSV silently overwrites curated name/notes/birthday/phone on existing contacts, despite the un-confirm-gated UI claiming import 'only adds/merges'.
 
+> **FIXED** (Stage 2, commit 9cd757d) — CSV re-import fills only EMPTY fields (existing curated name/notes/birthday/phone win; tags/emails union) and an id collision merges into the same contact instead of creating a duplicate.
+
 *Category: data-loss · Area: lib-people*
 
 **Problem.** For an existing contact matched by email: notes are replaced (line 41), birthday replaced (line 42), phone replaced when present (line 39), and name is always replaced when an email exists — if the CSV has no name column or an empty name cell, line 30 falls back to nameFromEmail(), so `existing.name = name || existing.name` clobbers a curated name like 'Mom' with 'Jdoe123'. Scenario: user imports contacts once, edits names/notes in-app for months, then re-imports the same or an older CSV (CrmSettingsModal.tsx:193 has no confirm dialog) — all curated fields revert with no warning or undo.
@@ -587,6 +635,8 @@ Every mechanical claim checks out in lib/dashboard/people/csv.ts: line 30 fabric
 </details>
 
 ### 37. `lib/dashboard/people/state.ts:21` — Timestamps in three different formats (gmail UTC 'Z' ISO, calendar RFC3339 with local offset, all-day 'YYYY-MM-DD') are compared lexicographically, mis-ordering instants by up to a day and producing wrong oweReply/overdue flags.
+
+> **FIXED** (Stage 2, commits db0300c, 05e3ae6, b10ac69) — A single `toEpochMs` normalizer (Z-ISO / offset-ISO / all-day) replaces every lexicographic timestamp compare in people state/interactions/suggestions; the sort comparator and max/min reduces are NaN-safe so a malformed date can't scramble ordering or drop an overdue contact.
 
 *Category: correctness · Area: lib-people*
 
@@ -602,6 +652,8 @@ Verified end-to-end: gmail.ts:50 emits UTC 'Z' ISO strings (toISOString); app/ap
 
 ### 38. `lib/dashboard/useAppState.ts:22` — Writes made within the 500ms debounce window are silently dropped on unmount or tab close — no flush, no beforeunload/pagehide handler, and view switches unmount the owning hook.
 
+> **FIXED** (Stage 2 / Stage 1, commit e3c3e2a) — Duplicate of high #11 (fixed in Stage 1); Stage-2 optimistic-locking further hardened `useAppState` (versioned writes, conflict recovery, edit-overlay).
+
 *Category: data-loss · Area: components-people-brain*
 
 **Problem.** The unmount cleanup only clears the pending timer (line 22, acknowledged in the comment as a v1 trade-off). PeopleView owns its own useAppState('lifeCRM') instance, so common flows lose data in practice: click 'Snooze 30d' or 'Hide' on a suggestion, then immediately click Home in the rail (or close the tab) within 500ms -> the mutation is never PUT and, because state is component-local, it is gone entirely; the UI showed the change happen. There is also no keepalive/sendBeacon on pagehide, so even completed debounce timers racing a tab close can drop.
@@ -615,6 +667,8 @@ Confirmed by direct code reading. useAppState.ts:22 clears the debounce timer on
 </details>
 
 ### 39. `lib/dashboard/useAppState.ts:36` — Out-of-order PUTs can persist stale coach state: a slow or retried earlier save can land after a later save and silently overwrite it on the server.
+
+> **FIXED** (Stage 2, commits e3c3e2a, 9e930e3, 4475c7a) — A `pagehide` keepalive flush sends an edit sitting in the debounce window on tab close (size-gated under the 64KB keepalive cap), with bfcache-restore resync so it isn't double-applied.
 
 *Category: data-loss · Area: components-coach*
 
@@ -630,6 +684,8 @@ Confirmed by reading both sides of the write path. Client (lib/dashboard/useAppS
 
 ### 40. `lib/data.ts:193` — Six project links in lib/data.ts point to files that do not exist under public/ — every one 404s on the live site.
 
+> **DEFERRED** (Stage 3, cluster 3E) — Not in Stage-2 scope; the 404ing project links in lib/data.ts are tracked for the Stage-3 public-site cleanup.
+
 *Category: broken-links · Area: public-site*
 
 **Problem.** public/files contains only Senior_Thesis.pdf, but projects reference: /files/crypto/Presentation.mp4 (line 193), "/files/Financial Indicators.pdf" (206), "/files/Baseball Betting.pdf" (217), "/files/10-K Embeddings.pdf" (248), /files/Math_157_Final_Project.pdf (268), "/files/Computer Graphics 22a Final Project.pdf" (288). Live-verified: https://hamzehhamdan.com/files/Baseball%20Betting.pdf returns 404. A visitor clicking "View PDF"/"Download PDF"/"Watch Video" on /projects/[slug] pages gets a 404 for 6 of the 11 portfolio projects.
@@ -643,6 +699,8 @@ CONFIRMED by tracing code, filesystem, and the live site. (1) All six URLs exist
 </details>
 
 ### 41. `lib/supabase.ts:6` — Both client-side Supabase clients are session-blind under the httpOnly cookie policy, so the components deliberately kept for reintegration (TaskBoard, contacts-graph) will silently render empty and fail all writes the moment they are re-mounted.
+
+> **FIXED** (Stage 2, commits 002ba06, 21c9b38, 247c67e, 9fff0d1) — The session-blind legacy Supabase clients are wrapped/replaced with a guard that throws loudly on data access (instead of silently returning empty) while passing `.auth` through so the live Google OAuth flow keeps working; `docs/legacy-reintegration.md` records the constraint.
 
 *Category: dead-code · Area: auth-middleware-supabase*
 
@@ -658,6 +716,8 @@ Every load-bearing claim verified by reading the code. (1) httpOnly:true is forc
 
 ### 42. `next.config.ts:40` — `frame-ancestors 'none'` + `X-Frame-Options: DENY` on source "/:path*" blocks the site's own same-origin iframe demos in the fourier-drawing-machine blog post in any environment that honors headers().
 
+> **FIXED** (Stage 2, commit 51b152c) — The sitewide frame policy is relaxed to same-origin (`X-Frame-Options: SAMEORIGIN`, CSP `frame-ancestors 'self'`) so the site's own embedded demo iframes render, and the misleading coverage comment is corrected.
+
 *Category: correctness · Area: public-site*
 
 **Problem.** /blog/fourier-drawing-machine embeds /playground/fourier-drawing-machine/phase{1,2,3}.html via <iframe> (DemoBlock in app/(public)/blog/[slug]/page.tsx:694-708). Verified locally: `next dev`/`next start` serve phase1.html with X-Frame-Options: DENY and CSP frame-ancestors 'none', so browsers refuse to render all three demos — the post's core interactive content shows 'refused to connect'. Production only works today because of the same Netlify gap that breaks finding 3 (headers silently dropped for public/ assets). Any host migration, local verification, or a Netlify runtime fix breaks the post; and fixing finding 3 naively (e.g. blanket _headers) would break production too.
@@ -671,6 +731,8 @@ CONFIRMED by tracing code and by live reproduction. (1) next.config.ts:27-42 app
 </details>
 
 ### 43. `next.config.ts:41` — The X-Robots-Tag: noindex header for the mcp-injection-lab corpus is silently NOT applied in production, so 28 prompt-injection payload pages are indexable.
+
+> **FIXED** (Stage 2, commits 51b152c, 9fc0157) — `netlify.toml` `[[headers]]` blocks apply the security header set to CDN-served static paths (which Next's `headers()` never reaches on Netlify), with a tailored relaxed CSP scoped to `/playground/*`.
 
 *Category: security · Area: public-site*
 
@@ -692,6 +754,8 @@ Confirmed by code reading plus independent live verification. (1) next.config.ts
 </details>
 
 ### 44. `next.config.ts:41` — next.config.ts headers() — including the X-Robots-Tag noindex for the mcp-injection-lab and the CSP/X-Frame-Options/nosniff/HSTS set — are never applied to public/ static assets on Netlify, so the noindex intent is silently dead.
+
+> **FIXED** (Stage 2, commits 51b152c, 9fc0157) — Duplicate of #42/#43; `X-Robots-Tag: noindex, nofollow` for the mcp-injection-lab is now emitted via both next.config.ts and a Netlify `[[headers]]` block (pages stay crawlable so the noindex is seen).
 
 *Category: security · Area: config-infra-security*
 
