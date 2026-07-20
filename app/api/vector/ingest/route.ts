@@ -23,7 +23,11 @@ export async function POST(req: Request) {
         const file = formData.get("file") as File | null;
         const textContent = formData.get("content") as string | null;
         const metadataRaw = formData.get("metadata") as string | null;
-        const metadata = metadataRaw ? JSON.parse(metadataRaw) : {};
+        let metadata: Record<string, unknown> = {};
+        if (metadataRaw) {
+            try { metadata = JSON.parse(metadataRaw); }
+            catch { return NextResponse.json({ error: "Invalid metadata JSON" }, { status: 400 }); }
+        }
 
         let contentToEmbed = "";
 
@@ -35,22 +39,24 @@ export async function POST(req: Request) {
             const sniff = sniffMime(head);
             if (!sniff || !ALLOWED.includes(sniff)) return NextResponse.json({ error: "Unsupported file type" }, { status: 415 });
 
-            if (/mcp-injection|injection[_-]?test/i.test(file.name)) {
-                return NextResponse.json({ error: "Rejected source" }, { status: 400 });
-            }
+            // Prompt-injection posture: ingested content is UNTRUSTED data. The real
+            // control is downstream — chat/ai routes keep their tools read-only and never
+            // execute side effects driven by retrieved content. Filename screening was
+            // removed as ineffective (renaming bypasses it; pasted `content` skips it entirely).
 
-            const fileType = file.type;
             const buffer = Buffer.from(await file.arrayBuffer());
 
-            if (fileType === "application/pdf") {
+            if (sniff === "application/pdf") {
                 // PDF Parsing
                 const pdfParseModule = await import("pdf-parse") as any;
                 const pdfParse = pdfParseModule.default || pdfParseModule;
-                const pdfData = await pdfParse(buffer);
+                let pdfData;
+                try { pdfData = await pdfParse(buffer); }
+                catch { return NextResponse.json({ error: "Could not parse PDF" }, { status: 422 }); }
                 contentToEmbed = pdfData.text;
                 metadata.type = "pdf";
                 metadata.title = metadata.title || file.name;
-            } else if (fileType.startsWith("image/")) {
+            } else if (sniff.startsWith("image/")) {
                 // Image Description via GPT-4 Vision
                 const base64Image = buffer.toString("base64");
                 const visionResponse = await openai.chat.completions.create({
@@ -60,7 +66,7 @@ export async function POST(req: Request) {
                             role: "user",
                             content: [
                                 { type: "text", text: "Describe this image in detail for knowledge retrieval." },
-                                { type: "image_url", image_url: { url: `data:${fileType};base64,${base64Image}` } }
+                                { type: "image_url", image_url: { url: `data:${sniff};base64,${base64Image}` } }
                             ]
                         }
                     ],
