@@ -37,6 +37,15 @@ describe("readCookieValue", () => {
   it("returns the raw value when percent-decoding fails", () => {
     expect(readCookieValue("g_oauth_state=%E0%A4%A", "g_oauth_state")).toBe("%E0%A4%A");
   });
+  it("does not match a cookie whose name is the target plus a suffix (prefix collision)", () => {
+    expect(readCookieValue("g_oauth_state_x=evil", "g_oauth_state")).toBeNull();
+  });
+  it("finds the target cookie when it is listed first among several", () => {
+    expect(readCookieValue("g_oauth_state=first; a=1; b=2", "g_oauth_state")).toBe("first");
+  });
+  it("finds the target cookie when it is listed last among several", () => {
+    expect(readCookieValue("a=1; b=2; g_oauth_state=last", "g_oauth_state")).toBe("last");
+  });
 });
 
 describe("oauthStateMatches", () => {
@@ -57,5 +66,17 @@ describe("oauthStateMatches", () => {
   });
   it("rejects empty strings on both sides", () => {
     expect(oauthStateMatches("", "")).toBe(false);
+  });
+  it("rejects an empty query state against a non-empty cookie", () => {
+    expect(oauthStateMatches("", "x")).toBe(false);
+  });
+  it("rejects a non-empty query state against an empty cookie", () => {
+    expect(oauthStateMatches("x", "")).toBe(false);
+  });
+  it("rejects a null query state against an empty cookie", () => {
+    expect(oauthStateMatches(null, "")).toBe(false);
+  });
+  it("rejects an empty query state against a null cookie", () => {
+    expect(oauthStateMatches("", null)).toBe(false);
   });
 });
