@@ -25,9 +25,12 @@ export function usePeopleSnapshot(now: Date) {
   }, []);
   const db = useMemo(() => normalizeDb(raw ?? {}), [raw]);
   const live = useLiveInteractions(now);
-  const stateOf = (c: Contact) => computeState(c, live.gmail, live.cal, db, now);
-  const counts = summaryCounts(db, stateOf);
-  const attention = attentionList(db, stateOf, () => false); // Home ignores group-level nudges
+  const stateOf = useMemo(
+    () => (c: Contact) => computeState(c, live.gmail, live.cal, db, now),
+    [live.gmail, live.cal, db, now],
+  );
+  const counts = useMemo(() => summaryCounts(db, stateOf), [db, stateOf]);
+  const attention = useMemo(() => attentionList(db, stateOf, () => false), [db, stateOf]); // Home ignores group-level nudges
   return { db, counts, attention, connected: live.connected, loaded: raw !== null, stateOf };
 }
 
