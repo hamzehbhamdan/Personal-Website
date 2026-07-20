@@ -22,6 +22,7 @@ import { fmtDur, pauseTimer, resetTimer, startTimer } from "@/lib/dashboard/coac
 import { uid } from "@/lib/dashboard/coach/migrate";
 import { stageForDone, syncDone } from "@/lib/dashboard/coach/board";
 import { Badge, Card } from "@/components/dashboard/ui";
+import { focusRing } from "./a11y";
 import { cn } from "@/lib/utils";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -71,22 +72,25 @@ function SubRow({
       >
         <CheckIcon visible={sub.done} />
       </button>
-      <span
+      <button
+        type="button"
         onClick={onEdit}
+        aria-label={`Edit subtask: ${sub.label}`}
         className={cn(
-          "cursor-pointer text-[12.5px]",
+          "cursor-pointer rounded-[4px] text-left text-[12.5px]",
+          focusRing,
           sub.done ? "text-stone-400 line-through" : "text-stone-700",
         )}
       >
         {sub.label}
-      </span>
+      </button>
       {sub.meta && <span className="text-[11px] text-stone-400">{sub.meta}</span>}
       <Badge tone="neutral">+{sub.pts || 0}</Badge>
       <button
         type="button"
         onClick={onDelete}
         aria-label="Delete subtask"
-        className="ml-auto border-none bg-transparent text-[11px] text-stone-400 opacity-0 transition-opacity group-hover/sub:opacity-100"
+        className="ml-auto border-none bg-transparent text-[11px] text-stone-400 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/sub:opacity-100"
       >
         ✕
       </button>
@@ -243,22 +247,25 @@ export function TaskRow({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-[7px]">
-            <span
+            <button
+              type="button"
               onClick={() => onEdit(task.id)}
+              aria-label={`Edit task: ${task.label}`}
               className={cn(
-                "cursor-pointer text-[13.5px] font-semibold hover:text-[#A51C30]",
+                "cursor-pointer rounded-[4px] text-left text-[13.5px] font-semibold hover:text-[#A51C30]",
+                focusRing,
                 done ? "text-stone-400 line-through" : "text-stone-900",
               )}
             >
               {task.label}
-            </span>
+            </button>
             {task.tag && <Badge tone="neutral">{task.tag}</Badge>}
             <Badge tone="neutral">{grp ? `${taskPts(task)} pt` : `${task.pts || 0} pt est`}</Badge>
             <button
               type="button"
               onClick={handleDeleteTask}
               aria-label="Delete task"
-              className="ml-auto border-none bg-transparent text-[12px] text-stone-400 opacity-0 transition-opacity group-hover:opacity-100"
+              className="ml-auto border-none bg-transparent text-[12px] text-stone-400 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
             >
               ✕
             </button>
