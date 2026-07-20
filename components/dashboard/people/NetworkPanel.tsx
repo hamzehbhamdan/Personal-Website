@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CrmDB } from "@/lib/dashboard/people/types";
-import { step, seedPositions, type SimNode } from "@/lib/dashboard/people/graph-sim";
+import { step, seedPositions, createSettleTracker, type SimNode } from "@/lib/dashboard/people/graph-sim";
 import { canonEdge, edgeKey, neighbors, removeEdge, shortestPath } from "@/lib/dashboard/people/connections";
 import { tierColor } from "@/lib/dashboard/people/tiers";
 import { normalizeDb } from "@/lib/dashboard/people/backup";
@@ -20,7 +20,7 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
 }) {
   const contacts = db.contacts;
   const edges = db.connections;
-  const nameById = useMemo(() => new Map(contacts.map((c) => [c.id, c.name])), [contacts]);
+  const contactById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
 
   const [nodes, setNodes] = useState<SimNode[]>([]);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
@@ -30,35 +30,68 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
   const wrapRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; moved: boolean } | null>(null);
   const pan = useRef<{ x: number; y: number } | null>(null);
+  // Restarts the relaxation loop after it has gone to sleep. The loop effect
+  // below installs the real implementation; no-op until it mounts.
+  const wakeRef = useRef<() => void>(() => {});
 
   // Sync sim nodes with the contact set (keep positions for existing, seed new), then pre-warm.
   useEffect(() => {
     setNodes((prev) => {
       const byId = new Map(prev.map((n) => [n.id, n]));
       const ids = contacts.map((c) => c.id);
-      const kept = ids.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
+      // Clone kept nodes before stepping: step() mutates in place and these
+      // objects are still referenced by current React state (review #58).
+      const kept = ids.filter((id) => byId.has(id)).map((id) => ({ ...byId.get(id)! }));
       const seeded = seedPositions(ids.filter((id) => !byId.has(id)), W / 2, H / 2);
       const all = [...kept, ...seeded];
       for (let i = 0; i < 160; i++) step(all, edges, { centerX: W / 2, centerY: H / 2, friction: 0.9 });
       return all;
     });
+    wakeRef.current(); // node added/removed/edited — let the layout re-settle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contacts]);
 
-  // Live relaxation loop.
+  // Live relaxation loop. Steps the sim each animation frame until the layout
+  // settles (per-node displacement below SETTLE_EPS for SETTLE_FRAMES straight
+  // frames), then stops scheduling entirely. wakeRef.current() restarts it —
+  // wired to drag start/move/end, the contact-sync effect, and (via this
+  // effect's [edges] dependency) every connection add/remove.
   useEffect(() => {
     let raf = 0;
+    let running = false;
+    let disposed = false;
+    const settle = createSettleTracker();
     const tick = () => {
+      if (disposed || settle.settled()) {
+        running = false;
+        return;
+      }
       setNodes((prev) => {
-        if (!prev.length) return prev;
+        if (!prev.length) {
+          settle.update(0, 0); // empty graph: count calm frames, then sleep
+          return prev; // same reference — React bails out, no re-render
+        }
         const next = prev.map((n) => ({ ...n }));
-        step(next, edges, { centerX: W / 2, centerY: H / 2, friction: 0.92 });
+        const disp = step(next, edges, { centerX: W / 2, centerY: H / 2, friction: 0.92 });
+        settle.update(disp, next.length);
         return next;
       });
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const wake = () => {
+      if (disposed) return;
+      settle.reset();
+      if (running) return;
+      running = true;
+      raf = requestAnimationFrame(tick);
+    };
+    wakeRef.current = wake;
+    wake();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      wakeRef.current = () => {};
+    };
   }, [edges]);
 
   const posById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
@@ -92,6 +125,7 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     drag.current = { id, moved: false };
+    wakeRef.current(); // neighbors must respond while this node is pinned
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: true } : n)));
   }
   function onNodePointerMove(e: React.PointerEvent) {
@@ -99,11 +133,13 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
     drag.current.moved = true;
     const p = toGraph(e.clientX, e.clientY);
     const id = drag.current.id;
+    wakeRef.current(); // keep the sim awake for the whole drag, not just its start
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, x: p.x, y: p.y, vx: 0, vy: 0 } : n)));
   }
   function onNodePointerUp(id: string) {
     const wasMoved = drag.current?.moved;
     drag.current = null;
+    wakeRef.current(); // released node re-enters the sim; let the layout relax
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: false } : n)));
     if (!wasMoved) onOpenContact(id);
   }
@@ -124,7 +160,7 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
   }
 
   function removeConnection(a: string, b: string) {
-    const na = nameById.get(a) ?? "someone", nb = nameById.get(b) ?? "someone";
+    const na = contactById.get(a)?.name ?? "someone", nb = contactById.get(b)?.name ?? "someone";
     if (!window.confirm(`Remove the connection between ${na} and ${nb}?`)) return;
     setState((prev) => {
       const d = normalizeDb(prev);
@@ -220,7 +256,7 @@ export function NetworkPanel({ db, setState, onOpenContact, onOpenLink }: {
               })}
             </svg>
             {nodes.map((n) => {
-              const c = contacts.find((x) => x.id === n.id);
+              const c = contactById.get(n.id);
               if (!c) return null;
               const color = tierColor(db, c.tier);
               const onPathNode = pathNodes?.has(n.id);
