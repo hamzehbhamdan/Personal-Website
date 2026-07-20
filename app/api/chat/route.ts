@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
 import { allow } from "@/lib/rate-limit";
+import { parseChatRequest } from "@/lib/dashboard/ai-schema";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -28,7 +29,7 @@ async function executeGetContacts(supabase: SupabaseClient, search?: string, lim
     return JSON.stringify(data);
 }
 
-async function executeSearchSupabase(supabase: SupabaseClient, query: string, params: any): Promise<string> {
+async function executeSearchSupabase(supabase: SupabaseClient, query: string, retrievalCount: number): Promise<string> {
     let allResults: string[] = [];
 
     try {
@@ -50,7 +51,7 @@ async function executeSearchSupabase(supabase: SupabaseClient, query: string, pa
             const { data: documents } = await supabase.rpc("match_documents", {
                 query_embedding: queryEmbedding,
                 match_threshold: 0.5,
-                match_count: params?.retrievalCount || 5,
+                match_count: retrievalCount,
             });
             if (documents) {
                 documents.forEach((d: any) => {
@@ -73,7 +74,12 @@ export async function POST(req: Request) {
         return Response.json({ error: "Rate limited" }, { status: 429 });
     }
     try {
-        const { messages: inputMessages, params } = await req.json();
+        // Ingress validation (report #14): 400 on malformed JSON / bad shape,
+        // whitelist user|assistant roles, cap count + total chars, clamp retrievalCount.
+        const body: unknown = await req.json().catch(() => null);
+        const parsed = parseChatRequest(body);
+        if (!parsed.ok) return Response.json({ error: parsed.reason }, { status: 400 });
+        const { messages: inputMessages, retrievalCount, activeStoreId } = parsed.value;
 
         const systemPrompt = `You are Hamzeh's Advanced Personal OS Assistant.
 You have direct access to his Second Brain (notes), Tasks (Directives), Contacts (Network), and Calendar.
@@ -131,11 +137,11 @@ Be concise, professional, and slightly futuristic in tone.`;
         ];
 
         // If vector store is connected, use OpenAI Responses API with file_search
-        if (params?.activeStoreId && await ownsStore(supabase, gate.userId, params.activeStoreId)) {
+        if (activeStoreId && await ownsStore(supabase, gate.userId, activeStoreId)) {
             // Pass the FULL conversation (not just the last turn) so follow-ups keep context.
-            const responsesInput = (inputMessages as { role: string; content: unknown }[]).map((m) => ({
+            const responsesInput = inputMessages.map((m) => ({
                 role: m.role,
-                content: String(m?.content ?? ""),
+                content: m.content,
             }));
 
             const responsesResponse = await fetch("https://api.openai.com/v1/responses", {
@@ -151,7 +157,7 @@ Be concise, professional, and slightly futuristic in tone.`;
                     tools: [
                         {
                             type: "file_search",
-                            vector_store_ids: [params.activeStoreId]
+                            vector_store_ids: [activeStoreId]
                         }
                     ]
                 })
@@ -186,7 +192,9 @@ Be concise, professional, and slightly futuristic in tone.`;
         }
 
         // Fallback: Use Chat Completions API with manual tool handling
-        let conversationMessages = [...inputMessages];
+        // Internal loop state: starts from validated ingress, then legitimately
+        // accumulates assistant tool-call messages and role:"tool" results.
+        const conversationMessages: unknown[] = [...inputMessages];
 
         for (let step = 0; step < 5; step++) {
             const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -232,7 +240,7 @@ Be concise, professional, and slightly futuristic in tone.`;
                             toolResult = await executeGetContacts(supabase, toolArgs.search, toolArgs.limit);
                             break;
                         case "searchLocalNodes":
-                            toolResult = await executeSearchSupabase(supabase, toolArgs.query, params);
+                            toolResult = await executeSearchSupabase(supabase, toolArgs.query, retrievalCount);
                             break;
                         default:
                             toolResult = `Unknown tool: ${toolName}`;
