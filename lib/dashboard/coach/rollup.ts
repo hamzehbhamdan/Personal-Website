@@ -19,7 +19,7 @@ export function taskDone(t: Task): boolean {
   return t.subs && t.subs.length ? t.subs.every((x) => x.done) : !!t.done;
 }
 export function taskTime(t: Task, now: number = Date.now()): number {
-  return (+t.timeMs || 0) + (t.timerStart ? now - t.timerStart : 0);
+  return (+t.timeMs || 0) + (t.timerStart ? Math.max(0, now - t.timerStart) : 0);
 }
 
 export interface Subtree { pts: number; done: number; ms: number; n: number; dn: number; }

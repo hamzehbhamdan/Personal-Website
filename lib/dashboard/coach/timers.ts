@@ -3,11 +3,11 @@ import type { Task } from "./types";
 export function startTimer(tasks: Task[], id: string, now: number = Date.now()): void {
   const t = tasks.find((x) => x.id === id);
   if (!t) return;
-  tasks.forEach((x) => { if (x.timerStart) { x.timeMs = (+x.timeMs || 0) + (now - x.timerStart); x.timerStart = null; } });
+  tasks.forEach((x) => { if (x.timerStart) { x.timeMs = (+x.timeMs || 0) + Math.max(0, now - x.timerStart); x.timerStart = null; } });
   t.timerStart = now;
 }
 export function pauseTimer(t: Task | undefined, now: number = Date.now()): void {
-  if (t && t.timerStart) { t.timeMs = (+t.timeMs || 0) + (now - t.timerStart); t.timerStart = null; }
+  if (t && t.timerStart) { t.timeMs = (+t.timeMs || 0) + Math.max(0, now - t.timerStart); t.timerStart = null; }
 }
 export function resetTimer(t: Task): void { t.timerStart = null; t.timeMs = 0; }
 
