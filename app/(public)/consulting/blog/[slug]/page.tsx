@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Clock, Calendar } from "lucide-react"
 import { getBlogPost, blogPosts, type ContentBlock } from "@/lib/consulting-blog"
+import { getBlogPost as getMainBlogPost } from "@/lib/blog"
 
 const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" }
 
@@ -591,10 +592,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const { slug } = await params
     const post = getBlogPost(slug)
     if (!post) return {}
+    // If this post is also published on the main blog, that URL is canonical
+    // (avoids duplicate-content between /blog and /consulting/blog).
+    const canonical = getMainBlogPost(slug) ? `/blog/${slug}` : `/consulting/blog/${slug}`
     return {
         title: post.title,
         description: post.excerpt,
-        alternates: { canonical: `/consulting/blog/${slug}` },
+        alternates: { canonical },
     }
 }
 
