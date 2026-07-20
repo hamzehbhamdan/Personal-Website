@@ -4,7 +4,10 @@ import { periodRange } from "./periods";
 import { taskDone } from "./rollup";
 import { stageForDone } from "./board";
 
-export const uid = (p = "x"): string => p + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+export const uid = (p = "x"): string =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? p + crypto.randomUUID()
+    : p + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
 
 /** v2->v4 migration. MUTATES `raw` (via normalize) — pass a structuredClone. */
 export function migrate(raw: Partial<CoachDB>, today: Date = new Date()): CoachDB {

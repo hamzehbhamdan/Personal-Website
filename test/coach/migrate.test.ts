@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { migrate } from "../../lib/dashboard/coach/migrate";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { migrate, uid } from "../../lib/dashboard/coach/migrate";
 import { taskPts } from "../../lib/dashboard/coach/rollup";
 import type { CoachDB, Sub, Task, TaskStage } from "../../lib/dashboard/coach/types";
 
@@ -129,5 +129,46 @@ describe("migrate — board id determinism (review #31)", () => {
     const g = db.tasks.find((t) => t.label === "Groceries")!;
     expect(g.id).toBe("bt-0");
     expect(g.subs[0].id).toBe("bt-0-s-0");
+  });
+});
+
+describe("uid", () => {
+  const originalCrypto = globalThis.crypto;
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    Object.defineProperty(globalThis, "crypto", { value: originalCrypto, configurable: true, writable: true });
+  });
+
+  it("keeps the prefix", () => {
+    expect(uid("s").startsWith("s")).toBe(true);
+  });
+
+  it("is collision-free across a tight bulk loop within one millisecond", () => {
+    const ids = new Set<string>();
+    for (let i = 0; i < 5000; i++) ids.add(uid("t"));
+    expect(ids.size).toBe(5000); // no birthday collisions
+  });
+
+  it("uses crypto.randomUUID when available", () => {
+    const id = uid("g");
+    // crypto.randomUUID output: 8-4-4-4-12 hex, prefixed with "g"
+    expect(id).toMatch(/^g[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  it("falls back to a unique prefixed id when crypto.randomUUID is unavailable", () => {
+    // Disable crypto.randomUUID entirely so uid() must take the fallback branch.
+    Object.defineProperty(globalThis, "crypto", { value: {}, configurable: true, writable: true });
+    // The fallback's uniqueness depends on Date.now() varying between calls (it
+    // reuses the legacy Date.now()+random-suffix scheme, which is exactly what
+    // collides when Date.now() is constant across a tight loop). Advance the
+    // mocked clock by 1ms per call so this test verifies the fallback branch
+    // deterministically instead of relying on timing luck.
+    let t = 1_700_000_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => t++);
+    const ids = new Set<string>();
+    for (let i = 0; i < 5000; i++) ids.add(uid("f"));
+    expect(ids.size).toBe(5000);
+    expect([...ids].every((id) => id.startsWith("f"))).toBe(true);
   });
 });
