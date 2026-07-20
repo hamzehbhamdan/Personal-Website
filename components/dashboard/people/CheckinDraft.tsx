@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { askAi, createGmailDraft, sendGmail } from "@/lib/dashboard/people/client-ai";
 import { buildCheckinPrompt } from "@/lib/dashboard/people/ai-prompts";
 import { contactEmails } from "@/lib/dashboard/people/interactions";
+import { scheduleSend } from "@/lib/dashboard/people/send-scheduler";
 import type { Contact, VoiceProfile } from "@/lib/dashboard/people/types";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -15,10 +17,13 @@ const UNDO_SECONDS = 15;
 const parseList = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
 /**
- * Check-in composer: an editable To/Cc/Bcc/Subject/Body review of an AI draft (in the owner's voice),
- * with draft controls (regenerate / tone / length). "Send now" creates the draft then starts a 30s
- * UNDO window before it actually sends; Undo (or unmounting) cancels — nothing auto-sends. "Save as
- * draft" only creates a Gmail draft. Body/AI text render as plain values (no dangerouslySetInnerHTML).
+ * Check-in composer: an editable To/Cc/Bcc/Subject/Body review of an AI draft (in the owner's
+ * voice), with draft controls (regenerate / tone / length). "Send now" creates the Gmail draft,
+ * then schedules the real send after an UNDO_SECONDS (15s) window via the module-level
+ * send-scheduler with a sonner Undo toast. Because the timer lives outside this component,
+ * closing the contact modal does NOT cancel a confirmed send — only the toast's Undo does.
+ * "Save as draft" only creates a Gmail draft. Body/AI text render as plain values (no
+ * dangerouslySetInnerHTML).
  */
 export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact: Contact; recent: string[]; days: number | null; voice?: VoiceProfile; onSent?: (email: { subject: string; body: string }) => void }) {
   const [loading, setLoading] = useState(true);
@@ -33,15 +38,8 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
   const [busy, setBusy] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ secondsLeft: number } | null>(null);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearTimers = () => {
-    if (tickRef.current) clearInterval(tickRef.current);
-    if (sendTimeoutRef.current) clearTimeout(sendTimeoutRef.current);
-    tickRef.current = null; sendTimeoutRef.current = null;
-  };
+  // True once a send is scheduled — blocks a second Send/Save while the undo window runs.
+  const [locked, setLocked] = useState(false);
 
   const generate = (opts?: { tone?: string; length?: "short" | "long" }) => {
     setLoading(true); setError(null);
@@ -55,7 +53,7 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { generate(); return clearTimers; }, []);
+  useEffect(() => { generate(); }, []);
 
   const handleCopy = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(body);
@@ -72,35 +70,38 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
   const startSend = async () => {
     setBusy(true); setStatusMsg(null);
     const params = { to: parseList(to), cc: parseList(cc), bcc: parseList(bcc), subject, body };
+    const toLabel = params.to.join(", ");
     try {
       const draft = await createGmailDraft(params.to, params.bcc, params.subject, params.body, params.cc);
       setConfirming(false);
-      setPending({ secondsLeft: UNDO_SECONDS });
-      tickRef.current = setInterval(() => setPending((p) => (p ? { secondsLeft: Math.max(0, p.secondsLeft - 1) } : p)), 1000);
-      sendTimeoutRef.current = setTimeout(() => {
-        clearTimers();
-        setPending(null);
-        sendGmail(draft.draftId, params).then(() => { setStatusMsg("Sent ✓"); onSent?.({ subject: params.subject, body: params.body }); }).catch(() => setStatusMsg("Send failed — the draft is in your Gmail Drafts."));
-      }, UNDO_SECONDS * 1000);
+      setLocked(true);
+      // Module-level schedule (finding #26): unmounting this composer — closing the
+      // contact modal, toggling "Draft a check-in" — can no longer cancel the send.
+      // Completion/failure feedback goes through toasts because the composer may be gone.
+      const handle = scheduleSend(UNDO_SECONDS * 1000, () => {
+        sendGmail(draft.draftId, params)
+          .then(() => { toast.success(`Sent to ${toLabel} ✓`); onSent?.({ subject: params.subject, body: params.body }); })
+          .catch(() => toast.error("Send failed — the draft is in your Gmail Drafts."));
+      });
+      toast(`Sending to ${toLabel} in ${UNDO_SECONDS}s…`, {
+        duration: UNDO_SECONDS * 1000,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            if (handle.cancel()) {
+              toast("Cancelled — saved as a Gmail draft instead (nothing sent).");
+              setLocked(false); // silent no-op if the composer has unmounted
+            }
+          },
+        },
+      });
+      setStatusMsg(`Sending in ${UNDO_SECONDS}s — Undo is on the toast (bottom right). Closing this window won't cancel it.`);
     } catch { setStatusMsg("Could not create the draft."); }
     finally { setBusy(false); }
   };
 
-  const undoSend = () => { clearTimers(); setPending(null); setStatusMsg("Cancelled — saved as a Gmail draft instead (nothing sent)."); };
-
   if (loading) return <div className="mt-3 text-[13px] text-stone-500">Drafting a warm check-in…</div>;
   if (error) return <div className="mt-3 text-[13px] text-[#A51C30]">{error}</div>;
-
-  if (pending) {
-    return (
-      <div className="mt-3 rounded-[10px] border border-[#A51C30]/40 bg-[#f9f8f6] p-3">
-        <div className="flex items-center justify-between gap-2 text-[13px] text-stone-700">
-          <span>Sending to {to} in <b>{pending.secondsLeft}s</b>…</span>
-          <button type="button" onClick={undoSend} className={btnPrimary} style={mono}>Undo</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mt-3 flex flex-col gap-2 rounded-[10px] border border-stone-200 p-3">
@@ -124,8 +125,8 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 pt-2">
-        <button type="button" onClick={saveDraftOnly} disabled={busy || !to.trim() || !body.trim()} className={btnGhost} style={mono}>Save as draft</button>
-        {!confirming && <button type="button" onClick={() => { setConfirming(true); setStatusMsg(null); }} disabled={!to.trim() || !body.trim()} className={btnPrimary} style={mono}>Send…</button>}
+        <button type="button" onClick={saveDraftOnly} disabled={busy || locked || !to.trim() || !body.trim()} className={btnGhost} style={mono}>Save as draft</button>
+        {!confirming && <button type="button" onClick={() => { setConfirming(true); setStatusMsg(null); }} disabled={locked || !to.trim() || !body.trim()} className={btnPrimary} style={mono}>Send…</button>}
       </div>
 
       {confirming && (
