@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 // Content-Security-Policy for the dashboard shell. Enforcing (see Task 18):
 // live-verified as Report-Only against a production build (dashboard, login,
 // command palette, /api/ai, Supabase search) with zero violations before flipping.
+// COVERAGE (verified live 2026-07-19): headers() applies ONLY to Next-served routes.
+// On Netlify, public/ static files (all of /playground/**) are served from the CDN
+// and NEVER receive these headers — their headers come from the [[headers]] blocks
+// in netlify.toml, which must be kept in sync with the values below.
+// Frame policy is 'self'/SAMEORIGIN (not 'none'/DENY): /blog/fourier-drawing-machine
+// iframes /playground/fourier-drawing-machine/phase{1,2,3}.html same-origin, and
+// DENY / frame-ancestors 'none' block even same-origin framing. Cross-origin
+// framing remains blocked.
 // Origins: self by default; 'unsafe-inline' scripts for Next.js hydration/RSC (no nonce
 // infra) and Plausible; 'unsafe-inline' styles for the Task 3 primitives' style={...};
 // Plausible analytics (script + beacon); Supabase browser/auth client (connect);
@@ -15,7 +23,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
-  "frame-ancestors 'none'",
+  "frame-ancestors 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://plausible.io`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
@@ -25,7 +33,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const securityHeaders = [
-  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
@@ -38,7 +46,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      { source: "/playground/mcp-injection-lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex" }] },
+      { source: "/playground/mcp-injection-lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },
 };
