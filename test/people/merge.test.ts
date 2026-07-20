@@ -1,6 +1,6 @@
 // test/people/merge.test.ts
 import { describe, it, expect } from "vitest";
-import { findContactClash, mergeContactFillEmpty } from "@/lib/dashboard/people/merge";
+import { findContactClash, mergeContactFillEmpty, resolveGroupMembership } from "@/lib/dashboard/people/merge";
 import type { Contact } from "@/lib/dashboard/people/types";
 
 function makeContact(overrides: Partial<Contact> = {}): Contact {
@@ -160,5 +160,39 @@ describe("mergeContactFillEmpty", () => {
     mergeContactFillEmpty(existing, incoming);
     expect(JSON.stringify(existing)).toBe(existingSnapshot);
     expect(JSON.stringify(incoming)).toBe(incomingSnapshot);
+  });
+});
+
+describe("resolveGroupMembership", () => {
+  it("merge mode: preserves an existing membership even when checked is empty (regression for the merge group-wipe bug)", () => {
+    // This is the exact scenario that was broken: adding a contact that collides with an
+    // existing one (merge), where the add form's checkedGroups is empty because it's never
+    // seeded in add mode. The existing contact's prior membership must survive.
+    expect(resolveGroupMembership(/* wasIn */ true, /* checked */ false, /* mergeMode */ true)).toBe(true);
+  });
+
+  it("merge mode: adds a newly-checked group the contact wasn't already in", () => {
+    expect(resolveGroupMembership(false, true, true)).toBe(true);
+  });
+
+  it("merge mode: leaves an unchecked, not-previously-a-member group alone", () => {
+    expect(resolveGroupMembership(false, false, true)).toBe(false);
+  });
+
+  it("merge mode: a checked pre-existing membership stays in", () => {
+    expect(resolveGroupMembership(true, true, true)).toBe(true);
+  });
+
+  it("non-merge (plain add or edit): checked alone decides — unchecking removes a prior membership", () => {
+    expect(resolveGroupMembership(true, false, false)).toBe(false);
+  });
+
+  it("non-merge (plain add or edit): checking adds membership", () => {
+    expect(resolveGroupMembership(false, true, false)).toBe(true);
+  });
+
+  it("non-merge: unchecked and not a member stays out; checked and already a member stays in", () => {
+    expect(resolveGroupMembership(false, false, false)).toBe(false);
+    expect(resolveGroupMembership(true, true, false)).toBe(true);
   });
 });

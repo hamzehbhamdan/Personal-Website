@@ -51,3 +51,22 @@ export function mergeContactFillEmpty(existing: Contact, incoming: IncomingConta
     snoozeUntil: existing.snoozeUntil,
   };
 }
+
+/**
+ * Decide whether a contact should end up a member of one manual group after Save, given its
+ * membership before the save (`wasIn`), whether the add/edit form has that group checked
+ * (`checked`), and whether this save is a merge (the add form collided with an existing contact,
+ * per findContactClash).
+ *
+ * On a merge, `checked` comes from the add form's `checkedGroups`, which starts EMPTY in add
+ * mode (it's only seeded from an existing contact in edit mode). Treating it as authoritative
+ * would silently strip the existing contact from every manual group it already belonged to —
+ * contradicting the merge confirm dialog's promise that "existing details are kept, only empty
+ * fields are filled in". So on merge, membership can only be ADDED by `checked`, never removed:
+ * the result is `wasIn OR checked`. Non-merge add (no collision) and edit are unaffected —
+ * `checked` alone decides, so unchecking a group in edit mode still removes it, exactly as before.
+ * Pure — no side effects.
+ */
+export function resolveGroupMembership(wasIn: boolean, checked: boolean, mergeMode: boolean): boolean {
+  return mergeMode ? (wasIn || checked) : checked;
+}

@@ -9,7 +9,7 @@ import { normalizeDb } from "@/lib/dashboard/people/backup";
 import { interactionsFor } from "@/lib/dashboard/people/interactions";
 import { lc, nameFromEmail, initials } from "@/lib/dashboard/people/text";
 import { tierNames, tierCad } from "@/lib/dashboard/people/tiers";
-import { findContactClash, mergeContactFillEmpty } from "@/lib/dashboard/people/merge";
+import { findContactClash, mergeContactFillEmpty, resolveGroupMembership } from "@/lib/dashboard/people/merge";
 import { buildTagsPrompt, parseTagsResponse } from "@/lib/dashboard/people/ai-prompts";
 import { askAi } from "@/lib/dashboard/people/client-ai";
 import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
@@ -195,11 +195,13 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
       const contacts = existing
         ? nextDb.contacts.map((x) => (x.id === built.id ? built : x))
         : [...nextDb.contacts, built];
+      // mergeMode: preserve the existing contact's prior membership (fill-empty spirit) — see
+      // resolveGroupMembership. Non-merge add/edit: checked drives add+remove as before.
       const groups = nextDb.groups.map((g) => {
         if (g.type === "smart") return g;
         const members = g.members || [];
-        const shouldBeIn = checked.has(g.id);
         const isIn = members.includes(built.id);
+        const shouldBeIn = resolveGroupMembership(isIn, checked.has(g.id), mergeMode);
         if (shouldBeIn === isIn) return g;
         return { ...g, members: shouldBeIn ? [...members, built.id] : members.filter((m) => m !== built.id) };
       });
