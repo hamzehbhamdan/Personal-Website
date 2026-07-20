@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
 import { allow } from "@/lib/rate-limit";
+import { sniffMime } from "@/lib/mime-sniff";
 import OpenAI from "openai";
 
 export const dynamic = 'force-dynamic';
@@ -132,12 +133,4 @@ export async function POST(req: Request) {
         console.warn("vector: ingest failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
-}
-
-function sniffMime(head: Buffer): string | null {
-    if (head.slice(0, 5).toString("latin1") === "%PDF-") return "application/pdf";
-    if (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) return "image/png";
-    if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
-    if (head.every((b) => b === 0x09 || b === 0x0a || b === 0x0d || (b >= 0x20 && b < 0x7f) || b >= 0x80)) return "text/plain";
-    return null;
 }
