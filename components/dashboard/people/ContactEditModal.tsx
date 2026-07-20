@@ -9,6 +9,7 @@ import { normalizeDb } from "@/lib/dashboard/people/backup";
 import { interactionsFor } from "@/lib/dashboard/people/interactions";
 import { lc, nameFromEmail, initials } from "@/lib/dashboard/people/text";
 import { tierNames, tierCad } from "@/lib/dashboard/people/tiers";
+import { findContactClash, mergeContactFillEmpty } from "@/lib/dashboard/people/merge";
 import { buildTagsPrompt, parseTagsResponse } from "@/lib/dashboard/people/ai-prompts";
 import { askAi } from "@/lib/dashboard/people/client-ai";
 import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
@@ -141,6 +142,12 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
   // Save derives the contact + group-membership deltas ONLY from normalizeDb(prev) inside the
   // updater (never from the `db`/`contact` props captured at render) per the state-mutation
   // convention, so a stale render never clobbers a concurrent write.
+  //
+  // Add mode (!contact) can collide with an already-saved contact (same primary email, or —
+  // rarer — same derived id). Silently overwriting that contact would blow away its curated
+  // data (#57), so a collision is confirmed up front, against the render `db` snapshot, before
+  // any state write happens. Editing an existing contact (`contact` truthy) is unaffected: it
+  // keeps the original id-only lookup and always fully overwrites that same contact.
   function handleSave() {
     const emails = form.emails.split(",").map(lc).filter(Boolean);
     const name = form.name.trim() || (emails[0] ? nameFromEmail(emails[0]) : "Unnamed");
@@ -148,36 +155,53 @@ export function ContactEditModal({ init, db, live, setState, onClose }: {
     const id = contact ? contact.id : (emails[0] || `${name.toLowerCase()}-${Date.now()}`);
     const checked = checkedGroups;
 
+    let mergeMode = false;
+    if (!contact) {
+      const clash = findContactClash(db.contacts, id, emails);
+      if (clash) {
+        if (!window.confirm(`A contact with this email already exists (${clash.name}). Merge into it? Existing details are kept — only empty fields are filled in.`)) return;
+        mergeMode = true;
+      }
+    }
+
     setState((prev) => {
       const nextDb = normalizeDb(prev);
       const cadenceDays = form.cadenceDays || tierCad(nextDb, form.tier);
-      const existing = nextDb.contacts.find((x) => x.id === id);
-      const built: Contact = {
-        id,
-        name,
-        emails,
-        phone: form.phone.trim(),
-        tier: form.tier,
-        cadenceDays,
-        birthday: form.birthday.trim(),
-        howWeMet: form.howWeMet.trim(),
-        tags,
-        notes: form.notes,
-        avatarImg: form.avatarImg,
-        log: existing ? existing.log : [],
-        lastTouch: existing ? existing.lastTouch : null,
-        snoozeUntil: existing ? existing.snoozeUntil : null,
-      };
+      // mergeMode only re-derives `existing` by id-or-email (mirrors the confirm check above,
+      // re-run against the fresh state); editing keeps the original id-only lookup so an
+      // unrelated email collision introduced mid-edit can never redirect the save onto a
+      // DIFFERENT contact.
+      const existing = mergeMode
+        ? findContactClash(nextDb.contacts, id, emails)
+        : nextDb.contacts.find((x) => x.id === id);
+      const built: Contact = existing && mergeMode
+        ? mergeContactFillEmpty(existing, { name, emails, phone: form.phone.trim(), tier: form.tier, cadenceDays, birthday: form.birthday.trim(), howWeMet: form.howWeMet.trim(), tags, notes: form.notes, avatarImg: form.avatarImg })
+        : {
+            id: existing ? existing.id : id,
+            name,
+            emails,
+            phone: form.phone.trim(),
+            tier: form.tier,
+            cadenceDays,
+            birthday: form.birthday.trim(),
+            howWeMet: form.howWeMet.trim(),
+            tags,
+            notes: form.notes,
+            avatarImg: form.avatarImg,
+            log: existing ? existing.log : [],
+            lastTouch: existing ? existing.lastTouch : null,
+            snoozeUntil: existing ? existing.snoozeUntil : null,
+          };
       const contacts = existing
-        ? nextDb.contacts.map((x) => (x.id === id ? built : x))
+        ? nextDb.contacts.map((x) => (x.id === built.id ? built : x))
         : [...nextDb.contacts, built];
       const groups = nextDb.groups.map((g) => {
         if (g.type === "smart") return g;
         const members = g.members || [];
         const shouldBeIn = checked.has(g.id);
-        const isIn = members.includes(id);
+        const isIn = members.includes(built.id);
         if (shouldBeIn === isIn) return g;
-        return { ...g, members: shouldBeIn ? [...members, id] : members.filter((m) => m !== id) };
+        return { ...g, members: shouldBeIn ? [...members, built.id] : members.filter((m) => m !== built.id) };
       });
       // New contacts (no `existing` row in the fresh db) drop their emails from `dismissed`,
       // matching crm.html:480 — covers both the manual-add and accept-a-suggestion (init.prefill) paths.
