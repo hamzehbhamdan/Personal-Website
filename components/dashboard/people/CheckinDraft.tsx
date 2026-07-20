@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { askAi, createGmailDraft, sendGmail } from "@/lib/dashboard/people/client-ai";
 import { buildCheckinPrompt } from "@/lib/dashboard/people/ai-prompts";
@@ -40,6 +40,12 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
   // True once a send is scheduled — blocks a second Send/Save while the undo window runs.
   const [locked, setLocked] = useState(false);
+  // Guards setState calls made from the module-level scheduler's fire callback, which can
+  // run after this component has unmounted (that's the point — see send-scheduler.ts).
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    return () => { aliveRef.current = false; };
+  }, []);
 
   const generate = (opts?: { tone?: string; length?: "short" | "long" }) => {
     setLoading(true); setError(null);
@@ -80,8 +86,16 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
       // Completion/failure feedback goes through toasts because the composer may be gone.
       const handle = scheduleSend(UNDO_SECONDS * 1000, () => {
         sendGmail(draft.draftId, params)
-          .then(() => { toast.success(`Sent to ${toLabel} ✓`); onSent?.({ subject: params.subject, body: params.body }); })
-          .catch(() => toast.error("Send failed — the draft is in your Gmail Drafts."));
+          .then(() => {
+            toast.success(`Sent to ${toLabel} ✓`);
+            onSent?.({ subject: params.subject, body: params.body });
+            // Unlock so a still-mounted composer is usable again; no-op if unmounted.
+            if (aliveRef.current) { setLocked(false); setStatusMsg(`Sent to ${toLabel} ✓`); }
+          })
+          .catch(() => {
+            toast.error("Send failed — the draft is in your Gmail Drafts.");
+            if (aliveRef.current) { setLocked(false); setStatusMsg("Send failed — the draft is in your Gmail Drafts."); }
+          });
       }, contact.id);
       toast(`Sending to ${toLabel} in ${UNDO_SECONDS}s…`, {
         duration: UNDO_SECONDS * 1000,
