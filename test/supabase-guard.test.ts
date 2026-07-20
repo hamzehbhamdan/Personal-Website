@@ -4,6 +4,7 @@ import {
     guardDataAccess,
     SESSION_BLIND_MESSAGE,
 } from "@/lib/supabase-guard";
+import { supabase } from "@/lib/supabase";
 
 describe("sessionBlindDeadClient (lib/supabase legacy export)", () => {
     it("throws the explanatory error on any string property access", () => {
@@ -19,6 +20,14 @@ describe("sessionBlindDeadClient (lib/supabase legacy export)", () => {
         const loose = dead as Record<PropertyKey, unknown>;
         expect(loose[Symbol.toPrimitive]).toBeUndefined(); // logging/inspection
         expect(loose["then"]).toBeUndefined(); // `await dead` must not throw
+    });
+});
+
+describe("lib/supabase.ts (legacy export now backed by the dead client)", () => {
+    it("is import-safe but throws the explanatory error on any data access", () => {
+        expect(supabase).toBeTruthy(); // import alone must not throw
+        expect(() => supabase.from("contacts")).toThrowError(SESSION_BLIND_MESSAGE);
+        expect(() => supabase.auth).toThrowError(/httpOnly/);
     });
 });
 
