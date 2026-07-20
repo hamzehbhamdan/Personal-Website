@@ -16,7 +16,12 @@ export function parseCSV(text: string): string[][] {
   return rows;
 }
 
-/** Pure port of importCSV transform (crm.html:631). Returns a NEW db + counts; input untouched. */
+/**
+ * Pure port of importCSV transform (crm.html:631) with one deliberate deviation from the
+ * original (review #36/#65): merging into an EXISTING contact only fills EMPTY fields and
+ * matches by id as well as email, so a re-import can never clobber curated data or mint a
+ * duplicate contact id. Returns a NEW db + counts; input untouched.
+ */
 export function importCsvInto(db: CrmDB, rows: string[][]): { db: CrmDB; added: number; updated: number } {
   if (rows.length < 2) return { db, added: 0, updated: 0 };
   const out: CrmDB = { ...db, contacts: db.contacts.map((c) => ({ ...c, tags: [...(c.tags || [])], emails: [...(c.emails || [])], log: (c.log || []).map((l) => ({ ...l })) })) };
@@ -32,14 +37,19 @@ export function importCsvInto(db: CrmDB, rows: string[][]): { db: CrmDB; added: 
     const id = email || name.toLowerCase() + "-" + Date.now() + "-" + k;
     const tags = iTags >= 0 ? String(row[iTags] || "").split(/[;|]/).map((t) => t.trim()).filter(Boolean) : [];
     const tier = iTier >= 0 && tierNames(out).includes(row[iTier]) ? row[iTier] : tierNames(out)[2] || tierNames(out)[0];
-    const existing = email ? out.contacts.find((x) => contactEmails(x).includes(email)) : null;
+    // Match by email OR by id: a contact created from an email keeps id === that email even
+    // after the address is edited away, so an id-only match is the same person (#65) —
+    // mirrors ContactEditModal's id-merge guard and keeps contact ids unique.
+    const existing = email ? out.contacts.find((x) => contactEmails(x).includes(email) || x.id === email) : null;
     if (existing) {
-      existing.name = name || existing.name;
+      // Merge = fill EMPTY fields only (#36). Curated name/phone/notes/birthday are never
+      // overwritten by a re-import; tags and emails union as before.
+      if (!existing.name && name) existing.name = name;
       if (email && !contactEmails(existing).includes(email)) existing.emails.push(email);
-      existing.phone = (iPhone >= 0 ? (row[iPhone] || "").trim() : "") || existing.phone;
+      if (!existing.phone && iPhone >= 0 && (row[iPhone] || "").trim()) existing.phone = (row[iPhone] || "").trim();
       existing.tags = [...new Set([...(existing.tags || []), ...tags])];
-      if (iNotes >= 0 && row[iNotes]) existing.notes = row[iNotes];
-      if (iBday >= 0 && (row[iBday] || "").trim()) existing.birthday = (row[iBday] || "").trim();
+      if (!existing.notes && iNotes >= 0 && row[iNotes]) existing.notes = row[iNotes];
+      if (!existing.birthday && iBday >= 0 && (row[iBday] || "").trim()) existing.birthday = (row[iBday] || "").trim();
       updated++;
     } else {
       out.contacts.push({ id, name, emails: email ? [email] : [], phone: iPhone >= 0 ? (row[iPhone] || "").trim() : "", tier, cadenceDays: tierCad(out, tier), tags, notes: iNotes >= 0 ? row[iNotes] || "" : "", birthday: iBday >= 0 ? (row[iBday] || "").trim() : "", howWeMet: "", log: [], lastTouch: null, snoozeUntil: null });

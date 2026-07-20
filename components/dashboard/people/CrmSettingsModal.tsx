@@ -189,7 +189,9 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
 
   // Import contacts CSV: compute counts ONCE from the read-only `db` snapshot for the summary
   // message, then apply the real write inside the setState updater derived from `prev` (port of
-  // importCSV, crm.html:630-631). No confirm gate — unlike backup restore, this only adds/merges.
+  // importCSV, crm.html:630-631). No confirm gate — unlike backup restore, this only adds new
+  // contacts and fills EMPTY fields on existing ones: importCsvInto never overwrites curated
+  // name/phone/notes/birthday (tags/emails union) and never reuses an existing id (review #36/#65).
   function handleImportCsvChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
