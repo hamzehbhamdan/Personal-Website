@@ -1,5 +1,9 @@
 "use client";
 
+// KEPT FOR REINTEGRATION — currently unmounted. Before mounting: port all
+// createSupabaseBrowserClient() data access to requireUser()-gated /api
+// routes (the browser client is session-blind under httpOnly cookies and
+// its .from() now throws). See docs/legacy-reintegration.md (finding #41).
 import { useState, useEffect } from "react";
 import {
     DndContext,

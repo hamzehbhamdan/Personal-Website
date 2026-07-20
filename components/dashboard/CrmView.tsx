@@ -1,5 +1,11 @@
 "use client";
 
+// KEPT FOR REINTEGRATION — currently unmounted (entry point of the
+// contacts-graph feature: ContactTable/NetworkGraph/ImportContactsModal/
+// ConnectionManagerModal). Before mounting: port all Supabase data access
+// (this file uses createSupabaseBrowserClient(); the modals use the guarded
+// lib/supabase export) to requireUser()-gated /api routes. See
+// docs/legacy-reintegration.md (finding #41).
 import { useState, useEffect } from "react";
 import { Search, MoreVertical, Mail, Calendar, Grid, List, UserPlus, Share2, Upload, Network, Users } from "lucide-react";
 import { subDays } from "date-fns";
