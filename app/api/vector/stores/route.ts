@@ -32,11 +32,36 @@ export async function GET() {
 
         const userStoreIds = mappings.map(m => m.vector_store_id);
 
-        // 2. Fetch all from OpenAI and filter
-        const vectorStoresList = await openai.vectorStores.list();
-        const filteredStores = vectorStoresList.data.filter((s) => userStoreIds.includes(s.id));
+        // 2. Retrieve each mapped store directly (report #18). list() only returns
+        //    the first page (default 20, newest-first) of ALL account stores, so
+        //    mapped stores silently vanished once the account exceeded 20.
+        //    Bounded by the user's own mapping count.
+        const results = await Promise.allSettled(
+            userStoreIds.map((id) => openai.vectorStores.retrieve(id))
+        );
 
-        return NextResponse.json(filteredStores);
+        const stores: OpenAI.VectorStore[] = [];
+        const staleIds: string[] = [];
+        results.forEach((r, i) => {
+            if (r.status === "fulfilled") {
+                stores.push(r.value);
+            } else if ((r.reason as { status?: number })?.status === 404) {
+                // Store deleted outside the app — self-heal the mapping row.
+                staleIds.push(userStoreIds[i]);
+            }
+            // Non-404 rejections (network/5xx): omit from this response, keep the mapping.
+        });
+
+        for (const staleId of staleIds) {
+            const { error: cleanupError } = await supabase
+                .from('user_vector_stores')
+                .delete()
+                .eq('user_id', userId)
+                .eq('vector_store_id', staleId);
+            if (cleanupError) console.warn("vector: stores GET stale-mapping cleanup failed");
+        }
+
+        return NextResponse.json(stores);
     } catch (error: any) {
         console.warn("vector: stores GET failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
