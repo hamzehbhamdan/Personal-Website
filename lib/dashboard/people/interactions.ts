@@ -1,4 +1,4 @@
-import { lc, isMine, fmtDate } from "./text";
+import { lc, isMine, fmtDate, toEpochMs } from "./text";
 import { isPerson } from "./isPerson";
 import type { GmailMap, CalMap, GmailHeaderRow, CalendarEvent, Contact, Interaction, GmailMsg } from "./types";
 
@@ -9,7 +9,7 @@ function addMsg(map: GmailMap, email: string, msg: GmailMsg) {
   const e = lc(email); if (!isPerson(e)) return;
   const g = map[e] || (map[e] = { last: null, lastDir: null, count: 0, msgs: [] });
   g.count++; g.msgs.push(msg);
-  if (!g.last || msg.date > g.last) { g.last = msg.date; g.lastDir = msg.dir; }
+  if (!g.last || toEpochMs(msg.date) > toEpochMs(g.last)) { g.last = msg.date; g.lastDir = msg.dir; }
 }
 
 /** Port of ingestThreads (crm.html:274), snippet DROPPED. `now` filters future-dated rows. */
@@ -29,13 +29,15 @@ export function buildCalMap(events: CalendarEvent[], now: Date): CalMap {
   const map: CalMap = {};
   events.forEach((ev) => {
     const start = ev.start; if (!start) return;
-    const when = new Date(start); const summary = ev.summary || "(busy)";
+    // Classify + pick by INSTANT (toEpochMs handles offset + all-day forms); store the
+    // ORIGINAL start string (review #37).
+    const whenMs = toEpochMs(start); const summary = ev.summary || "(busy)";
     (ev.attendees || []).forEach((a) => {
       const e = lc(a.email); if (a.self || isMine(e) || !isPerson(e)) return;
       const c = map[e] || (map[e] = { lastPast: null, next: null, events: [] });
       c.events.push({ date: start, summary });
-      if (when <= now) { if (!c.lastPast || start > c.lastPast) c.lastPast = start; }
-      else { if (!c.next || start < c.next) c.next = start; }
+      if (whenMs <= now.getTime()) { if (!c.lastPast || whenMs > toEpochMs(c.lastPast)) c.lastPast = start; }
+      else { if (!c.next || whenMs < toEpochMs(c.next)) c.next = start; }
     });
   });
   return map;
@@ -49,7 +51,14 @@ export function interactionsFor(c: Contact, gmail: GmailMap, cal: CalMap): Inter
     (cal[e]?.events ?? []).forEach((ev) => out.push({ type: "event", date: ev.date, text: ev.summary }));
   });
   (c.log || []).forEach((l) => out.push({ type: "log", date: l.date, logType: l.type, text: l.note ? `${l.type} — ${l.note}` : l.type }));
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return out.sort((a, b) => {
+    // NaN-safe: toEpochMs(malformed) is NaN, and NaN arithmetic propagates NaN, which the
+    // native sort's comparator contract does not handle predictably. Coalesce to 0 (treat
+    // as equal) so a malformed row never scrambles the relative order of valid rows —
+    // Array.prototype.sort is stable, so it just keeps its original position (review #37).
+    const d = toEpochMs(b.date) - toEpochMs(a.date);
+    return Number.isNaN(d) ? 0 : d;
+  });
 }
 export const tlIcon = (m: Interaction) =>
   m.type === "event" ? "📅" : m.type === "log" ? (LOG_ICON[m.logType || ""] || "📝") : m.dir === "out" ? "➡️" : "⬅️";

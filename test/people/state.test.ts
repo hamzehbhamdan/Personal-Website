@@ -76,4 +76,13 @@ describe("state()", () => {
     expect(state(c({ birthday: "07-12" }), {}, {}, db(), afternoon).bdayIn).toBe(1); // tomorrow
     expect(state(c({ birthday: "07-20" }), {}, {}, db(), afternoon).bdayIn).toBe(9);
   });
+  it("cross-format: later offset meeting cancels owe-reply over an earlier 'Z' email (#37)", () => {
+    const now = new Date("2026-07-19T12:00:00Z");
+    const g = buildGmailMap([{ from: "amir@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-07-18T20:00:00.000Z", subject: "?", mailbox: "inbox" }], now);
+    // 18:00-05:00 == 23:00Z — AFTER the email, but lexicographically SMALLER
+    const cal = buildCalMap([{ summary: "met", start: "2026-07-18T18:00:00-05:00", attendees: [{ email: "amir@x.com" }] }], now);
+    const s = state(c({}), g, cal, db(), now);
+    expect(s.oweReply).toBe(false);
+    expect(s.last).toBe("2026-07-18T18:00:00-05:00"); // newest by instant, original string preserved
+  });
 });

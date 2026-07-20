@@ -49,4 +49,35 @@ describe("interaction maps", () => {
     expect(lines[1]).toMatch(/they wrote: launch pricing\?/);
     expect(lines.some((l) => /Call — caught up/.test(l))).toBe(true);
   });
+  it("cross-format: buildCalMap picks lastPast/next by instant, not string (#37)", () => {
+    const evs: CalendarEvent[] = [
+      { summary: "all-day", start: "2026-06-22", attendees: [{ email: "amir@x.com" }] },                     // 00:00 on the 22nd
+      { summary: "late", start: "2026-06-21T23:00:00-05:00", attendees: [{ email: "amir@x.com" }] },          // = 04:00Z on the 22nd — LATER past
+      { summary: "future all-day", start: "2026-08-02", attendees: [{ email: "amir@x.com" }] },               // 00:00 on Aug 2 — SOONER future
+      { summary: "future late", start: "2026-08-01T21:00:00-05:00", attendees: [{ email: "amir@x.com" }] },   // = 02:00Z on Aug 2
+    ];
+    const m = buildCalMap(evs, NOW);
+    expect(m["amir@x.com"].lastPast).toBe("2026-06-21T23:00:00-05:00");
+    expect(m["amir@x.com"].next).toBe("2026-08-02");
+  });
+  it("cross-format: interactionsFor sorts the merged timeline by instant (#37)", () => {
+    const g = buildGmailMap([{ from: "amir@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-06-21T20:00:00.000Z", subject: "hey", mailbox: "inbox" }], NOW);
+    const cal = buildCalMap([
+      { summary: "party", start: "2026-06-22", attendees: [{ email: "amir@x.com" }] },
+      { summary: "dinner", start: "2026-06-21T23:00:00-05:00", attendees: [{ email: "amir@x.com" }] },
+    ], NOW);
+    const tl = interactionsFor({ ...contact(), log: [] }, g, cal);
+    expect(tl.map((i) => i.date)).toEqual(["2026-06-21T23:00:00-05:00", "2026-06-22", "2026-06-21T20:00:00.000Z"]);
+  });
+  it("NaN-safe sort: a malformed log timestamp does not scramble valid rows' relative order (#37)", () => {
+    const g = buildGmailMap([
+      { from: "amir@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-06-20T00:00:00Z", subject: "newer", mailbox: "inbox" },
+      { from: "amir@x.com", to: ["hamdanhamzeh0@gmail.com"], date: "2026-06-10T00:00:00Z", subject: "older", mailbox: "inbox" },
+    ], NOW);
+    const withBadLog: Contact = { ...contact(), log: [{ date: "not-a-real-date", type: "Call", note: "bad" }] };
+    const tl = interactionsFor(withBadLog, g, {});
+    const validOrder = tl.filter((i) => i.type === "email").map((i) => i.text);
+    expect(validOrder).toEqual(["newer", "older"]); // valid rows keep correct instant order despite the NaN row
+    expect(tl.some((i) => i.text === "Call — bad")).toBe(true); // malformed row still present, not dropped
+  });
 });
