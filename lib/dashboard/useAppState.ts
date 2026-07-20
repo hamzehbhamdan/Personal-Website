@@ -1,7 +1,7 @@
 // lib/dashboard/useAppState.ts
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SaveQueue, replayPending, ConflictError, type SaveStatus } from "@/lib/dashboard/state-sync";
+import { SaveQueue, ConflictError, type SaveStatus } from "@/lib/dashboard/state-sync";
 import { fitsKeepalive } from "@/lib/dashboard/keepalive";
 import {
   createOverlay,
@@ -11,7 +11,10 @@ import {
   abandonInFlight,
   replayOverlay,
   overlayHasEdits,
+  resetOverlay,
   isRecovering,
+  nextRecoveryStep,
+  planBfcacheResync,
 } from "@/lib/dashboard/edit-overlay";
 
 export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "home" | "brain", seed: T) {
@@ -31,6 +34,16 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
   const overlayRef = useRef(createOverlay<T>());        // post-load edits not yet confirmed on the server
   const latestRef = useRef<T>(seed);                   // newest snapshot for the queue
   const loadRef = useRef<() => void>(() => {});        // conflict re-GET indirection (queue built before load runs)
+  const resyncRef = useRef<() => void>(() => {});      // bfcache-restore resync indirection (pageshow handler)
+  // CR2: bounded auto-retry of a FAILED recovery re-GET so writes are never
+  // permanently disabled. Counts retries this recovery cycle; the pending timer.
+  const recoveryAttemptRef = useRef(0);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // CR3: the pagehide keepalive PUT is fire-and-forget on this base; on a bfcache
+  // restore we use these to tell "our flush landed" (adopt server) from "nothing
+  // landed" (replay overlay) — see planBfcacheResync.
+  const keepaliveFlushedRef = useRef(false);
+  const flushedBaseRef = useRef(0);
 
   // Stable-for-the-component-lifetime singleton. Constructed inside an effect
   // (not render) so React Compiler's react-hooks/refs rule doesn't flag the
@@ -115,14 +128,20 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         const pending = pendingRef.current;
         pendingRef.current = [];
         const overlay = overlayRef.current;
-        // Rebuild on top of the fresh server doc: first the pre-(first-)load
-        // buffer, then the still-unconfirmed post-load overlay. On the initial
-        // load the overlay is empty; on a conflict re-GET `pending` is empty and
-        // the overlay carries the edits that must survive recovery. The two
-        // buffers are temporally disjoint (pending strictly before the first
-        // load, overlay strictly after), so the combined order is chronological.
-        const merged = replayOverlay(overlay, replayPending(base, pending));
-        const buffered = pending.length > 0 || overlayHasEdits(overlay);
+        // CR4: fold the pre-(first-)load buffer INTO the recoverable overlay,
+        // then replay the overlay ONCE on the fresh server doc. Previously the
+        // pending updaters were only replayed into `merged` and never copied to
+        // the overlay, so if the FIRST post-load persist 409'd, the recovery
+        // re-GET replayed an EMPTY overlay and the pre-load edit vanished from UI
+        // and server. Copying them in makes them survive a first-save 409 exactly
+        // like post-load edits, and confirmSaved drops them on the confirmed save.
+        // Safe against double-apply: `pending` is only non-empty on the very
+        // first load, when the overlay is still empty (the two buffers are
+        // temporally disjoint), so this appends — it never re-applies an edit the
+        // overlay already holds, and merged replays the overlay a single time.
+        for (const p of pending) recordEdit(overlay, p);
+        const merged = replayOverlay(overlay, base);
+        const buffered = overlayHasEdits(overlay);
         if (!alive || !aliveRef.current) {
           // Component unmounted before the GET resolved (e.g. a quick
           // edit-then-navigate on a per-view hook). Don't touch React state,
@@ -141,6 +160,8 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         queueRef.current?.setBase(version); // initialize/refresh the optimistic-lock base
         loadedRef.current = true;
         everLoadedRef.current = true;
+        recoveryAttemptRef.current = 0;     // a re-GET succeeded: reset the CR2 backoff
+        keepaliveFlushedRef.current = false; // reconciled with the server; no stale flush pending
         latestRef.current = merged;
         setState(merged);
         setLoaded(true);
@@ -149,13 +170,82 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         // the overlay via confirmSaved.
         if (buffered) persist(merged);
       })
-      .catch(() => { if (alive && aliveRef.current) setLoadError(true); }); // loaded stays FALSE
+      .catch(() => {
+        if (!alive || !aliveRef.current) return;
+        if (!everLoadedRef.current) { setLoadError(true); return; } // initial load: retry UI is reachable (loaded is FALSE)
+        // CR2: a conflict-recovery re-GET failed. `loaded` is still TRUE, so the
+        // LoadState/Retry UI is unreachable AND writes are disabled (loadedRef
+        // false) — the hook would be permanently wedged, edits piling silently
+        // into the overlay. Never wedge: retry the re-GET with bounded backoff,
+        // and once exhausted re-enable writes so a stale-base re-persist (and any
+        // future edit) re-triggers recovery when connectivity returns. The
+        // overlay keeps every unconfirmed edit throughout, so nothing is lost.
+        const step = nextRecoveryStep(recoveryAttemptRef.current);
+        if (step.action === "retry") {
+          recoveryAttemptRef.current = step.attempt;
+          if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+          recoveryTimerRef.current = setTimeout(() => {
+            recoveryTimerRef.current = null;
+            if (aliveRef.current) loadRef.current(); // re-GET again (still recovering: loadedRef false)
+          }, step.delay);
+        } else {
+          recoveryAttemptRef.current = 0;
+          loadedRef.current = true;               // re-enable writes: unwedge
+          if (overlayHasEdits(overlayRef.current)) persist(latestRef.current); // re-attempt now
+        }
+      });
     return () => { alive = false; };
+  }, [persist]);
+
+  // CR3: reconcile after a bfcache restore (pageshow persisted=true). The page
+  // was FROZEN, not torn down: React did not remount, so all refs — the stale
+  // queue base and the overlay still holding the keepalive-flushed updater —
+  // survived. A plain recovery load() would replay that already-sent updater on
+  // top of the server doc that already contains it (double-apply). Re-GET the
+  // authoritative server doc/version and, per planBfcacheResync, either ADOPT it
+  // (flush landed → drop the overlay, no replay) or REPLAY the overlay + re-persist
+  // (nothing landed → recover the buffered edits). Failure is handled like a
+  // recovery re-GET failure: re-enable writes rather than wedge.
+  const resync = useCallback(() => {
+    fetch(`/api/state?app=${appRef.current}`)
+      .then((r) => { if (!r.ok) throw new Error(`resync failed: ${r.status}`); return r.json(); })
+      .then((j) => {
+        if (!aliveRef.current) return;
+        const version = typeof j.version === "number" ? j.version : 0;
+        const serverDoc = j.data && Object.keys(j.data).length ? (j.data as T) : seedRef.current;
+        const overlay = overlayRef.current;
+        const plan = planBfcacheResync({
+          keepaliveFlushed: keepaliveFlushedRef.current,
+          flushedBase: flushedBaseRef.current,
+          serverVersion: version,
+        });
+        keepaliveFlushedRef.current = false;
+        recoveryAttemptRef.current = 0;
+        queueRef.current?.setBase(version);
+        loadedRef.current = true; // resync always re-enables writes on the fresh base
+        if (plan === "adopt-server") {
+          // The keepalive PUT advanced the server past the base we flushed with:
+          // the fresh doc already reflects our edit. Drop the overlay so replay
+          // can't double-apply it, and adopt the server doc verbatim.
+          resetOverlay(overlay);
+          latestRef.current = serverDoc;
+          setState(serverDoc);
+        } else {
+          // Nothing we sent landed — replay the still-unconfirmed overlay on the
+          // fresh doc and re-persist so the buffered edits are not dropped.
+          const merged = replayOverlay(overlay, serverDoc);
+          latestRef.current = merged;
+          setState(merged);
+          if (overlayHasEdits(overlay)) persist(merged);
+        }
+      })
+      .catch(() => { if (aliveRef.current) loadedRef.current = true; }); // never wedge on a resync failure
   }, [persist]);
 
   // Keep the conflict-recovery indirection pointed at the current load. The
   // queue's onStatus closure captures loadRef (stable), so it never goes stale.
   useEffect(() => { loadRef.current = () => { void load(); }; }, [load]);
+  useEffect(() => { resyncRef.current = () => { resync(); }; }, [resync]);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -164,6 +254,7 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
     return () => {
       cancel();
       aliveRef.current = false;
+      if (recoveryTimerRef.current) { clearTimeout(recoveryTimerRef.current); recoveryTimerRef.current = null; }
       // Flush an in-window edit instead of dropping it (view-switch unmounts).
       if (timer.current) {
         clearTimeout(timer.current);
@@ -188,10 +279,17 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
       if (!loadedRef.current || !timer.current) return; // nothing sitting in the debounce window
       clearTimeout(timer.current);
       timer.current = null;
-      const body = JSON.stringify({ data: latestRef.current, baseVersion: queueRef.current!.baseVersion });
+      const flushedBase = queueRef.current!.baseVersion;
+      const body = JSON.stringify({ data: latestRef.current, baseVersion: flushedBase });
       if (fitsKeepalive(body)) {
         // Direct keepalive PUT — bypasses the queue, so no "saved" fires and the
-        // overlay is not cleared here; the page is tearing down so it is moot.
+        // overlay is NOT cleared here (the response is never read during unload).
+        // On a real close the page dies and it is moot; on a bfcache freeze the
+        // refs survive, so record that we flushed at `flushedBase` — the pageshow
+        // resync (CR3) uses this to avoid double-applying the still-present
+        // overlay updater once the server advances past this base.
+        keepaliveFlushedRef.current = true;
+        flushedBaseRef.current = flushedBase;
         void fetch(`/api/state?app=${appRef.current}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -203,8 +301,15 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         queueRef.current!.submit(latestRef.current);
       }
     };
+    // bfcache restore: the page was frozen with a stale base + unflushed overlay;
+    // reconcile with the server so a keepalive-flushed edit isn't double-applied.
+    const restore = (e: PageTransitionEvent) => { if (e.persisted) resyncRef.current(); };
     window.addEventListener("pagehide", flush);
-    return () => window.removeEventListener("pagehide", flush);
+    window.addEventListener("pageshow", restore);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("pageshow", restore);
+    };
   }, []);
 
   const update = useCallback((updater: (prev: T) => T) => {

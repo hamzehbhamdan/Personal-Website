@@ -8,7 +8,12 @@ import {
   abandonInFlight,
   replayOverlay,
   overlayHasEdits,
+  resetOverlay,
   isRecovering,
+  nextRecoveryStep,
+  recoveryRetryDelay,
+  RECOVERY_MAX_RETRIES,
+  planBfcacheResync,
 } from "@/lib/dashboard/edit-overlay";
 
 type Doc = { done: boolean; subtask: boolean; other: string };
@@ -124,6 +129,128 @@ describe("coalescing — multiple submits before one confirmation", () => {
     confirmSaved(o);                     // the len-2 snapshot confirmed
     expect(o.updaters).toHaveLength(1);  // the still-debouncing edit is kept
     expect(replayOverlay(o, seed())).toEqual({ done: false, subtask: false, other: "still-debouncing" });
+  });
+});
+
+const advance = (p: Doc): Doc => ({ ...p, other: "advanced-by-other-tab" });
+
+describe("CR4 — pre-load edit survives the first post-load persist 409", () => {
+  // Models the pending→overlay handoff the initial load() now performs: it copies
+  // the pre-load updaters INTO the overlay (recordEdit) so a first-save 409
+  // replays them, instead of only folding them into `merged` and losing them.
+  it("a pre-load edit is replayed on the recovery re-GET after a first-save 409", () => {
+    const o = createOverlay<Doc>();
+    const pending = [setDone]; // one pre-load optimistic edit, buffered before the GET
+
+    // --- initial load resolves: fold pending into the (empty) overlay, replay once
+    for (const p of pending) recordEdit(o, p);
+    const base: Doc = seed();
+    const merged = replayOverlay(o, base);
+    expect(merged).toEqual({ done: true, subtask: false, other: "server" }); // applied exactly once
+    expect(overlayHasEdits(o)).toBe(true); // the fix: it now lives in the recoverable overlay
+
+    // --- first post-load persist submits `merged`, then 409s (another tab advanced)
+    markSubmitted(o);       // the submitted snapshot carries the whole overlay (len 1)
+    abandonInFlight(o);     // 409: nothing confirmed, keep the updater
+    expect(o.updaters).toHaveLength(1);
+
+    // --- recovery re-GETs the advanced server doc (which does NOT contain our edit)
+    const advancedServer: Doc = { done: false, subtask: false, other: "advanced" };
+    const recovered = replayOverlay(o, advancedServer);
+    expect(recovered).toEqual({ done: true, subtask: false, other: "advanced" }); // pre-load edit SURVIVES
+  });
+
+  it("on the successful first-save path the pre-load edit is dropped (not double-applied later)", () => {
+    const o = createOverlay<Doc>();
+    for (const p of [setDone]) recordEdit(o, p); // initial load folds pending into overlay
+    markSubmitted(o);   // first persist submits merged (server accepts)
+    confirmSaved(o);    // "saved": drop the confirmed prefix
+    expect(overlayHasEdits(o)).toBe(false);
+    // A LATER conflict must not re-apply it: server already has it, replay is a no-op.
+    const laterServer: Doc = { done: true, subtask: false, other: "advanced" };
+    expect(replayOverlay(o, laterServer)).toEqual(laterServer);
+  });
+});
+
+describe("CR2 — a failed recovery re-GET must not permanently wedge the hook", () => {
+  it("retries with bounded exponential backoff, then re-enables writes", () => {
+    // Walk the recovery decision the way the hook's catch does: keep re-GETting
+    // under the cap, then fall back to re-enabling writes.
+    const delays: number[] = [];
+    let attempt = 0;
+    let reenabled = false;
+    for (let i = 0; i < RECOVERY_MAX_RETRIES + 3; i++) {
+      const step = nextRecoveryStep(attempt);
+      if (step.action === "retry") { delays.push(step.delay); attempt = step.attempt; }
+      else { reenabled = true; break; }
+    }
+    expect(delays).toEqual([500, 1000, 2000, 4000, 8000]); // capped at 8000, exactly MAX retries
+    expect(reenabled).toBe(true);                          // never loops forever → hook unwedges
+  });
+
+  it("recoveryRetryDelay caps the backoff and never goes negative", () => {
+    expect(recoveryRetryDelay(0)).toBe(500);
+    expect(recoveryRetryDelay(4)).toBe(8000);
+    expect(recoveryRetryDelay(10)).toBe(8000); // capped
+    expect(recoveryRetryDelay(-1)).toBe(500);   // defensive: never < the first delay
+  });
+
+  it("no edit is lost across the failed-recovery window: the overlay keeps every unconfirmed edit", () => {
+    // An edit is recorded, its save 409s (abandonInFlight keeps it), the recovery
+    // re-GET then FAILS repeatedly. The overlay must still hold the edit so that
+    // when writes are re-enabled and a later re-GET succeeds it replays + persists.
+    const o = createOverlay<Doc>();
+    recordEdit(o, setDone);
+    markSubmitted(o);
+    abandonInFlight(o);                       // the 409 that triggered recovery
+    // ...N failed re-GETs happen (pure policy, no overlay mutation) ...
+    let attempt = 0;
+    for (let step = nextRecoveryStep(attempt); step.action === "retry"; step = nextRecoveryStep(attempt)) {
+      attempt = step.attempt;
+    }
+    expect(o.updaters).toHaveLength(1);       // edit never dropped during the wedge window
+    // writes re-enabled; a subsequent successful re-GET replays it on the fresh doc
+    expect(replayOverlay(o, advance(seed()))).toEqual({ done: true, subtask: false, other: "advanced-by-other-tab" });
+  });
+});
+
+describe("CR3 — bfcache restore must not double-apply a keepalive-flushed edit", () => {
+  it("planBfcacheResync adopts the server only when a flush advanced past its base", () => {
+    // keepalive flushed at base 4, server now 5 → our PUT landed → adopt server.
+    expect(planBfcacheResync({ keepaliveFlushed: true, flushedBase: 4, serverVersion: 5 })).toBe("adopt-server");
+    // keepalive flushed but server still at base → nothing landed → replay overlay.
+    expect(planBfcacheResync({ keepaliveFlushed: true, flushedBase: 4, serverVersion: 4 })).toBe("replay-overlay");
+    // no keepalive was sent → never adopt (would drop genuinely-unsent edits).
+    expect(planBfcacheResync({ keepaliveFlushed: false, flushedBase: 4, serverVersion: 9 })).toBe("replay-overlay");
+  });
+
+  it("adopt-server drops the still-present overlay updater so it is NOT re-applied", () => {
+    // Repro: edit recorded in the overlay, pagehide keepalive-flushes the full doc
+    // (overlay NOT cleared, base NOT advanced). On bfcache restore the refs survive.
+    const o = createOverlay<Doc>();
+    recordEdit(o, (p) => ({ ...p, other: `${p.other}+entry` })); // NON-idempotent updater
+    const flushedBase = 4;
+
+    // resync re-GETs: server advanced to 5 and already contains "+entry".
+    const serverVersion = 5;
+    const serverDoc: Doc = { done: false, subtask: false, other: "server+entry" };
+    const plan = planBfcacheResync({ keepaliveFlushed: true, flushedBase, serverVersion });
+    expect(plan).toBe("adopt-server");
+
+    resetOverlay(o);                          // the fix: clear the already-sent overlay
+    // Had we replayed instead, we'd get "server+entry+entry" — the double-apply bug.
+    expect(replayOverlay(o, serverDoc)).toEqual(serverDoc); // adopted verbatim, no duplicate entry
+    expect(overlayHasEdits(o)).toBe(false);
+  });
+
+  it("replay-overlay recovers the edit when the flush did NOT land (no drop)", () => {
+    const o = createOverlay<Doc>();
+    recordEdit(o, setDone);
+    // resync re-GETs: server still at the base we flushed with → flush was lost.
+    const plan = planBfcacheResync({ keepaliveFlushed: true, flushedBase: 4, serverVersion: 4 });
+    expect(plan).toBe("replay-overlay");
+    const serverDoc: Doc = { done: false, subtask: false, other: "server" };
+    expect(replayOverlay(o, serverDoc)).toEqual({ done: true, subtask: false, other: "server" }); // edit restored
   });
 });
 
