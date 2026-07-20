@@ -1,13 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { gateResult, isGatedPath } from "@/lib/auth";
+import { gateResult, isGatedPath, isStaticAsset } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
     // 1. Skip middleware for static assets, API routes, and Next.js internals
     if (
         request.nextUrl.pathname.startsWith("/api") ||
         request.nextUrl.pathname.startsWith("/_next") ||
-        request.nextUrl.pathname.includes(".") // Files with extensions
+        isStaticAsset(request.nextUrl.pathname) // Static files, by extension allowlist
     ) {
         return NextResponse.next();
     }

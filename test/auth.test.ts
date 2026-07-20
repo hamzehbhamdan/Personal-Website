@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gateResult, isGatedPath } from "../lib/auth";
+import { gateResult, isGatedPath, isStaticAsset } from "../lib/auth";
 
 const ALLOWED = "owner@example.com";
 
@@ -46,5 +46,22 @@ describe("isGatedPath", () => {
   it("leaves the public site ungated", () => {
     expect(isGatedPath("/", "www")).toBe(false);
     expect(isGatedPath("/blog", "hamzehhamdan")).toBe(false);
+  });
+});
+
+describe("isStaticAsset", () => {
+  it("matches real static-asset extensions", () => {
+    for (const p of ["/logo.svg", "/a/b/pic.PNG", "/font.woff2", "/data.json", "/style.css", "/app.js", "/doc.pdf"]) {
+      expect(isStaticAsset(p)).toBe(true);
+    }
+  });
+  it("does NOT let a dotted page path bypass the gate", () => {
+    for (const p of ["/dashboard/v1.2", "/user.name", "/report.2026", "/pricing.plans"]) {
+      expect(isStaticAsset(p)).toBe(false);
+    }
+  });
+  it("is false for clean page paths", () => {
+    expect(isStaticAsset("/dashboard")).toBe(false);
+    expect(isStaticAsset("/login")).toBe(false);
   });
 });

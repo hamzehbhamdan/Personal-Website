@@ -28,3 +28,12 @@ export function isGatedPath(pathname: string, subdomain: string): boolean {
     pathname === "/login" || pathname === "/auth" || pathname.startsWith("/auth/");
   return isDashboard && !isAuthSurface;
 }
+
+const STATIC_ASSET_RE = /\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|mjs|map|json|txt|xml|pdf|ttf|woff2?|eot)$/i;
+
+/** True only for paths ending in a known static-asset extension. Prevents a
+ *  dotted PAGE path (e.g. /dashboard/v1.2) from skipping the auth gate the way
+ *  a blanket `pathname.includes(".")` check does. */
+export function isStaticAsset(pathname: string): boolean {
+  return STATIC_ASSET_RE.test(pathname);
+}
