@@ -52,9 +52,9 @@ export function GoalCard({
 
   // coach.html:510 (`jumpTo(id)`) resolves the offset with NO explicit
   // `today` arg — `findOffset`'s default (`new Date()`) is used there. Here we
-  // thread the module-frozen `today` (CoachView's `TODAY`) instead, so a jump
-  // lands on the period that contained the target goal at load time, not
-  // whatever period a stale click-time `new Date()` would resolve to.
+  // thread CoachView's state-backed `today` (useToday()) instead, so a jump
+  // lands on the period the rendered boards are anchored to — one consistent
+  // frame per render — not whatever a click-time `new Date()` would resolve to.
   function jumpToGoal(target: Goal) {
     jumpTo(target.horizon, findOffset(target.horizon, target.period, today));
   }

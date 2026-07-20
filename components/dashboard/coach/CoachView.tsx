@@ -8,6 +8,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { ViewHeader, Segmented, LoadState } from "@/components/dashboard/ui";
 import { useAppState } from "@/lib/dashboard/useAppState";
+import { useToday } from "@/lib/dashboard/useToday";
 import { emptyCoachDB } from "@/lib/dashboard/coach/seed";
 import { migrate } from "@/lib/dashboard/coach/migrate";
 import { periodRange, HORIZONS, findOffset } from "@/lib/dashboard/coach/periods";
@@ -39,12 +40,11 @@ const btnGhost =
 const iconBtn =
   "flex h-[34px] w-[34px] items-center justify-center rounded-[9px] border border-stone-200 text-[16px] text-stone-500 hover:border-stone-300";
 
-const TODAY = new Date();
-
 export function CoachView({
   initialSelect = null,
   onConsumed,
 }: { initialSelect?: Extract<ViewIntent, { view: "coach" }> | null; onConsumed?: () => void } = {}) {
+  const today = useToday();
   const { state, setState, loaded, loadError, retryLoad } = useAppState<CoachDB>("execCoach", emptyCoachDB());
   const [horizon, setHorizon] = useState<Horizon>("week");
   const [offset, setOffset] = useState(0);
@@ -60,19 +60,22 @@ export function CoachView({
 
   // Read snapshot: run migration on every state change into a normalized v3 doc
   // (idempotent). Never mutate this directly — see `mutate` below.
-  const db = useMemo(() => migrate(structuredClone(state), TODAY), [state]);
+  // `today` is referentially stable within a calendar day (useToday returns
+  // the same Date object until midnight), so these deps only invalidate on a
+  // real day change.
+  const db = useMemo(() => migrate(structuredClone(state), today), [state, today]);
 
   // Every write: produce a fresh migrated draft from `prev` (never from the `db`
   // snapshot above), mutate it in place, and persist the draft.
   const mutate = useCallback(
     (fn: (draft: CoachDB) => void) => {
       setState((prev) => {
-        const draft = migrate(structuredClone(prev), TODAY);
+        const draft = migrate(structuredClone(prev), today);
         fn(draft);
         return draft;
       });
     },
-    [setState],
+    [setState, today],
   );
 
   // Ports the artifact's global `jumpTo(id)` (coach.html:510,846) as a typed
@@ -90,13 +93,13 @@ export function CoachView({
     if (initialSelect.kind === "goal") {
       const g = getGoal(db, initialSelect.id);
       if (g) {
-        jumpTo(g.horizon, findOffset(g.horizon, g.period, TODAY));
+        jumpTo(g.horizon, findOffset(g.horizon, g.period, today));
         setOverlay({ kind: "goal", id: g.id });
       }
     } else if (initialSelect.kind === "task") {
       const t = db.tasks.find((x) => x.id === initialSelect.id);
       if (t) {
-        jumpTo("week", findOffset("week", t.week, TODAY));
+        jumpTo("week", findOffset("week", t.week, today));
         setOverlay({ kind: "task", id: t.id });
       }
     }
@@ -104,8 +107,8 @@ export function CoachView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSelect, loaded]);
 
-  const r = periodRange(horizon, offset, TODAY);
-  const boardWeek = periodRange("week", boardOffset, TODAY);
+  const r = periodRange(horizon, offset, today);
+  const boardWeek = periodRange("week", boardOffset, today);
 
   if (!loaded) {
     return (
@@ -167,7 +170,7 @@ export function CoachView({
       {pane === "plan" ? (
         <>
           {searchOpen && (
-            <SearchOverlay db={db} today={TODAY} jumpTo={jumpTo} onClose={() => setSearchOpen(false)} />
+            <SearchOverlay db={db} today={today} jumpTo={jumpTo} onClose={() => setSearchOpen(false)} />
           )}
 
           <div className="mt-4">
@@ -186,7 +189,7 @@ export function CoachView({
               db={db}
               horizon={horizon}
               offset={offset}
-              today={TODAY}
+              today={today}
               onStart={(hs) => setOverlay({ kind: "intake", horizons: hs })}
             />
 
@@ -196,20 +199,20 @@ export function CoachView({
               db={db}
               horizon={horizon}
               offset={offset}
-              today={TODAY}
+              today={today}
               onPrev={() => setOffset((o) => o - 1)}
               onNext={() => setOffset((o) => o + 1)}
             />
 
             <div className="mt-6">
               {horizon === "week" ? (
-                <WeekBoard db={db} offset={offset} today={TODAY} mutate={mutate} setOverlay={setOverlay} />
+                <WeekBoard db={db} offset={offset} today={today} mutate={mutate} setOverlay={setOverlay} />
               ) : (
                 <HigherHorizon
                   db={db}
                   horizon={horizon}
                   offset={offset}
-                  today={TODAY}
+                  today={today}
                   mutate={mutate}
                   setOverlay={setOverlay}
                   jumpTo={jumpTo}
@@ -226,7 +229,7 @@ export function CoachView({
             db={db}
             horizon="week"
             offset={boardOffset}
-            today={TODAY}
+            today={today}
             onPrev={() => setBoardOffset((o) => o - 1)}
             onNext={() => setBoardOffset((o) => o + 1)}
           />
@@ -234,7 +237,7 @@ export function CoachView({
             {pane === "board" ? (
               <BoardPanel db={db} mutate={mutate} setOverlay={setOverlay} weekKey={boardWeek.key} />
             ) : (
-              <MetricsPanel db={db} weekKey={boardWeek.key} today={TODAY} />
+              <MetricsPanel db={db} weekKey={boardWeek.key} today={today} />
             )}
           </div>
         </div>
@@ -245,7 +248,7 @@ export function CoachView({
           key={overlay.id ? `goal:edit:${overlay.id}` : `goal:new:${overlay.parentForNew ?? "root"}`}
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           horizon={horizon}
           offset={offset}
           goalId={overlay.id}
@@ -258,7 +261,7 @@ export function CoachView({
           key={`task:${overlay.id}`}
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           taskId={overlay.id}
           onClose={() => setOverlay({ kind: "none" })}
         />
@@ -277,7 +280,7 @@ export function CoachView({
         <PickGoalModal
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           horizon={horizon}
           offset={offset}
           onClose={() => setOverlay({ kind: "none" })}
@@ -287,7 +290,7 @@ export function CoachView({
         <CoachPanel
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           horizon={horizon}
           offset={offset}
           onClose={() => setOverlay({ kind: "none" })}
@@ -297,7 +300,7 @@ export function CoachView({
         <IntakeModal
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           horizons={overlay.horizons}
           onClose={() => setOverlay({ kind: "none" })}
         />
@@ -306,7 +309,7 @@ export function CoachView({
         <RollForwardModal
           db={db}
           mutate={mutate}
-          today={TODAY}
+          today={today}
           onClose={() => setOverlay({ kind: "none" })}
           onApplied={() => {
             setHorizon("week");
@@ -315,7 +318,7 @@ export function CoachView({
         />
       )}
       {overlay.kind === "insights" && (
-        <InsightsModal db={db} today={TODAY} onClose={() => setOverlay({ kind: "none" })} />
+        <InsightsModal db={db} today={today} onClose={() => setOverlay({ kind: "none" })} />
       )}
     </div>
   );
