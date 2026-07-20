@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored third-party scripts (not our source, not meant to be linted):
+    "public/**/vendor/**",
   ]),
 ]);
 
