@@ -16,6 +16,7 @@ import { progressOf, taskDone, taskTime } from "@/lib/dashboard/coach/rollup";
 import { fmtHM } from "@/lib/dashboard/coach/timers";
 import { uid } from "@/lib/dashboard/coach/migrate";
 import { Badge, Ring } from "@/components/dashboard/ui";
+import { focusRing } from "./a11y";
 import { TaskRow } from "./TaskRow";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -76,12 +77,14 @@ export function GoalSection({
     <div className="mb-5">
       <div className="mb-2 flex items-center gap-2.5 border-b border-stone-200 pb-1.5">
         <Ring pct={pct} size={30} />
-        <span
+        <button
+          type="button"
           onClick={() => onEditGoal(g.id)}
-          className="cursor-pointer text-[13.5px] font-semibold text-stone-900 hover:text-[#A51C30]"
+          aria-label={`Edit goal: ${g.title}`}
+          className={`cursor-pointer rounded-[4px] text-left text-[13.5px] font-semibold text-stone-900 hover:text-[#A51C30] ${focusRing}`}
         >
           {g.title}
-        </span>
+        </button>
         <Badge tone="neutral">{g.horizon}</Badge>
         {g.recurring && (
           <span className="text-[11px] text-[#A51C30]" title="recurring">

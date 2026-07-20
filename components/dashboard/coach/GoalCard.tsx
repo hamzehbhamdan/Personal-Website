@@ -17,6 +17,7 @@ import { childrenOf, getGoal, progressOf, subtree } from "@/lib/dashboard/coach/
 import { findOffset, NEXTDOWN, NEXTUP } from "@/lib/dashboard/coach/periods";
 import { fmtHM } from "@/lib/dashboard/coach/timers";
 import { Card, Ring } from "@/components/dashboard/ui";
+import { focusRing } from "./a11y";
 import { TaskRow } from "./TaskRow";
 
 export function GoalCard({
@@ -70,22 +71,26 @@ export function GoalCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div
+          <button
+            type="button"
             onClick={() => onEditGoal(goal.id)}
-            className="cursor-pointer text-[15px] font-semibold text-stone-900 hover:text-[#A51C30]"
+            aria-label={`Edit goal: ${goal.title}`}
+            className={`block cursor-pointer rounded-[4px] text-left text-[15px] font-semibold text-stone-900 hover:text-[#A51C30] ${focusRing}`}
           >
             {goal.title} {goal.recurring && <span className="text-[11px] text-[#A51C30]">♻</span>}
-          </div>
+          </button>
 
           {parent ? (
             <div className="mt-[2px] text-[11.5px] text-stone-400">
               toward{" "}
-              <span
+              <button
+                type="button"
                 onClick={() => jumpToGoal(parent)}
-                className="cursor-pointer text-[#A51C30] no-underline"
+                aria-label={`Jump to goal: ${parent.title}`}
+                className={`cursor-pointer rounded-[4px] text-left text-[#A51C30] no-underline ${focusRing}`}
               >
                 {parent.title}
-              </span>
+              </button>
             </div>
           ) : (
             nextUp && (
@@ -96,13 +101,15 @@ export function GoalCard({
           {kids.length > 0 && (
             <div className="mb-[2px] mt-[9px] flex flex-wrap gap-[6px]">
               {kids.map((k) => (
-                <span
+                <button
                   key={k.id}
+                  type="button"
                   onClick={() => jumpToGoal(k)}
-                  className="cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-[11px] text-[#78716c]"
+                  aria-label={`Jump to goal: ${k.title}`}
+                  className={`cursor-pointer rounded-full bg-stone-100 px-[9px] py-[3px] text-left text-[11px] text-[#78716c] ${focusRing}`}
                 >
                   {k.title} · {progressOf(db, k, tickNow)}%
-                </span>
+                </button>
               ))}
             </div>
           )}
