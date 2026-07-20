@@ -98,6 +98,13 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
           });
       }, contact.id);
       toast(`Sending to ${toLabel} in ${UNDO_SECONDS}s…`, {
+        // Stable per-contact id (matches the scheduler's dedupe key): rescheduling for the
+        // SAME contact within the undo window (modal closed/reopened, `locked` reset) makes
+        // sonner REPLACE this toast in place rather than stack a second one. That guarantees
+        // at most one live "Sending…" toast per contact, and its Undo always closes over the
+        // currently-pending `handle` — a stale toast from a superseded send can never linger
+        // with a no-op Undo (finding CR6).
+        id: `checkin-${contact.id}`,
         duration: UNDO_SECONDS * 1000,
         action: {
           label: "Undo",
