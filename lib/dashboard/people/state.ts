@@ -4,17 +4,30 @@ import { contactEmails } from "./interactions";
 import { tierCad } from "./tiers";
 import type { Contact, GmailMap, CalMap, ContactState, CrmDB } from "./types";
 
+// A malformed date string makes toEpochMs() return NaN, and every comparison against NaN is
+// false. A plain running max/min over toEpochMs can therefore get "poisoned": once the
+// accumulator holds a malformed candidate, no later candidate — however valid — can ever
+// compare greater/lesser than it, so the malformed value wins and silently rides all the way
+// out to `last`/`days`/`overdue` (review CR1: a genuinely-overdue contact vanished from the
+// Attention list because its `lastTouch` happened to be unparseable and got seeded first).
+// Rank NaN as the LOSING extreme for whichever direction is in play (-Infinity for "newer",
+// +Infinity for "sooner") so a well-formed candidate always outranks a malformed one no matter
+// which one was seen first, and a single bad value can never poison the rest of the reduce.
+const rankFor = (s: string, whenInvalid: number) => { const e = toEpochMs(s); return Number.isNaN(e) ? whenInvalid : e; };
+const newer = (a: string, b: string) => rankFor(a, -Infinity) > rankFor(b, -Infinity);
+const sooner = (a: string, b: string) => rankFor(a, Infinity) < rankFor(b, Infinity);
+
 export function state(c: Contact, gmail: GmailMap, cal: CalMap, db: Pick<CrmDB, "tiers">, now: Date): ContactState {
   const emails = contactEmails(c);
   let gLast: string | null = null, gDir: "in" | "out" | null = null;
-  emails.forEach((e) => { const g = gmail[e]; if (g && (!gLast || (g.last && toEpochMs(g.last) > toEpochMs(gLast)))) { gLast = g.last; gDir = g.lastDir; } });
+  emails.forEach((e) => { const g = gmail[e]; if (g && (!gLast || (g.last && newer(g.last, gLast)))) { gLast = g.last; gDir = g.lastDir; } });
   let calLast: string | null = null, calNext: string | null = null;
-  emails.forEach((e) => { const cc = cal[e]; if (cc) { if (cc.lastPast && (!calLast || toEpochMs(cc.lastPast) > toEpochMs(calLast))) calLast = cc.lastPast; if (cc.next && (!calNext || toEpochMs(cc.next) < toEpochMs(calNext))) calNext = cc.next; } });
-  const logLast = (c.log || []).reduce<string | null>((m, e) => (!m || toEpochMs(e.date) > toEpochMs(m) ? e.date : m), null);
+  emails.forEach((e) => { const cc = cal[e]; if (cc) { if (cc.lastPast && (!calLast || newer(cc.lastPast, calLast))) calLast = cc.lastPast; if (cc.next && (!calNext || sooner(cc.next, calNext))) calNext = cc.next; } });
+  const logLast = (c.log || []).reduce<string | null>((m, e) => (!m || newer(e.date, m) ? e.date : m), null);
   const cands = [gLast, calLast, c.lastTouch, logLast].filter(Boolean) as string[];
   // Max by INSTANT but return the ORIGINAL string (review #37) — callers/tests rely on
   // the source string surviving verbatim (no toISOString re-serialization).
-  const last = cands.length ? cands.reduce((m, x) => (toEpochMs(x) > toEpochMs(m) ? x : m)) : null;
+  const last = cands.length ? cands.reduce((m, x) => (newer(x, m) ? x : m)) : null;
   const days = last ? daysBetween(now, new Date(toEpochMs(last))) : null;
   const cad = c.cadenceDays || tierCad(db, c.tier) || 90;
   const snoozed = !!(c.snoozeUntil && new Date(c.snoozeUntil) > now);
