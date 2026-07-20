@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { gateResult } from "@/lib/auth";
 
 export async function login(formData: FormData) {
     const email = formData.get("email") as string;
@@ -38,7 +39,7 @@ export async function login(formData: FormData) {
         }
     );
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     });
@@ -46,6 +47,15 @@ export async function login(formData: FormData) {
     if (error) {
         console.warn("Login failed");
         return redirect(`/login?message=${encodeURIComponent(error.message)}`);
+    }
+
+    // Enforce the single-user allow-list (mirrors app/auth/callback/route.ts).
+    // Sign out a valid-but-unauthorized account so it can't strand an
+    // unclearable session that refresh-churns on every request.
+    const gate = gateResult(data.user, process.env.ALLOWED_EMAIL);
+    if (!gate.ok) {
+        await supabase.auth.signOut();
+        return redirect(`/login?message=${encodeURIComponent("Unauthorized account")}`);
     }
 
     return redirect("/dashboard");
