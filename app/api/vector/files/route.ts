@@ -3,12 +3,19 @@ import OpenAI from "openai";
 import { requireUser } from "@/lib/supabase-server";
 import { ownsStore } from "@/lib/vector-store-ownership";
 import { allow } from "@/lib/rate-limit";
+import { sniffMime } from "@/lib/mime-sniff";
 
 export const dynamic = 'force-dynamic';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+
+type UploadedVectorFile = Omit<OpenAI.VectorStores.VectorStoreFile, "status"> & {
+    filename: string;
+    bytes: number;
+    status: "uploaded";
+};
 
 export async function GET(req: Request) {
     const gate = await requireUser(req);
@@ -99,25 +106,31 @@ export async function POST(req: Request) {
         // Verify the caller owns this store before touching OpenAI.
         if (!(await ownsStore(supabase, userId, storeId))) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-        const uploadedFiles: any[] = [];
+        const MAX_FILES = 5;
+        const MAX_BYTES = 15 * 1024 * 1024;
+        const ALLOWED = ["application/pdf", "text/plain", "text/markdown"]; // no images: vector stores can't index them
+        if (files.length > MAX_FILES) return NextResponse.json({ error: `Max ${MAX_FILES} files per upload` }, { status: 400 });
 
-        await Promise.all(files.map(async (file) => {
-            const arrayBuffer = await file.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
+        const uploadedFiles: UploadedVectorFile[] = [];
+        for (const file of files) {
+            if (file.size > MAX_BYTES) return NextResponse.json({ error: `"${file.name}" exceeds 15MB` }, { status: 413 });
+            const head = Buffer.from(await file.slice(0, 16).arrayBuffer());
+            const sniff = sniffMime(head);
+            if (!sniff || !ALLOWED.includes(sniff)) {
+                return NextResponse.json({ error: `"${file.name}" is an unsupported type for retrieval` }, { status: 415 });
+            }
 
-            // 1. Upload to OpenAI Files
-            const openaiFile = await openai.files.create({
-                file: new File([buffer], file.name, { type: file.type }),
-                purpose: "assistants",
-            });
-
-            // 2. Attach to Vector Store
-            const vsFile = await openai.vectorStores.files.create(storeId, {
-                file_id: openaiFile.id
-            });
-
-            uploadedFiles.push({ ...vsFile, filename: file.name, bytes: openaiFile.bytes, status: 'uploaded' });
-        }));
+            // Upload to OpenAI Files first...
+            const openaiFile = await openai.files.create({ file, purpose: "assistants" });
+            try {
+                // ...then attach; on attach failure, delete the orphaned billed File so nothing is left dangling.
+                const vsFile = await openai.vectorStores.files.create(storeId, { file_id: openaiFile.id });
+                uploadedFiles.push({ ...vsFile, filename: file.name, bytes: openaiFile.bytes, status: "uploaded" });
+            } catch (attachErr) {
+                await openai.files.delete(openaiFile.id).catch(() => {}); // best-effort reclaim; a transient delete failure is non-fatal
+                throw attachErr;
+            }
+        }
 
         return NextResponse.json({ success: true, count: uploadedFiles.length, files: uploadedFiles });
     } catch (error: any) {
