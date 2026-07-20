@@ -27,6 +27,10 @@ export interface Task {
   timeMs: number;            // accumulated tracked time
   timerStart: number | null; // wall-clock ms when running, else null
   createdAt: string;         // ISO
+  /** id of the prev-week task this clone was rolled forward from
+   *  (review #33/#34) — only set by applyRollForward; used to make re-apply
+   *  idempotent. Absent on all other tasks. */
+  sourceId?: string;
 }
 
 export interface Goal {
