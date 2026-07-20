@@ -31,3 +31,45 @@
   #     build never writes env values into public/ (only into the still-scanned .next). Hardening:
   #     narrow to "public/playground/mcp-injection-lab" (the only dir with decoys) so the rest of
   #     public/ stays scanned — test against Netlify's scan before applying.
+
+# ── Static-asset headers (CDN-served) ──────────────────────────────────────
+# next.config.ts headers() applies ONLY to Next-served routes. On Netlify,
+# files under public/ (all of /playground/**) and /_next/static/* are served
+# straight from the CDN and get NONE of those headers (live-verified
+# 2026-07-19: the mcp-injection-lab pages returned no X-Robots-Tag, no CSP,
+# no X-Frame-Options, no nosniff). These blocks close that gap.
+# Netlify applies ALL matching rules cumulatively and does NOT apply custom
+# headers to function (Next-served) responses — so: no header key may appear
+# in two rules matching the same path, and none of this duplicates the
+# next.config.ts headers on app routes. KEEP IN SYNC with next.config.ts.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Tailored CSP for the static playground pages ONLY (finding #44: do NOT
+# blanket-apply the app's strict CSP — these pages use inline <script>,
+# Google Fonts, and Chart.js from jsdelivr). Deltas vs the app CSP:
+# +cdn.jsdelivr.net (script), +fonts.googleapis.com (style),
+# +fonts.gstatic.com (font), -plausible.io, -*.supabase.co,
+# frame-ancestors 'self' (fourier phase pages are iframed by
+# /blog/fourier-drawing-machine). CSP must NOT be added to the /* rule:
+# multiple matching CSPs intersect and the strictest would win.
+[[headers]]
+  for = "/playground/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; form-action 'self'"
+
+# The 28-page prompt-injection corpus (ai/1-28.html) must not be indexed or
+# AI-ingested under this domain. The splat matches across segments.
+# Deliberately NO robots.txt Disallow (finding #43): crawlers must be able
+# to fetch these pages, or they never see the noindex.
+[[headers]]
+  for = "/playground/mcp-injection-lab/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
