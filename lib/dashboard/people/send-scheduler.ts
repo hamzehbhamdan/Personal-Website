@@ -14,13 +14,30 @@ export interface PendingSend {
   cancel(): boolean;
 }
 
-export function scheduleSend(delayMs: number, fire: () => void): PendingSend {
+/**
+ * Dedupe map for in-flight sends, keyed by caller-supplied key (e.g. contact id).
+ * Guards against a real double-send: the composer's `locked` guard is per-mount
+ * React state, so remounting the composer for the SAME contact within the undo
+ * window (closing/reopening the modal, toggling the draft panel) resets it and
+ * lets a user re-confirm a second send to the same recipient. Keying by contact
+ * id and cancelling any existing pending send for that key before scheduling the
+ * new one ensures only the newest confirm for that contact ever fires, while
+ * sends to different contacts (different keys) stay fully independent.
+ */
+const pendingByKey = new Map<string, PendingSend>();
+
+export function scheduleSend(delayMs: number, fire: () => void, key?: string): PendingSend {
+  if (key !== undefined) {
+    pendingByKey.get(key)?.cancel();
+  }
+
   let pending = true;
   const id = setTimeout(() => {
     pending = false;
+    if (key !== undefined && pendingByKey.get(key) === handle) pendingByKey.delete(key);
     fire();
   }, delayMs);
-  return {
+  const handle: PendingSend = {
     get pending() {
       return pending;
     },
@@ -28,7 +45,11 @@ export function scheduleSend(delayMs: number, fire: () => void): PendingSend {
       if (!pending) return false;
       pending = false;
       clearTimeout(id);
+      if (key !== undefined && pendingByKey.get(key) === handle) pendingByKey.delete(key);
       return true;
     },
   };
+
+  if (key !== undefined) pendingByKey.set(key, handle);
+  return handle;
 }

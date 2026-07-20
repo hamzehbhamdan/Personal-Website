@@ -82,7 +82,7 @@ export function CheckinDraft({ contact, recent, days, voice, onSent }: { contact
         sendGmail(draft.draftId, params)
           .then(() => { toast.success(`Sent to ${toLabel} ✓`); onSent?.({ subject: params.subject, body: params.body }); })
           .catch(() => toast.error("Send failed — the draft is in your Gmail Drafts."));
-      });
+      }, contact.id);
       toast(`Sending to ${toLabel} in ${UNDO_SECONDS}s…`, {
         duration: UNDO_SECONDS * 1000,
         action: {
