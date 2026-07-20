@@ -232,7 +232,7 @@ export default function ContactPage() {
                                             Send a Message
                                         </p>
                                         <p className="text-[13px] text-stone-400 mt-1">
-                                            Fill in the form and your email client will open pre-filled.
+                                            Fill in the form and I&apos;ll get your message straight to my inbox.
                                         </p>
                                     </div>
 
