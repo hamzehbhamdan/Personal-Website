@@ -189,8 +189,7 @@ export const projects = [
         description: "A comprehensive analysis of Bitcoin (BTC) and Ethereum (ETH) price movements, implementing various time series analysis techniques, machine learning models, and deep learning architectures. The project goes beyond traditional ARIMA modeling to incorporate advanced neural network architectures, feature engineering with external data sources, and pairs trading strategies.",
         tags: ["Finance", "ML", "Data Science"],
         links: [
-            { label: "View Jupyter Notebook", url: "https://drive.google.com/file/d/1_vvri7xVcfAOBQWfqz6rTC0SDdm5T4-n/view?usp=sharing" },
-            { label: "Watch Video", url: "/files/crypto/Presentation.mp4" }
+            { label: "View Jupyter Notebook", url: "https://drive.google.com/file/d/1_vvri7xVcfAOBQWfqz6rTC0SDdm5T4-n/view?usp=sharing" }
         ]
     },
     {
@@ -202,8 +201,7 @@ export const projects = [
         tags: ["Finance", "ML", "Data Science"],
         links: [
             { label: "View on GitHub", url: "https://github.com/hamzehbhamdan/Financial-Indicators-Analysis" },
-            { label: "View Jupyter Notebook", url: "https://drive.google.com/file/d/15OK1pM2zkGT_nz0vcKKYfKEU9qeWdXiy/view?usp=sharing" },
-            { label: "View PDF", url: "/files/Financial Indicators.pdf" }
+            { label: "View Jupyter Notebook", url: "https://drive.google.com/file/d/15OK1pM2zkGT_nz0vcKKYfKEU9qeWdXiy/view?usp=sharing" }
         ]
     },
     {
@@ -213,9 +211,7 @@ export const projects = [
         image: "/images/projects/baseballbetting.png",
         description: "This study dives into how specific metrics influence success in baseball, analyzing hitting, pitching, and fielding metrics to understand team performance. The project combines statistical rigor with domain knowledge to provide insights that can influence roster-building decisions, tactical approaches, and broadcasting narratives. The findings bridge the gap between traditional baseball insights and modern predictive techniques.",
         tags: ["Sports"],
-        links: [
-            { label: "View PDF", url: "/files/Baseball Betting.pdf" }
-        ]
+        links: []
     },
     {
         title: "Analysis of NFL Two-Point Conversions",
@@ -244,8 +240,7 @@ export const projects = [
         tags: ["Finance", "ML", "NLP"],
         links: [
             { label: "View Demo", url: "https://10k-filings-analysis.streamlit.app/" },
-            { label: "View Code", url: "https://github.com/hamzehbhamdan/10-K-Text-Clustering/" },
-            { label: "Download PDF", url: "/files/10-K Embeddings.pdf" }
+            { label: "View Code", url: "https://github.com/hamzehbhamdan/10-K-Text-Clustering/" }
         ]
     },
     {
@@ -264,9 +259,7 @@ export const projects = [
         image: "/images/projects/neuralnetworks.png",
         description: "An explanation of how ChatGPT works from the ground up. Topics include basic neural networks, recurrent neural networks, and long short-term memory networks.",
         tags: ["AI", "ML", "Other"],
-        links: [
-            { label: "Download PDF", url: "/files/Math_157_Final_Project.pdf" }
-        ]
+        links: []
     },
     {
         title: "Exploring Racial Inequality in El Paso: A Big Data Approach",
@@ -284,8 +277,6 @@ export const projects = [
         image: "/images/projects/graphics.png",
         description: "An explanation of basic computer graphics. Includes discussions on transformations in 2D and 3D space, quaternions, perspective projections, and shadow mapping.",
         tags: ["Other"],
-        links: [
-            { label: "Download PDF", url: "/files/Computer Graphics 22a Final Project.pdf" }
-        ]
+        links: []
     }
 ];
