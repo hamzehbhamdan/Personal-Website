@@ -1,6 +1,6 @@
 // test/state-sync.test.ts
 import { describe, it, expect } from "vitest";
-import { SaveQueue, replayPending, ConflictError } from "@/lib/dashboard/state-sync";
+import { SaveQueue, replayPending, ConflictError, TooLargeError } from "@/lib/dashboard/state-sync";
 
 function deferred<T = void>() {
   let resolve!: (v: T) => void;
@@ -182,6 +182,34 @@ describe("SaveQueue optimistic locking", () => {
     await tick(); await tick();
     expect(attempts).toBe(2);     // generic failure still gets its one retry
     expect(statuses).toEqual(["saving", "conflict"]);
+  });
+
+  it("a too-large rejection stops the chain without a retry and reports 'too-large'", async () => {
+    let sends = 0;
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async () => { sends++; throw new TooLargeError(); }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick(); await tick();
+    expect(sends).toBe(1);        // over the size cap: a retry sends the same oversize body → never retried
+    expect(statuses).toEqual(["saving", "too-large"]);
+  });
+
+  it("a too-large rejection drops the mid-flight dirty snapshot instead of resending it", async () => {
+    const d1 = deferred();
+    let sends = 0;
+    const statuses: string[] = [];
+    const q = new SaveQueue<number>(async () => {
+      sends++;
+      await d1.promise;
+      throw new TooLargeError();
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick();
+    q.submit(2);                  // arrives while 1 is in flight
+    d1.resolve();
+    await tick(); await tick(); await tick();
+    expect(sends).toBe(1);        // 2 is also over the cap → no chained resend
+    expect(statuses[statuses.length - 1]).toBe("too-large");
   });
 
   it("recovers after a conflict once the base is refreshed", async () => {

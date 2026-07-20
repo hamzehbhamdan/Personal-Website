@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock the gate so no real Supabase/network is needed (same pattern as api-auth.test.ts).
 vi.mock("../lib/supabase-server", () => ({ requireUser: vi.fn() }));
 import { requireUser, type RequireUserResult } from "../lib/supabase-server";
+import { MAX_STATE_BYTES } from "../lib/dashboard/state-schema";
 import { NextResponse } from "next/server";
 
 type ChainResult = { data: unknown; error: unknown };
@@ -80,6 +81,31 @@ describe("/api/state versioned writes", () => {
     }
     expect(chain.upsert).not.toHaveBeenCalled();
     expect(chain.update).not.toHaveBeenCalled();
+  });
+
+  it("PUT → 413 (not 400) when the payload exceeds the size cap, and nothing is written", async () => {
+    const { supabase, chain } = makeSupabase({});
+    authedWith(supabase);
+    const { PUT } = await import("../app/api/state/route");
+    const big = { blob: "x".repeat(MAX_STATE_BYTES + 10) };
+    const res = await PUT(putReq({ data: big, baseVersion: 0 }));
+    expect(res.status).toBe(413);            // non-retryable size class, distinct from 400/409
+    expect(chain.upsert).not.toHaveBeenCalled();
+    expect(chain.update).not.toHaveBeenCalled();
+  });
+
+  it("PUT → 400 (not 413) for a non-size validation failure (unknown app)", async () => {
+    const { supabase } = makeSupabase({});
+    authedWith(supabase);
+    const { PUT } = await import("../app/api/state/route");
+    const res = await PUT(
+      new Request("http://localhost/api/state?app=evil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: {}, baseVersion: 0 }),
+      }),
+    );
+    expect(res.status).toBe(400);
   });
 
   it("PUT baseVersion 0 takes the insert path (never update) and returns version 1", async () => {

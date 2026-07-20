@@ -115,6 +115,10 @@ export function PeopleView({
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>
         Out of sync — reloaded
       </span>
+    ) : status === "too-large" ? (
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#A51C30]" style={mono}>
+        Over 2 MB — trim to keep saving
+      </span>
     ) : null;
 
   if (!loaded) {

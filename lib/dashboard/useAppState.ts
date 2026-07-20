@@ -1,7 +1,7 @@
 // lib/dashboard/useAppState.ts
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SaveQueue, ConflictError, type SaveStatus } from "@/lib/dashboard/state-sync";
+import { SaveQueue, ConflictError, TooLargeError, type SaveStatus } from "@/lib/dashboard/state-sync";
 import { fitsKeepalive } from "@/lib/dashboard/keepalive";
 import {
   createOverlay,
@@ -54,14 +54,17 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         async (doc, baseVersion) => {
           // Optimistic-lock PUT: carries the base version we loaded/last saved.
           // 409 ⇒ someone else advanced the doc ⇒ ConflictError (never retried);
-          // any other non-2xx ⇒ generic (retryable) failure. Success resolves
-          // the server's new version so the queue stores it as the next base.
+          // 413 ⇒ doc over the size cap ⇒ TooLargeError (never retried — the same
+          // oversize body would 413 again); any other non-2xx ⇒ generic
+          // (retryable) failure. Success resolves the server's new version so the
+          // queue stores it as the next base.
           const r = await fetch(`/api/state?app=${appRef.current}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data: doc, baseVersion }),
           });
           if (r.status === 409) throw new ConflictError();
+          if (r.status === 413) throw new TooLargeError();
           if (!r.ok) throw new Error("save failed");
           const j = await r.json().catch(() => null);
           return typeof j?.version === "number" ? j.version : undefined;

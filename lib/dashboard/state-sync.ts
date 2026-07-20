@@ -1,11 +1,21 @@
 // lib/dashboard/state-sync.ts
-export type SaveStatus = "saving" | "saved" | "error" | "conflict";
+export type SaveStatus = "saving" | "saved" | "error" | "conflict" | "too-large";
 
 /** PUT rejected with 409: our baseVersion is stale. Never blindly retried. */
 export class ConflictError extends Error {
   constructor(message = "state version conflict") {
     super(message);
     this.name = "ConflictError";
+  }
+}
+
+/** PUT rejected with 413: the doc exceeds the server's size cap. Non-retryable —
+ *  a retry sends the same oversize body and 413s again — so the chain aborts and
+ *  reports "too-large" for a persistent, actionable over-limit banner. */
+export class TooLargeError extends Error {
+  constructor(message = "state payload too large") {
+    super(message);
+    this.name = "TooLargeError";
   }
 }
 
@@ -28,6 +38,11 @@ export function replayPending<T>(base: T, pending: Array<(prev: T) => T>): T {
  * resending the dirty snapshot (either would carry the same stale base),
  * and reports the distinct "conflict" status so the owner can re-GET and
  * refresh the base via setBase().
+ *
+ * Size cap: a TooLargeError — HTTP 413, the doc exceeds the server's byte cap —
+ * is likewise NON-retryable (the same oversize body would 413 again) and reports
+ * the distinct "too-large" status so the UI can show a persistent, actionable
+ * over-limit banner rather than the transient "Save failed" retry loop.
  */
 export class SaveQueue<T> {
   private latest: T | null = null;
@@ -53,7 +68,7 @@ export class SaveQueue<T> {
   private async send(): Promise<void> {
     this.inFlight = true;
     this.onStatus("saving");
-    let outcome: "ok" | "error" | "conflict" = "error";
+    let outcome: "ok" | "error" | "conflict" | "too-large" = "error";
     // Up to two attempts (one send + one retry). Clear `dirty` at the START of
     // each attempt so it means strictly "a newer snapshot arrived AFTER we
     // began sending the current one". The retry re-reads this.latest and so
@@ -72,6 +87,12 @@ export class SaveQueue<T> {
           outcome = "conflict";
           break;
         }
+        if (e instanceof TooLargeError) {
+          // The doc is over the 413 size cap; the same oversize body would 413
+          // again, so abort with no retry and no resend of the dirty snapshot.
+          outcome = "too-large";
+          break;
+        }
         // generic failure: fall through to the retry (attempt 1) or give up
       }
     }
@@ -79,6 +100,12 @@ export class SaveQueue<T> {
       this.dirty = false;   // dropping, not resending: same stale base would 409 again
       this.inFlight = false;
       this.onStatus("conflict");
+      return;
+    }
+    if (outcome === "too-large") {
+      this.dirty = false;   // dropping, not resending: same oversize doc would 413 again
+      this.inFlight = false;
+      this.onStatus("too-large");
       return;
     }
     if (this.dirty) {

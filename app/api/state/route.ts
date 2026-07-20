@@ -25,7 +25,10 @@ export async function PUT(req: Request) {
   const app = new URL(req.url).searchParams.get("app") ?? "";
   const body = await req.json().catch(() => null);
   const v = validateStateWrite(app, body?.data);
-  if (!v.ok) return Response.json({ error: v.reason }, { status: v.status });
+  // Emit 413 for the size class so the client can treat it as NON-retryable
+  // (a smaller doc is required) — distinct from other validation 400s and the
+  // 409 conflict signal. Other rejections keep their 400.
+  if (!v.ok) return Response.json({ error: v.reason }, { status: v.reason === "payload too large" ? 413 : v.status });
   const base = body?.baseVersion;
   if (typeof base !== "number" || !Number.isInteger(base) || base < 0)
     return Response.json({ error: "baseVersion required" }, { status: 400 });
