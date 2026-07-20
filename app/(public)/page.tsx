@@ -39,15 +39,18 @@ const activityDisplayNames: Record<string, string> = {
 function EditorialSection({
     children,
     className = "",
+    id,
 }: {
     children: React.ReactNode;
     className?: string;
+    id?: string;
 }) {
     const ref = useRef(null);
     const inView = useInView(ref, { once: true, margin: "-80px" });
     return (
         <motion.section
             ref={ref}
+            id={id}
             initial={{ opacity: 0, y: 24 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
@@ -82,7 +85,7 @@ export default function Home() {
             <Divider />
 
             {/* 01 — Experience */}
-            <EditorialSection className="w-full py-12 md:py-20">
+            <EditorialSection id="story" className="w-full py-12 md:py-20 scroll-mt-16">
                 <div className="mx-auto max-w-5xl px-6 space-y-10">
                     <div className="flex items-center gap-4">
                         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400 shrink-0">

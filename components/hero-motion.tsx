@@ -75,7 +75,7 @@ export function HeroMotion() {
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                             <Link
-                                href="/about"
+                                href="/#story"
                                 className="inline-flex items-center gap-2 border border-stone-300 text-stone-700 text-sm font-medium px-5 py-2.5 hover:border-stone-500 hover:text-stone-900 transition-colors"
                             >
                                 The Story
