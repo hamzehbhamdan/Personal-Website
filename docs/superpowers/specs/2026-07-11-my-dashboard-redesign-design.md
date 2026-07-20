@@ -202,7 +202,7 @@ The data here is high-sensitivity: a full personal relationship graph, Gmail-der
 | Secret/token theft | All secrets server-only env (never `NEXT_PUBLIC_*`); Google refresh token encrypted at rest, server-side flow (§5.5); Anthropic/OpenAI keys server-only. |
 | Over-broad mailbox access | `gmail.metadata` (no bodies/snippets) + `gmail.compose` (drafts only, cannot send) (§5.5). |
 | CSRF on mutating routes | `Origin` check + SameSite=Lax cookies (§5.4). |
-| Cost/abuse | Per-user rate limit + input caps on `/api/ai` (§5.4). |
+| Cost/abuse | Per-user rate limit + input caps on `/api/ai` (§5.4). Note: the in-memory limiter is best-effort and per-serverless-instance on Netlify (N concurrent instances each grant the full quota; cold starts reset windows). The real spend ceiling is provider-side budget caps, not this limiter. |
 | Prompt injection via email subjects / notes | Untrusted content is data, not instructions; **all AI output is a reviewable draft — nothing is ever auto-sent** (hard invariant). |
 | Third-party PII to model providers | Egress minimization + rely on API no-training default; consider ZDR (§5.8). |
 | XSS reading in-memory data | JSX escaping; no `dangerouslySetInnerHTML` on user/email content (§5.6). |
