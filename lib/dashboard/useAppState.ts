@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveQueue, replayPending, ConflictError, type SaveStatus } from "@/lib/dashboard/state-sync";
 import { fitsKeepalive } from "@/lib/dashboard/keepalive";
+import {
+  createOverlay,
+  recordEdit,
+  markSubmitted,
+  confirmSaved,
+  abandonInFlight,
+  replayOverlay,
+  overlayHasEdits,
+  isRecovering,
+} from "@/lib/dashboard/edit-overlay";
 
 export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "home" | "brain", seed: T) {
   const [state, setState] = useState<T>(seed);
@@ -14,9 +24,11 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
   const seedRef = useRef(seed);                       // stable base for replay
   const appRef = useRef(app);
   useEffect(() => { appRef.current = app; }, [app]);
-  const loadedRef = useRef(false);
+  const loadedRef = useRef(false);        // writes enabled; flips false DURING conflict recovery
+  const everLoadedRef = useRef(false);    // monotonic: the initial GET has resolved at least once
   const aliveRef = useRef(true);
-  const pendingRef = useRef<Array<(prev: T) => T>>([]); // pre-load optimistic edits
+  const pendingRef = useRef<Array<(prev: T) => T>>([]); // pre-(first-)load optimistic edits
+  const overlayRef = useRef(createOverlay<T>());        // post-load edits not yet confirmed on the server
   const latestRef = useRef<T>(seed);                   // newest snapshot for the queue
   const loadRef = useRef<() => void>(() => {});        // conflict re-GET indirection (queue built before load runs)
 
@@ -45,12 +57,20 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         (s) => {
           if (!aliveRef.current) return;
           setStatus(s);
-          if (s === "conflict") {
+          if (s === "saved") {
+            // The submitted snapshot is on the server. Drop exactly the edits it
+            // carried (the submittedLen prefix); edits appended after that submit
+            // but before this confirmation stay in the overlay for a future
+            // recovery — clearing the whole overlay here would silently drop them.
+            confirmSaved(overlayRef.current);
+          } else if (s === "conflict") {
             // Another tab/device advanced the doc. Block further writes and
             // re-GET the fresh doc + version. The conflicting payload is NOT
-            // replayed; edits made during the re-GET buffer in pendingRef (as
-            // usual while loadedRef is false) and replay on top of the fresh
-            // doc. `loaded` stays true so no skeleton flash — see load().
+            // replayed; instead the still-unconfirmed post-load edits (overlayRef)
+            // and any edits made during the re-GET replay on top of the fresh doc
+            // and are re-persisted on the new base — see load(). The in-flight
+            // snapshot was NOT confirmed, so clear its submit boundary.
+            abandonInFlight(overlayRef.current);
             loadedRef.current = false;
             loadRef.current();
           }
@@ -69,6 +89,12 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       timer.current = null;
+      // Stale-base guard: a timer armed before a 409 must not fire mid-recovery.
+      // loadedRef flips false the instant the conflict lands; submitting now
+      // would carry the pre-conflict base and 409 again (a redundant recovery).
+      // The recovery's own re-persist re-arms this timer on the fresh base.
+      if (isRecovering(loadedRef.current)) return;
+      markSubmitted(overlayRef.current); // boundary: this snapshot carries the whole overlay
       queueRef.current!.submit(latestRef.current);
     }, 500);
   }, []);
@@ -88,27 +114,40 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
         const base = j.data && Object.keys(j.data).length ? (j.data as T) : seedRef.current;
         const pending = pendingRef.current;
         pendingRef.current = [];
-        const merged = replayPending(base, pending);
+        const overlay = overlayRef.current;
+        // Rebuild on top of the fresh server doc: first the pre-(first-)load
+        // buffer, then the still-unconfirmed post-load overlay. On the initial
+        // load the overlay is empty; on a conflict re-GET `pending` is empty and
+        // the overlay carries the edits that must survive recovery. The two
+        // buffers are temporally disjoint (pending strictly before the first
+        // load, overlay strictly after), so the combined order is chronological.
+        const merged = replayOverlay(overlay, replayPending(base, pending));
+        const buffered = pending.length > 0 || overlayHasEdits(overlay);
         if (!alive || !aliveRef.current) {
           // Component unmounted before the GET resolved (e.g. a quick
           // edit-then-navigate on a per-view hook). Don't touch React state,
-          // but pre-load edits must STILL reach the server exactly once —
+          // but buffered edits must STILL reach the server exactly once —
           // otherwise the buffered edit is silently dropped. Refresh the base
           // to the just-loaded version FIRST so the PUT is a well-formed
           // optimistic write; the queue's PUT is React-free and its onStatus
           // is guarded by aliveRef, so this is safe post-unmount.
-          if (pending.length) {
+          if (buffered) {
             queueRef.current?.setBase(version);
+            markSubmitted(overlay);
             queueRef.current?.submit(merged);
           }
           return;
         }
         queueRef.current?.setBase(version); // initialize/refresh the optimistic-lock base
         loadedRef.current = true;
+        everLoadedRef.current = true;
         latestRef.current = merged;
         setState(merged);
         setLoaded(true);
-        if (pending.length) persist(merged); // pre-load edits reach the server exactly once
+        // Buffered edits reach the server exactly once. On a conflict recovery
+        // this re-persists the overlay on the fresh base; its "saved" then clears
+        // the overlay via confirmSaved.
+        if (buffered) persist(merged);
       })
       .catch(() => { if (alive && aliveRef.current) setLoadError(true); }); // loaded stays FALSE
     return () => { alive = false; };
@@ -120,6 +159,7 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
 
   useEffect(() => {
     aliveRef.current = true;
+    const overlay = overlayRef.current; // stable object ref for the component lifetime
     const cancel = load();
     return () => {
       cancel();
@@ -128,7 +168,10 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
       if (timer.current) {
         clearTimeout(timer.current);
         timer.current = null;
-        if (loadedRef.current) queueRef.current!.submit(latestRef.current);
+        if (loadedRef.current) {
+          markSubmitted(overlay);
+          queueRef.current!.submit(latestRef.current);
+        }
       }
     };
   }, [load]);
@@ -147,6 +190,8 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
       timer.current = null;
       const body = JSON.stringify({ data: latestRef.current, baseVersion: queueRef.current!.baseVersion });
       if (fitsKeepalive(body)) {
+        // Direct keepalive PUT — bypasses the queue, so no "saved" fires and the
+        // overlay is not cleared here; the page is tearing down so it is moot.
         void fetch(`/api/state?app=${appRef.current}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -154,6 +199,7 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
           body,
         }).catch(() => {});
       } else {
+        markSubmitted(overlayRef.current);
         queueRef.current!.submit(latestRef.current);
       }
     };
@@ -162,11 +208,17 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
   }, []);
 
   const update = useCallback((updater: (prev: T) => T) => {
-    if (!loadedRef.current) pendingRef.current.push(updater); // recorded once, outside setState
+    // Recorded once, outside setState. Pre-(first-)load edits buffer in
+    // pendingRef (replayed by the initial load). Every edit AFTER the first load
+    // — including ones made during a conflict recovery, when loadedRef is
+    // transiently false — goes into the overlay so recovery can replay and
+    // re-persist it. everLoadedRef distinguishes the two false-loadedRef windows.
+    if (everLoadedRef.current) recordEdit(overlayRef.current, updater);
+    else pendingRef.current.push(updater);
     setState((prev) => {
       const next = updater(prev);
       latestRef.current = next;
-      if (loadedRef.current) persist(next);
+      if (loadedRef.current) persist(next); // recovery window defers persist to load()'s re-persist
       return next;
     });
   }, [persist]);
