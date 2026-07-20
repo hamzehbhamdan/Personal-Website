@@ -73,14 +73,20 @@ export function normalizeDb(raw: any): CrmDB {
 }
 export function validateBackup(obj: any): { ok: boolean; reason?: string } {
   if (!obj || typeof obj !== "object" || !Array.isArray(obj.contacts)) return { ok: false, reason: "not a CRM backup" };
-  // Import gate (review #35): every contact must be an object with a usable string id —
-  // normalizeDb silently DROPS offending rows, so reject up front rather than restore a
-  // backup that would lose contacts. Names are NOT required: normalizeDb coerces them,
-  // and requiring one would reject otherwise-usable foreign backups.
+  // Import gate (review #35): every contact must be an object with a usable id — normalizeDb
+  // silently DROPS offending rows, so reject up front rather than restore a backup that would
+  // lose contacts. Names are NOT required: normalizeDb coerces them, and requiring one would
+  // reject otherwise-usable foreign backups.
+  // The id check mirrors normalizeDb's ACTUAL acceptance rule (review CR5): normalizeDb keeps
+  // a row when `String(c.id ?? "") !== ""` and then coerces `id: String(c.id)` — it does not
+  // require the id to already be a string. A numeric (or other non-nullish, non-empty-after-
+  // coercion) id is fully restorable, so rejecting it here — as a bare `typeof id !== "string"`
+  // check used to — refused backups normalizeDb would have imported fine. Only reject when the
+  // SAME coercion normalizeDb applies yields "" (id is null, undefined, or already "").
   if (obj.contacts.some((c: unknown) => {
     if (!c || typeof c !== "object") return true;
     const id = (c as Record<string, unknown>).id;
-    return typeof id !== "string" || !id;
+    return String(id ?? "") === "";
   })) {
     return { ok: false, reason: "contacts missing ids" };
   }

@@ -47,13 +47,35 @@ describe("normalizeDb — voice migration", () => {
 describe("normalizeDb + validateBackup — malformed backups stay views-safe (#35)", () => {
   const stateStub = (): ContactState => ({ last: null, days: null, cad: 90, overdue: false, soon: false, snoozed: false, oweReply: false, calNext: null, bdayIn: null });
 
-  it("validateBackup rejects contacts without usable string ids", () => {
+  it("validateBackup rejects contacts without a usable id (empty/missing after String() coercion)", () => {
     expect(validateBackup({ contacts: [{}] })).toEqual({ ok: false, reason: "contacts missing ids" });
     expect(validateBackup({ contacts: [null] }).ok).toBe(false);
     expect(validateBackup({ contacts: [{ id: "" }] }).ok).toBe(false);
-    expect(validateBackup({ contacts: [{ id: 5 }] }).ok).toBe(false);
     expect(validateBackup({ contacts: [{ id: "a" }] }).ok).toBe(true);
     expect(validateBackup({ contacts: [] }).ok).toBe(true); // unchanged contract (csv.test.ts pins this too)
+  });
+
+  it("CR5: validateBackup accepts numeric ids — normalizeDb coerces them via String(), it never drops them", () => {
+    // Pre-fix, validateBackup's `typeof id !== "string"` gate rejected a numeric id even
+    // though normalizeDb's own filter (`String(c.id ?? "") !== ""`) and coercion
+    // (`id: String(c.id)`) accept and KEEP it. That mismatch refused an otherwise fully
+    // restorable foreign/legacy backup.
+    expect(validateBackup({ contacts: [{ id: 5 }] }).ok).toBe(true);
+    expect(validateBackup({ contacts: [{ id: 0 }] }).ok).toBe(true); // falsy number, but String(0) = "0" is non-empty
+    const raw = { contacts: [{ id: 42, name: "Numeric Id" }] };
+    expect(validateBackup(raw).ok).toBe(true);
+    const imported = normalizeDb(raw);
+    expect(imported.contacts.map((c) => c.id)).toEqual(["42"]);
+  });
+
+  it("CR5: a truly missing/empty id still fails validateBackup (null/undefined/empty string, mirroring String(id ?? \"\"))", () => {
+    expect(validateBackup({ contacts: [{ id: null }] }).ok).toBe(false);
+    expect(validateBackup({ contacts: [{ id: undefined }] }).ok).toBe(false);
+    expect(validateBackup({ contacts: [{ id: "" }] }).ok).toBe(false);
+    // NaN is not nullish, so `NaN ?? ""` is NaN and String(NaN) = "NaN" (non-empty) — normalizeDb
+    // KEEPS it (coerced to "NaN"), so validateBackup must accept it too, for the same reason
+    // numeric ids are accepted: rejecting it would refuse a backup normalizeDb can restore fine.
+    expect(validateBackup({ contacts: [{ id: NaN }] }).ok).toBe(true);
   });
   it("normalizeDb drops id-less rows and coerces name/tier so no view dereference can throw", () => {
     const d = normalizeDb({ contacts: [{}, null, "junk", { id: "a" }, { id: "b", name: 7, tier: null }], connections: [{ a: "a", b: "b" }, { a: "a", b: "ghost" }] });
