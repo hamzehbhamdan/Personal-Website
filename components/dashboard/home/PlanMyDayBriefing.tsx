@@ -16,12 +16,15 @@ interface Ev {
 }
 
 /** The centerpiece: suggests which goals to slot into today's OPEN calendar time. Text-only — never writes events. */
-export function PlanMyDayBriefing({ now, goals, intentions }: { now: Date; goals: Goal[]; intentions: string[] }) {
+export function PlanMyDayBriefing({ goals, intentions }: { goals: Goal[]; intentions: string[] }) {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [plan, setPlan] = useState("");
   const nothing = goals.length === 0 && intentions.length === 0;
 
   const run = async () => {
+    // Fresh timestamp at CLICK time (finding #25) — the Hero clock ticks live, so a
+    // mount-time snapshot here silently planned hours that had already passed.
+    const now = new Date();
     setStatus("loading");
     try {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();

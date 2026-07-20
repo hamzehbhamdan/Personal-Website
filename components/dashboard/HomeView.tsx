@@ -59,7 +59,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
           <SectionHeader index="02" label="Plan my day" />
         </div>
         <section className="min-w-0 md:col-span-2 lg:col-span-7">
-          <PlanMyDayBriefing now={snapNow} goals={coach.goals} intentions={todaysOpenIntentions} />
+          <PlanMyDayBriefing goals={coach.goals} intentions={todaysOpenIntentions} />
         </section>
         <section className="min-w-0 md:col-span-2 lg:col-span-5">
           <TodayAgenda now={snapNow} onNavigate={onNavigate} />
