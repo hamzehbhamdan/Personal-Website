@@ -12,7 +12,6 @@ import {
   replayOverlay,
   overlayHasEdits,
   resetOverlay,
-  isRecovering,
   nextRecoveryStep,
   planBfcacheResync,
 } from "@/lib/dashboard/edit-overlay";
@@ -106,7 +105,7 @@ export function useAppState<T extends object>(app: "lifeCRM" | "execCoach" | "ho
       // loadedRef flips false the instant the conflict lands; submitting now
       // would carry the pre-conflict base and 409 again (a redundant recovery).
       // The recovery's own re-persist re-arms this timer on the fresh base.
-      if (isRecovering(loadedRef.current)) return;
+      if (!loadedRef.current) return;
       markSubmitted(overlayRef.current); // boundary: this snapshot carries the whole overlay
       queueRef.current!.submit(latestRef.current);
     }, 500);

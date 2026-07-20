@@ -1,3 +1,5 @@
+import { clampInt } from "@/lib/dashboard/brain/seed";
+
 export const MODELS = ["claude-opus-4-8", "claude-sonnet-5", "claude-haiku-4-5-20251001"] as const;
 export const DEFAULT_MODEL = "claude-sonnet-5";
 const TASKS = new Set(["draft_checkin", "group_update", "coach_chat", "suggest_tasks", "suggest_goals", "intake", "ask_people", "suggest_tags", "distill_voice", "plan_day"]);
@@ -25,12 +27,6 @@ export const MAX_CHAT_MESSAGES = 100; // client persists up to MAX_MSGS=80 (lib/
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 export type ChatRequest = { messages: ChatMessage[]; retrievalCount: number; activeStoreId?: string };
 export type ChatParseResult = { ok: true; value: ChatRequest } | { ok: false; reason: string };
-
-// Same semantics as clampInt in lib/dashboard/brain/seed.ts:26-29.
-function clampInt(v: unknown, min: number, max: number, dflt: number): number {
-  const n = typeof v === "number" && Number.isFinite(v) ? Math.round(v) : dflt;
-  return Math.min(max, Math.max(min, n));
-}
 
 export function parseChatRequest(body: unknown): ChatParseResult {
   if (!body || typeof body !== "object") return { ok: false, reason: "bad body" };

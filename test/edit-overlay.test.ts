@@ -9,7 +9,6 @@ import {
   replayOverlay,
   overlayHasEdits,
   resetOverlay,
-  isRecovering,
   nextRecoveryStep,
   recoveryRetryDelay,
   RECOVERY_MAX_RETRIES,
@@ -251,32 +250,5 @@ describe("CR3 — bfcache restore must not double-apply a keepalive-flushed edit
     expect(plan).toBe("replay-overlay");
     const serverDoc: Doc = { done: false, subtask: false, other: "server" };
     expect(replayOverlay(o, serverDoc)).toEqual({ done: true, subtask: false, other: "server" }); // edit restored
-  });
-});
-
-describe("stale-base guard — isRecovering", () => {
-  it("(c) reports recovery-in-progress from the loaded flag", () => {
-    expect(isRecovering(false)).toBe(true);  // loadedRef flipped false → mid-recovery → skip submit
-    expect(isRecovering(true)).toBe(false);  // writes enabled → submit may proceed
-  });
-
-  it("(c) a debounce timer that fires mid-recovery does not submit a stale base", () => {
-    // Model the guarded timer callback: skip while recovering, else mark+submit.
-    const o = createOverlay<Doc>();
-    recordEdit(o, setDone);
-    let submits = 0;
-    const firedTimer = (loaded: boolean) => {
-      if (isRecovering(loaded)) return;
-      markSubmitted(o);
-      submits++;
-    };
-
-    firedTimer(false); // timer armed pre-conflict, fires while recovery outstanding
-    expect(submits).toBe(0);          // no spurious second 409
-    expect(o.submittedLen).toBe(0);   // boundary untouched
-
-    firedTimer(true);  // recovery finished, writes re-enabled
-    expect(submits).toBe(1);
-    expect(o.submittedLen).toBe(1);
   });
 });

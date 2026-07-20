@@ -76,14 +76,6 @@ export function resetOverlay<T>(o: EditOverlay<T>): void {
   o.submittedLen = 0;
 }
 
-/** The stale-base guard. A debounce timer or pagehide flush that fires while a
- *  conflict recovery is outstanding (loadedRef flipped false) must NOT submit:
- *  its snapshot still carries the pre-conflict base and would 409 again, spawning
- *  a redundant recovery. Callers early-return when this is true. */
-export function isRecovering(loaded: boolean): boolean {
-  return !loaded;
-}
-
 // --- CR2: bounded auto-retry for a failed conflict-recovery re-GET -----------
 //
 // A conflict flips writes off (loadedRef=false) and re-GETs the fresh doc. If

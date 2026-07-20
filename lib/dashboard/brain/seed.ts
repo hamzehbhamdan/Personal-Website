@@ -23,7 +23,7 @@ export function emptyBrain(): BrainDoc {
   };
 }
 
-function clampInt(v: unknown, min: number, max: number, dflt: number): number {
+export function clampInt(v: unknown, min: number, max: number, dflt: number): number {
   const n = typeof v === "number" && Number.isFinite(v) ? Math.round(v) : dflt;
   return Math.min(max, Math.max(min, n));
 }
