@@ -6,9 +6,12 @@ import { parseSendReq } from "@/lib/dashboard/people/gmail-schema";
 
 export const dynamic = "force-dynamic";
 
-// SANCTIONED single send route (reverses the never-send invariant). Sends a draft the client already
-// created; auth + same-origin (requireUser) + a LOW irreversible rate-limit + validated body. Echoes
-// recipients back for UI reconfirmation. This is the only send path in the codebase.
+// SANCTIONED single send route (reverses the never-send invariant). Sends a draft the client
+// already created, BY draftId — the draft's stored recipients (baked in at draft-create time)
+// govern the actual send. The `to/cc/bcc` echoed in the response are the CLIENT-CONFIRMED values
+// used for the undo/confirmation UI; they are validated as confirmation friction but do NOT
+// re-read or verify the draft's real recipients. auth + same-origin (requireUser) + a LOW
+// irreversible rate-limit. This is the only send path in the codebase.
 export async function POST(req: Request) {
   const gate = await requireUser(req);
   if (!gate.ok) return gate.response;
