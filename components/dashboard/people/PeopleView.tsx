@@ -2,6 +2,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "@/lib/dashboard/useAppState";
+import { useToday } from "@/lib/dashboard/useToday";
 import { ViewHeader, Segmented, LoadState } from "@/components/dashboard/ui";
 import { useLiveInteractions } from "./useLiveInteractions";
 import { emptyDb, normalizeDb } from "@/lib/dashboard/people/backup";
@@ -44,7 +45,7 @@ export function PeopleView({
 }: { initialSelect?: Extract<ViewIntent, { view: "people" }> | null; onConsumed?: () => void } = {}) {
   const { state: raw, setState, loaded, loadError, retryLoad, status } = useAppState<CrmDB>("lifeCRM", emptyDb());
   const db = useMemo(() => normalizeDb(raw), [raw]);
-  const now = useMemo(() => new Date(), []);
+  const now = useToday();
   const live = useLiveInteractions(now);
 
   const [seg, setSeg] = useState<Seg>("attention");

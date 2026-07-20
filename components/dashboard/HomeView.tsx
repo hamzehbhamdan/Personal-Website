@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import { PageContainer, SectionHeader } from "./ui";
 import type { ViewKey } from "./ui";
 import { useAppState } from "@/lib/dashboard/useAppState";
+import { useToday } from "@/lib/dashboard/useToday";
 import { emptyHome, normalizeHome, todayKey } from "@/lib/dashboard/home/seed";
 import type { HomeState } from "@/lib/dashboard/home/types";
 import { useBrain } from "./brain/BrainProvider";
@@ -20,8 +21,10 @@ import { QuickCapture } from "./home/QuickCapture";
 
 export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const clock = useClock();
-  // Stable "now" for data snapshots so they don't recompute every clock tick.
-  const snapNow = useMemo(() => new Date(), []);
+  // Live "now" for data snapshots — stable within a day (recomputes at midnight /
+  // visibilitychange / focus via useToday) so it doesn't recompute every clock tick,
+  // but stays live across a tab left open past local midnight (#22/#23).
+  const snapNow = useToday();
   const key = useMemo(() => todayKey(snapNow), [snapNow]);
   // Gate date-derived content past first paint so the prerendered HTML (build-time
   // date) can't mismatch the client (avoids a QuoteOfDay hydration warning).
