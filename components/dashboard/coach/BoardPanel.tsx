@@ -8,6 +8,7 @@ import type { CoachDB, Task, TaskStage } from "@/lib/dashboard/coach/types";
 import { STAGES, applyStage } from "@/lib/dashboard/coach/board";
 import { uid } from "@/lib/dashboard/coach/migrate";
 import { BoardCard } from "./BoardCard";
+import { focusRing } from "./a11y";
 import type { Overlay } from "./overlay";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -15,16 +16,28 @@ const mono = { fontFamily: "var(--font-geist-mono), monospace" };
 function DraggableCard({ db, task, accent, onOpen }: {
   db: CoachDB; task: Task; accent: string; onOpen: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } =
+    useDraggable({ id: task.id });
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      onClick={onOpen}
-      className={`cursor-grab touch-none active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
-    >
-      <BoardCard db={db} task={task} accent={accent} />
+    <div ref={setNodeRef} className={`relative ${isDragging ? "opacity-30" : ""}`}>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Edit task: ${task.label}`}
+        className={`block w-full cursor-pointer rounded-[10px] text-left ${focusRing}`}
+      >
+        <BoardCard db={db} task={task} accent={accent} />
+      </button>
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        aria-label={`Drag task: ${task.label}`}
+        className={`absolute right-1 top-1.5 cursor-grab touch-none rounded-[6px] px-1 py-0.5 text-[12px] leading-none text-stone-300 hover:text-stone-500 active:cursor-grabbing ${focusRing}`}
+      >
+        ⠿
+      </button>
     </div>
   );
 }
