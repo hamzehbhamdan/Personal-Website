@@ -2,8 +2,21 @@
 import { useEffect, useId, useRef } from "react";
 const serif = { fontFamily: "var(--font-playfair), Georgia, serif" };
 
-// Module-level LIFO stack of open modals. Only the topmost handles Escape.
+// Module-level LIFO stack of open modal-like layers (Modal + CommandPalette).
+// Only the topmost layer handles Escape.
 let modalStack: symbol[] = [];
+
+export function pushModalLayer(): symbol {
+  const id = Symbol();
+  modalStack.push(id);
+  return id;
+}
+export function popModalLayer(id: symbol): void {
+  modalStack = modalStack.filter((x) => x !== id);
+}
+export function isTopModalLayer(id: symbol): boolean {
+  return modalStack[modalStack.length - 1] === id;
+}
 
 export function Modal({ title, onClose, children, describedById, size, confirmClose }: {
   title: string;
@@ -34,18 +47,17 @@ export function Modal({ title, onClose, children, describedById, size, confirmCl
   const downOnBackdrop = useRef(false);
 
   useEffect(() => {
-    const id = Symbol();
-    modalStack.push(id);
+    const id = pushModalLayer();
     const h = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (modalStack[modalStack.length - 1] !== id) return; // not topmost → ignore
+      if (!isTopModalLayer(id)) return; // not topmost → ignore
       if (confirmRef.current && !confirmRef.current()) return;
       onCloseRef.current();
     };
     document.addEventListener("keydown", h);
     return () => {
       document.removeEventListener("keydown", h);
-      modalStack = modalStack.filter((x) => x !== id);
+      popModalLayer(id);
     };
   }, []); // mount/unmount only — stack order is stable regardless of onClose identity
   return (

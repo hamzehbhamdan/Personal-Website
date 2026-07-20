@@ -5,6 +5,7 @@ import { Search, Command as CommandIcon, ArrowRight, Users, Target, BookOpen, Sp
 import { cn } from "@/lib/utils";
 import { filterCommands, type Command, type CommandCtx } from "@/lib/dashboard/commands";
 import type { ViewIntent } from "@/lib/dashboard/nav";
+import { pushModalLayer, popModalLayer, isTopModalLayer } from "@/components/dashboard/ui/Modal";
 
 interface SearchResult {
   type: "contact" | "goal" | "task" | "note";
@@ -145,10 +146,25 @@ export function CommandPalette({
     onClose();
   };
 
+  // Join Modal's LIFO layer stack while open, so Escape only closes the
+  // topmost layer — a Modal opened over the palette (or vice-versa) gets
+  // first claim on Escape, and only a subsequent Escape reaches this palette.
+  const layerRef = useRef<symbol | null>(null);
+  useEffect(() => {
+    if (isOpen) {
+      layerRef.current = pushModalLayer();
+      return () => {
+        if (layerRef.current) popModalLayer(layerRef.current);
+        layerRef.current = null;
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isOpen) return;
       if (e.key === "Escape") {
+        if (layerRef.current && !isTopModalLayer(layerRef.current)) return; // a Modal is stacked above — let it handle Escape
         e.preventDefault();
         onClose();
       } else if (e.key === "ArrowDown") {
