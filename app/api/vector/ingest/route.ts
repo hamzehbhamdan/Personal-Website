@@ -25,8 +25,16 @@ export async function POST(req: Request) {
         const metadataRaw = formData.get("metadata") as string | null;
         let metadata: Record<string, unknown> = {};
         if (metadataRaw) {
-            try { metadata = JSON.parse(metadataRaw); }
+            let parsed: unknown;
+            try { parsed = JSON.parse(metadataRaw); }
             catch { return NextResponse.json({ error: "Invalid metadata JSON" }, { status: 400 }); }
+            // Valid JSON that isn't a plain object (null, 42, "x", [..], true) would
+            // slip past the parse guard and then throw on `metadata.type = ...` below,
+            // surfacing as a 500. Reject it here as a 400 like a parse error.
+            if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+                return NextResponse.json({ error: "Invalid metadata: expected an object" }, { status: 400 });
+            }
+            metadata = parsed as Record<string, unknown>;
         }
 
         let contentToEmbed = "";

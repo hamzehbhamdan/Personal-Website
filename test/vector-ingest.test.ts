@@ -73,6 +73,18 @@ describe("POST /api/vector/ingest", () => {
     expect(embeddingsCreate).not.toHaveBeenCalled();
   });
 
+  it.each(["null", "42", "\"x\"", "[1,2]", "true"])(
+    "returns 400 (not 500) on valid JSON metadata that isn't a plain object: %s",
+    async (metadata) => {
+      const res = await POST(makeRequest({ content: "hello world", metadata }));
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/metadata/i);
+      expect(embeddingsCreate).not.toHaveBeenCalled();
+      expect(insertSingle).not.toHaveBeenCalled();
+    },
+  );
+
   it("dispatches on the SNIFFED type, not the client-declared file.type: PNG bytes declared as application/pdf go through the image/vision branch", async () => {
     const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     const disguised = makeFile("fake.pdf", pngBytes, "application/pdf");
