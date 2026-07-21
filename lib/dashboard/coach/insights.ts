@@ -11,7 +11,7 @@ export interface Insights {
 }
 
 function scopeRange(scope: InsScope, today: Date): PeriodRange | null {
-  return scope === "all" ? null : periodRange(scope as any, 0, today);
+  return scope === "all" ? null : periodRange(scope, 0, today);
 }
 function insTasks(db: CoachDB, scope: InsScope, today: Date) {
   const r = scopeRange(scope, today);

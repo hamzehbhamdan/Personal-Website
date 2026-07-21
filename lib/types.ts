@@ -55,7 +55,7 @@ export interface Connection {
     id: string;
     contactId: string;
     type: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
 }
 
 export interface Contact {

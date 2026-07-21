@@ -5,7 +5,11 @@
 // and are delimited before going to the model (buildDistillPrompt). Never persisted; never logged.
 const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-function header(headers: any[], name: string): string {
+interface GmailHeader { name?: string; value?: string; }
+interface GmailMessagePart { mimeType?: string; body?: { data?: string }; parts?: GmailMessagePart[]; }
+interface GmailListResponse { messages?: { id: string }[]; nextPageToken?: string; }
+
+function header(headers: GmailHeader[] | undefined, name: string): string {
   return headers?.find((h) => (h.name || "").toLowerCase() === name.toLowerCase())?.value ?? "";
 }
 
@@ -15,7 +19,7 @@ export function decodeB64Url(data: string): string {
 }
 
 /** Recursively return the first text/plain body from a Gmail message payload. */
-export function extractPlainBody(payload: any): string {
+export function extractPlainBody(payload: GmailMessagePart | null | undefined): string {
   if (!payload || typeof payload !== "object") return "";
   if (payload.mimeType === "text/plain" && payload.body?.data) return decodeB64Url(payload.body.data);
   if (Array.isArray(payload.parts)) {
@@ -62,8 +66,8 @@ export async function gmailListSent(
     if (opts.pageToken) u.searchParams.set("pageToken", opts.pageToken);
     const list = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
     if (!list.ok) { console.warn("gmail-read: sent list failed", list.status); return { ok: false, messages: [] }; }
-    const lj = await list.json();
-    const ids: string[] = (lj.messages ?? []).map((m: any) => m.id);
+    const lj: GmailListResponse = await list.json();
+    const ids: string[] = (lj.messages ?? []).map((m) => m.id);
     const rows = await Promise.all(ids.map(async (id) => {
       try {
         const g = await fetch(`${API}/messages/${id}?format=metadata&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date`, { headers: { Authorization: `Bearer ${token}` } });

@@ -7,7 +7,11 @@ const API = "https://gmail.googleapis.com/gmail/v1/users/me";
 // downstream by isPerson. (Category exclusion isn't possible under gmail.metadata — q is forbidden.)
 const LABELS: Record<"sent" | "inbox", string[]> = { sent: ["SENT"], inbox: ["INBOX"] };
 
-function header(headers: any[], name: string): string {
+interface GmailHeader { name?: string; value?: string; }
+interface GmailMessageMeta { payload?: { headers?: GmailHeader[] }; }
+interface GmailListResponse { messages?: { id: string }[]; nextPageToken?: string; }
+
+function header(headers: GmailHeader[] | undefined, name: string): string {
   return headers?.find((h) => (h.name || "").toLowerCase() === name.toLowerCase())?.value ?? "";
 }
 
@@ -36,13 +40,13 @@ export async function gmailSearch(token: string, mailbox: "sent" | "inbox"): Pro
       if (pageToken) u.searchParams.set("pageToken", pageToken);
       const list = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
       if (!list.ok) { console.warn("gmail: list failed", list.status); break; }
-      const lj = await list.json();
-      const ids: string[] = (lj.messages ?? []).map((m: any) => m.id);
+      const lj: GmailListResponse = await list.json();
+      const ids: string[] = (lj.messages ?? []).map((m) => m.id);
       const got = await Promise.all(ids.map(async (id) => {
         try {
           const g = await fetch(`${API}/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date&metadataHeaders=Subject`, { headers: { Authorization: `Bearer ${token}` } });
           if (!g.ok) return null;
-          const j = await g.json(); const h = j.payload?.headers ?? [];
+          const j: GmailMessageMeta = await g.json(); const h = j.payload?.headers ?? [];
           const dateRaw = header(h, "Date");
           const parsed = dateRaw ? new Date(dateRaw) : null;
           if (!parsed || isNaN(parsed.getTime()) || parsed.getTime() < cutoff) return null;
