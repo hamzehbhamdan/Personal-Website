@@ -38,7 +38,7 @@ export async function GET(req: Request) {
         const vectorFiles = filesList.data;
 
         // 2. Enrich with actual file details (filename, etc) from Files API
-        const enrichedFiles = await Promise.all(vectorFiles.map(async (vf: any) => {
+        const enrichedFiles = await Promise.all(vectorFiles.map(async (vf: OpenAI.VectorStores.VectorStoreFile) => {
             try {
                 const fileDetails = await openai.files.retrieve(vf.id);
                 return {
@@ -48,13 +48,13 @@ export async function GET(req: Request) {
                     bytes: fileDetails.bytes,
                     upload_status: fileDetails.status
                 };
-            } catch (e) {
+            } catch {
                 return { ...vf, filename: "Unknown File", bytes: 0, upload_status: 'unknown' };
             }
         }));
 
         return NextResponse.json(enrichedFiles);
-    } catch (error: any) {
+    } catch {
         console.warn("vector: files GET failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
@@ -84,7 +84,7 @@ export async function DELETE(req: Request) {
             if ((err as { status?: number })?.status !== 404) throw err;
         }
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch {
         console.warn("vector: files DELETE failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
         // 207: at least one file in the batch failed but others may have succeeded — the
         // per-file `files` array carries the breakdown so the caller never has to guess.
         return NextResponse.json({ success: !anyFailed, count, files: results }, { status: anyFailed ? 207 : 200 });
-    } catch (error: any) {
+    } catch {
         console.warn("vector: files POST failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }

@@ -3,6 +3,18 @@ import { getGoogleAccessToken } from "@/lib/google";
 
 export const dynamic = "force-dynamic";
 
+interface GoogleCalendarAttendee {
+  email?: string;
+  self?: boolean;
+}
+
+interface GoogleCalendarEvent {
+  summary?: string;
+  start?: { dateTime?: string; date?: string };
+  end?: { dateTime?: string; date?: string };
+  attendees?: GoogleCalendarAttendee[];
+}
+
 export async function GET(req: Request) {
   const gate = await requireUser(req);
   if (!gate.ok) return gate.response;
@@ -16,13 +28,14 @@ export async function GET(req: Request) {
   try {
     const r = await fetch(api, { headers: { Authorization: `Bearer ${token}` } });
     if (!r.ok) { console.warn("calendar: fetch failed"); return Response.json({ connected: true, events: [] }); }
-    const j = await r.json();
-    const items = Array.isArray(j.items) ? j.items : [];
-    const events = items.map((e: any) => ({
+    const j: unknown = await r.json();
+    const itemsRaw = (j as { items?: unknown })?.items;
+    const items: GoogleCalendarEvent[] = Array.isArray(itemsRaw) ? itemsRaw : [];
+    const events = items.map((e) => ({
       summary: e.summary ?? "(busy)",
       start: e.start?.dateTime ?? e.start?.date,
       end: e.end?.dateTime ?? e.end?.date,
-      attendees: (Array.isArray(e.attendees) ? e.attendees : []).map((a: any) => ({ email: a?.email, self: !!a?.self })),
+      attendees: (Array.isArray(e.attendees) ? e.attendees : []).map((a) => ({ email: a?.email, self: !!a?.self })),
     }));
     return Response.json({ connected: true, events });
   } catch {

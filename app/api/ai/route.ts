@@ -25,7 +25,11 @@ export async function POST(req: Request) {
       system: parsed.value.system ?? "You are a concise, warm assistant. Return only the requested text.",
       messages: [{ role: "user", content: parsed.value.prompt }],
     });
-    const text = msg.content.filter((c) => c.type === "text").map((c: any) => c.text).join("").trim();
+    const text = msg.content
+      .filter((c): c is Anthropic.TextBlock => c.type === "text")
+      .map((c) => c.text)
+      .join("")
+      .trim();
     return Response.json({ text });
   } catch {
     console.warn("ai: generation failed");

@@ -62,7 +62,7 @@ export async function GET() {
         }
 
         return NextResponse.json(stores);
-    } catch (error: any) {
+    } catch {
         console.warn("vector: stores GET failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json(vectorStore);
-    } catch (error: any) {
+    } catch {
         console.warn("vector: stores POST failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
@@ -134,7 +134,7 @@ export async function DELETE(req: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch {
         console.warn("vector: stores DELETE failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }

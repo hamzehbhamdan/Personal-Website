@@ -7,6 +7,21 @@ import { parseChatRequest } from "@/lib/dashboard/ai-schema";
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+// Minimal shape of an OpenAI Chat Completions "function" tool definition —
+// only what this route actually builds/sends.
+interface ChatCompletionToolDef {
+    type: "function";
+    function: {
+        name: string;
+        description: string;
+        parameters: {
+            type: "object";
+            properties: Record<string, { type: string; enum?: string[]; description?: string }>;
+            required?: string[];
+        };
+    };
+}
+
 // Tool execution functions for non-file-search tools
 async function executeGetTasks(supabase: SupabaseClient, status?: string, limit?: number): Promise<string> {
     let query = supabase.from('tasks').select('*').limit(limit || 10).order('created_at', { ascending: false });
@@ -29,8 +44,13 @@ async function executeGetContacts(supabase: SupabaseClient, search?: string, lim
     return JSON.stringify(data);
 }
 
+interface MatchedDocument {
+    content: string;
+    metadata?: { title?: string } | null;
+}
+
 async function executeSearchSupabase(supabase: SupabaseClient, query: string, retrievalCount: number): Promise<string> {
-    let allResults: string[] = [];
+    const allResults: string[] = [];
 
     try {
         const embeddingResponse = await fetch("https://api.openai.com/v1/embeddings", {
@@ -54,7 +74,7 @@ async function executeSearchSupabase(supabase: SupabaseClient, query: string, re
                 match_count: retrievalCount,
             });
             if (documents) {
-                documents.forEach((d: any) => {
+                (documents as MatchedDocument[]).forEach((d) => {
                     allResults.push(`[Neural Node: ${d.metadata?.title || "Note"}]\n${d.content}`);
                 });
             }
@@ -91,7 +111,7 @@ If you cannot find information, admit it nicely.
 Be concise, professional, and slightly futuristic in tone.`;
 
         // Build tools array - file_search if vector store is connected, plus custom tools
-        const tools: any[] = [
+        const tools: ChatCompletionToolDef[] = [
             {
                 type: "function",
                 function: {

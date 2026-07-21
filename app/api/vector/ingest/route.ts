@@ -55,9 +55,13 @@ export async function POST(req: Request) {
             const buffer = Buffer.from(await file.arrayBuffer());
 
             if (sniff === "application/pdf") {
-                // PDF Parsing
-                const pdfParseModule = await import("pdf-parse") as any;
-                const pdfParse = pdfParseModule.default || pdfParseModule;
+                // PDF Parsing. The `pdf-parse` package ships no default export type we can
+                // rely on statically, so go through `unknown` and assert the shape we
+                // actually invoke (a callable that resolves to `{ text }`).
+                const pdfParseModule: unknown = await import("pdf-parse");
+                const pdfParse = ((pdfParseModule as { default?: unknown }).default ?? pdfParseModule) as (
+                    data: Buffer
+                ) => Promise<{ text: string }>;
                 let pdfData;
                 try { pdfData = await pdfParse(buffer); }
                 catch { return NextResponse.json({ error: "Could not parse PDF" }, { status: 422 }); }
@@ -130,20 +134,22 @@ export async function POST(req: Request) {
                     purpose: "assistants",
                 });
 
-                const vsAPI = (openai as any).vectorStores || (openai.beta as any)?.vectorStores;
+                const vsAPI: OpenAI.VectorStores | undefined =
+                    openai.vectorStores ||
+                    (openai.beta as unknown as { vectorStores?: OpenAI.VectorStores })?.vectorStores;
                 if (vsAPI) {
                     await vsAPI.files.create(activeStoreId, {
                         file_id: openaiFile.id,
                     });
                 }
-            } catch (syncError) {
+            } catch {
                 console.warn("vector: ingest cluster sync failed");
                 // We don't fail the whole request since Supabase succeeded
             }
         }
 
         return NextResponse.json({ success: true, id: (data as { id?: number } | null)?.id ?? null, type: metadata.type });
-    } catch (error: any) {
+    } catch {
         console.warn("vector: ingest failed");
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
