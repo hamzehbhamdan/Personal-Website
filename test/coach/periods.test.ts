@@ -34,9 +34,9 @@ describe("elapsedFrac", () => {
 
 describe("periodLabelOf / findOffset / ladders", () => {
   it("labels a stored goal period key", () => {
-    expect(periodLabelOf({ period: "2026-Q3" } as any)).toBe("Q3 2026");
-    expect(periodLabelOf({ period: "2026-07" } as any)).toBe("Jul 2026");
-    expect(periodLabelOf({ period: "2026" } as any)).toBe("2026");
+    expect(periodLabelOf({ period: "2026-Q3" })).toBe("Q3 2026");
+    expect(periodLabelOf({ period: "2026-07" })).toBe("Jul 2026");
+    expect(periodLabelOf({ period: "2026" })).toBe("2026");
   });
   it("findOffset round-trips a key", () => {
     const k = periodRange("month", 2, TODAY).key;

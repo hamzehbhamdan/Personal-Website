@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { computeInsights } from "../../lib/dashboard/coach/insights";
-import type { CoachDB } from "../../lib/dashboard/coach/types";
+import type { CoachDB, Task } from "../../lib/dashboard/coach/types";
 
 const TODAY = new Date(2026, 6, 8);
 const wk = "W2026-07-06";
 
 function db(): CoachDB {
-  const t = (id: string, goalId: string, pts: number, done: boolean, timeMs: number, doneAt: string | null): any =>
-    ({ id, goalId, week: wk, label: id, pts, note: "", tag: "", done, doneAt, subs: [], collapsed: false, timeMs, timerStart: null, createdAt: "x" });
+  const t = (id: string, goalId: string, pts: number, done: boolean, timeMs: number, doneAt: string | null): Task =>
+    ({ id, goalId, week: wk, label: id, pts, note: "", tag: "", done, doneAt, stage: done ? "done" : "todo", subs: [], collapsed: false, timeMs, timerStart: null, createdAt: "x" });
   return {
     version: 3, matters: "", memory: "", intakeDone: {}, planDone: {}, weekPlan: {},
     goals: [

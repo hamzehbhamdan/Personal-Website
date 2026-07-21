@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildAskContext, buildAskPrompt, buildCheckinPrompt, buildGroupUpdatePrompt, buildTagsPrompt, parseTagsResponse, buildTagsAllPrompt, parseTagsAllResponse, applyTagsAll, capHistory, buildDistillPrompt, type AskTurn } from "@/lib/dashboard/people/ai-prompts";
 import { state } from "@/lib/dashboard/people/state";
-import type { CrmDB } from "@/lib/dashboard/people/types";
+import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
 
 const NOW = new Date("2026-07-11T12:00:00Z");
 const db = (): CrmDB => ({ version: 1, dismissed: [], connections: [], settings: { autoTags: false }, tiers: [{ name: "Friends", cadenceDays: 60, color: "#000" }], groups: [],
@@ -80,7 +80,7 @@ describe("capHistory + ask transcript (chat memory)", () => {
 describe("voice injection + distill", () => {
   const voice = { tone: "playful", styleGuide: "I keep it short.", styleSummary: "casual, uses dashes", styleNotes: "sign off -H", examples: ["hey! quick one", "yo, thoughts?"] };
   it("check-in: no-voice unchanged; with-voice injects trusted guide + delimited examples", () => {
-    const c = { name: "Amir", tier: "Friends", notes: "", howWeMet: "" } as any;
+    const c = { name: "Amir", tier: "Friends", notes: "", howWeMet: "" } as unknown as Contact;
     const nv = buildCheckinPrompt(c, ["Jun 1 hi"], 12);
     expect(nv).not.toContain("Hamzeh's own voice");
     expect(nv).toContain("reconnect. Return ONLY the message text.");

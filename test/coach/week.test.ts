@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { weekModel, nextUp } from "../../lib/dashboard/coach/week";
-import type { CoachDB } from "../../lib/dashboard/coach/types";
+import type { CoachDB, Task } from "../../lib/dashboard/coach/types";
 
 function db(): CoachDB {
-  const t = (id: string, goalId: string, done = false): any =>
-    ({ id, goalId, week: "W", label: id, pts: 2, note: "", tag: "", done, doneAt: done ? "x" : null, subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" });
+  const t = (id: string, goalId: string, done = false): Task =>
+    ({ id, goalId, week: "W", label: id, pts: 2, note: "", tag: "", done, doneAt: done ? "x" : null, stage: done ? "done" : "todo", subs: [], collapsed: false, timeMs: 0, timerStart: null, createdAt: "x" });
   return {
     version: 3, matters: "", memory: "", intakeDone: {}, planDone: {}, weekPlan: { W: ["g1"] },
     goals: [{ id: "g1", horizon: "week", period: "W", title: "Goal", parentId: "", recurring: false, useManual: false, manualProgress: 0, notes: "" }],
@@ -22,7 +22,7 @@ describe("weekModel", () => {
   });
   it("isEmpty when no goals and no unfiled", () => {
     const e = { ...db(), tasks: [], weekPlan: {} };
-    expect(weekModel(e as any, "W").isEmpty).toBe(true);
+    expect(weekModel(e, "W").isEmpty).toBe(true);
   });
 });
 

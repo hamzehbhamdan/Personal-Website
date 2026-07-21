@@ -15,12 +15,12 @@ describe("csv + backup", () => {
     expect(out.contacts.find((c) => c.id === "a@x.com")!.tags.sort()).toEqual(["college", "gym", "x"]);
   });
   it("normalizeDb fills defaults (tiers, settings, tags, log arrays)", () => {
-    const d = normalizeDb({ version: 1, contacts: [{ id: "a", name: "A", emails: [], tier: "Friends" } as any] });
+    const d = normalizeDb({ version: 1, contacts: [{ id: "a", name: "A", emails: [], tier: "Friends" }] });
     expect(d.tiers.length).toBe(5); expect(d.settings.autoTags).toBe(false);
     expect(d.contacts[0].tags).toEqual([]); expect(d.contacts[0].log).toEqual([]);
   });
   it("normalizeDb is PURE — does not mutate its input, returns fresh references", () => {
-    const raw: any = { version: 1, contacts: [{ id: "a", name: "A", emails: [], tier: "Friends" }] };
+    const raw = { version: 1, contacts: [{ id: "a", name: "A", emails: [], tier: "Friends" }] };
     const snapshot = JSON.parse(JSON.stringify(raw));
     const out = normalizeDb(raw);
     expect(raw).toEqual(snapshot);                       // input untouched

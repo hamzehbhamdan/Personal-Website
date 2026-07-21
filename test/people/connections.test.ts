@@ -78,7 +78,7 @@ describe("neighbors", () => {
 
 describe("pruneEdges", () => {
   it("drops dangling ids, self-loops, and duplicates; canonicalizes", () => {
-    const raw: any = [{ a: "b", b: "a" }, { a: "a", b: "x" }, { a: "a", b: "a" }, { a: "a", b: "b" }];
+    const raw: unknown = [{ a: "b", b: "a" }, { a: "a", b: "x" }, { a: "a", b: "a" }, { a: "a", b: "b" }];
     const out = pruneEdges(raw, new Set(["a", "b"]));
     expect(keys(out)).toEqual(["a|b"]);
   });

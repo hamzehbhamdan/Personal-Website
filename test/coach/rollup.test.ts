@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { taskPts, taskDonePts, taskDone, taskTime, subtree, progressOf, statusOf } from "../../lib/dashboard/coach/rollup";
-import type { CoachDB } from "../../lib/dashboard/coach/types";
+import type { CoachDB, Horizon, Task } from "../../lib/dashboard/coach/types";
 
 function scenario(t1Done: boolean): CoachDB {
-  const g = (id: string, horizon: any, parentId: string) =>
+  const g = (id: string, horizon: Horizon, parentId: string) =>
     ({ id, horizon, period: "p", title: id, parentId, recurring: false, useManual: false, manualProgress: 0, notes: "" });
   return {
     version: 3, matters: "", memory: "", intakeDone: {}, weekPlan: {}, planDone: {},
@@ -42,7 +42,7 @@ describe("rollup (coach3harness oracle)", () => {
     expect(statusOf(db, db.goals[2])).toBe("in");
   });
   it("taskTime adds live running span", () => {
-    const t = { timeMs: 1000, timerStart: Date.now() - 5000 } as any;
+    const t = { timeMs: 1000, timerStart: Date.now() - 5000 } as unknown as Task;
     expect(taskTime(t)).toBeGreaterThanOrEqual(5900);
   });
 });

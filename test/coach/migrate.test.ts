@@ -20,7 +20,28 @@ function mkDb(over: Partial<CoachDB> = {}): Partial<CoachDB> {
   return { version: 4, goals: [], tasks: [], ...over };
 }
 
-const old: any = {
+/** v2 (legacy) on-disk doc shape — deliberately missing v4-only fields (recurring,
+ *  label, week, stage, ...) since that's exactly what migrate() must backfill. Fed
+ *  to migrate() via a double-cast (not `any`) so the malformed shape still reaches
+ *  it unchanged. */
+interface LegacyV2Goal {
+  id: string; horizon: string; period: string; title: string; parentId: string;
+  useManual: boolean; manualProgress: number; notes: string;
+}
+interface LegacyV2Task { id: string; goalId: string; title: string; done: boolean; createdAt?: string; }
+interface LegacyBoardSub { id?: string; label: string; pts: number; done: boolean; }
+interface LegacyBoardTask {
+  id?: string; sectionId: string; label: string; pts: number; tag: string; note: string;
+  done: boolean; subs: LegacyBoardSub[];
+}
+interface LegacyV2Doc {
+  version: number; matters: string; memory: string; intakeDone: Record<string, boolean>;
+  goals: LegacyV2Goal[]; tasks: LegacyV2Task[];
+  board: { sections: { id: string; name: string }[]; tasks: LegacyBoardTask[] };
+}
+const asCoachInput = (v: unknown): Partial<CoachDB> => v as unknown as Partial<CoachDB>;
+
+const old: LegacyV2Doc = {
   version: 2, matters: "stuff", memory: "notes", intakeDone: {},
   goals: [{ id: "g1", horizon: "week", period: "W2026-06-29", title: "Reset apt", parentId: "", useManual: false, manualProgress: 0, notes: "" }],
   tasks: [{ id: "t1", goalId: "g1", title: "Trash", done: true, createdAt: "x" }, { id: "t2", goalId: "g1", title: "Dishes", done: false }],
@@ -30,12 +51,12 @@ const old: any = {
 
 describe("migrate v2 -> v4", () => {
   it("bumps version and drops board", () => {
-    const db = migrate(structuredClone(old), TODAY);
+    const db = migrate(asCoachInput(structuredClone(old)), TODAY);
     expect(db.version).toBe(4);
     expect(db.board).toBeUndefined();
   });
   it("produces 3 tasks: 2 migrated + 1 board->unfiled", () => {
-    const db = migrate(structuredClone(old), TODAY);
+    const db = migrate(asCoachInput(structuredClone(old)), TODAY);
     expect(db.tasks.length).toBe(3);
     const unfiled = db.tasks.find((t) => t.label === "Groceries")!;
     expect(unfiled.goalId).toBe("");                 // board task -> unfiled
@@ -44,8 +65,8 @@ describe("migrate v2 -> v4", () => {
     expect(taskPts(unfiled)).toBe(1);                // subs present -> pts roll up
   });
   it("renames title->label, keeps matters/memory, sets rich defaults", () => {
-    const db = migrate(structuredClone(old), TODAY);
-    expect(db.tasks.every((t) => (t as any).title === undefined && t.label)).toBe(true);
+    const db = migrate(asCoachInput(structuredClone(old)), TODAY);
+    expect(db.tasks.every((t) => (t as unknown as { title?: string }).title === undefined && t.label)).toBe(true);
     expect(db.matters).toBe("stuff"); expect(db.memory).toBe("notes");
     const t1 = db.tasks.find((t) => t.label === "Trash")!;
     expect(t1.pts).toBe(1); expect(t1.timeMs).toBe(0); expect(t1.timerStart).toBe(null);
@@ -55,14 +76,14 @@ describe("migrate v2 -> v4", () => {
 
 describe("migrate v4 — Task.stage backfill + invariant", () => {
   it("backfills stage from done for legacy tasks", () => {
-    const db = migrate(structuredClone(old), TODAY);
+    const db = migrate(asCoachInput(structuredClone(old)), TODAY);
     expect(db.tasks.find((t) => t.label === "Trash")!.stage).toBe("done");   // done:true
     expect(db.tasks.find((t) => t.label === "Dishes")!.stage).toBe("todo");  // done:false
     expect(db.tasks.find((t) => t.label === "Groceries")!.stage).toBe("todo"); // board task, done:false
   });
 
   it("enforces stage==='done' ⇔ done===true even against a contradictory stored stage", () => {
-    const bad: any = {
+    const bad: Partial<CoachDB> = {
       version: 3, matters: "", memory: "", intakeDone: {}, goals: [],
       tasks: [
         { id: "a", goalId: "", week: "W2026-07-06", label: "done-but-todo", pts: 1, note: "", tag: "",
@@ -80,7 +101,7 @@ describe("migrate v4 — Task.stage backfill + invariant", () => {
   });
 
   it("is idempotent on stage", () => {
-    const once = migrate(structuredClone(old), TODAY);
+    const once = migrate(asCoachInput(structuredClone(old)), TODAY);
     const twice = migrate(structuredClone(once), TODAY);
     expect(twice.tasks.map((t) => t.stage)).toEqual(once.tasks.map((t) => t.stage));
     expect(twice.version).toBe(4);
@@ -112,8 +133,8 @@ describe("migrate v4 — Task.stage backfill + invariant", () => {
 
 describe("migrate — board id determinism (review #31)", () => {
   it("mints identical ids on repeated migration of the same unpersisted doc", () => {
-    const a = migrate(structuredClone(old), TODAY);
-    const b = migrate(structuredClone(old), TODAY);
+    const a = migrate(asCoachInput(structuredClone(old)), TODAY);
+    const b = migrate(asCoachInput(structuredClone(old)), TODAY);
     const gA = a.tasks.find((t) => t.label === "Groceries")!;
     const gB = b.tasks.find((t) => t.label === "Groceries")!;
     expect(gA.id).toBe(gB.id);                    // random uid() would differ per call
@@ -125,7 +146,7 @@ describe("migrate — board id determinism (review #31)", () => {
     const raw = structuredClone(old);
     delete raw.board.tasks[0].id;
     delete raw.board.tasks[0].subs[0].id;
-    const db = migrate(raw, TODAY);
+    const db = migrate(asCoachInput(raw), TODAY);
     const g = db.tasks.find((t) => t.label === "Groceries")!;
     expect(g.id).toBe("bt-0");
     expect(g.subs[0].id).toBe("bt-0-s-0");

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { emptyCoachDB, normalize } from "../../lib/dashboard/coach/seed";
+import type { CoachDB } from "../../lib/dashboard/coach/types";
 
 describe("coach seed", () => {
   it("emptyCoachDB is a valid v4 shell", () => {
@@ -11,7 +12,7 @@ describe("coach seed", () => {
     expect(db.weekPlan).toEqual({});
   });
   it("normalize backfills missing fields on a partial doc", () => {
-    const db = normalize({ goals: [{ id: "g1", horizon: "week", period: "W", title: "x" }] } as any);
+    const db = normalize({ goals: [{ id: "g1", horizon: "week", period: "W", title: "x" }] } as unknown as Partial<CoachDB>);
     expect(Array.isArray(db.tasks)).toBe(true);
     expect(db.matters).toBe("");
     expect(db.intakeDone).toEqual({});

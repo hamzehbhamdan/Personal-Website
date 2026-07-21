@@ -4,7 +4,7 @@ import { buildSuggestions } from "@/lib/dashboard/people/suggestions";
 import { state } from "@/lib/dashboard/people/state";
 import { groupState } from "@/lib/dashboard/people/groups";
 import { buildGmailMap } from "@/lib/dashboard/people/interactions";
-import type { CrmDB } from "@/lib/dashboard/people/types";
+import type { CrmDB, Contact } from "@/lib/dashboard/people/types";
 
 const NOW = new Date("2026-07-11T12:00:00Z");
 const db = (): CrmDB => ({
@@ -16,7 +16,7 @@ const db = (): CrmDB => ({
   ],
   groups: [{ id: "grp-1", name: "Quarterly life update", type: "manual", rule: null, members: ["a@x.com", "b@y.com"], cadenceDays: 90, lastTouch: "2026-01-15T00:00:00Z", snoozeUntil: null }],
 });
-const so = (d: CrmDB) => (c: any) => state(c, {}, {}, d, NOW);
+const so = (d: CrmDB) => (c: Contact) => state(c, {}, {}, d, NOW);
 
 describe("selectors", () => {
   it("allTags is sorted unique", () => expect(allTags(db())).toEqual(["hiking"]));
@@ -47,12 +47,12 @@ describe("selectors", () => {
 });
 
 describe("matchContacts", () => {
-  const db: any = { contacts: [
+  const db = { contacts: [
     { id: "1", name: "Alex Rivera", emails: ["alex@acme.com"], tier: "1" },
     { id: "2", name: "Alexa Stone", emails: ["astone@x.com"], tier: "1" },
     { id: "3", name: "Bob Lin", emails: ["bob@x.com"], tier: "1" },
     { id: "4", name: "No Email", emails: [], tier: "1" },
-  ], groups: [] };
+  ], groups: [] } as unknown as CrmDB;
   it("returns [] for an empty query", () => {
     expect(matchContacts(db, "  ")).toEqual([]);
   });

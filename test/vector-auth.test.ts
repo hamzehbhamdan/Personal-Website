@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../lib/supabase-server", () => ({ requireUser: vi.fn() }));
-import { requireUser } from "../lib/supabase-server";
+import { requireUser, type RequireUserResult } from "../lib/supabase-server";
 import { NextResponse } from "next/server";
 
 const unauth = () =>
-  (requireUser as any).mockResolvedValue({ ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) });
+  vi.mocked(requireUser).mockResolvedValue({ ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) } as RequireUserResult);
 
 describe("vector routes require auth", () => {
   beforeEach(() => vi.resetAllMocks());

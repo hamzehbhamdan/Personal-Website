@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ownsStore } from "../lib/vector-store-ownership";
 
-function mockSupabase(returnData: any) {
-  const chain: any = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    maybeSingle: vi.fn(async () => ({ data: returnData })),
-  };
-  return { from: vi.fn(() => chain) } as any;
+function mockSupabase(returnData: { vector_store_id: string } | null) {
+  const chain: Record<string, unknown> = {};
+  chain.select = vi.fn(() => chain);
+  chain.eq = vi.fn(() => chain);
+  chain.maybeSingle = vi.fn(async () => ({ data: returnData }));
+  return { from: vi.fn(() => chain) } as unknown as SupabaseClient;
 }
 
 describe("ownsStore", () => {
