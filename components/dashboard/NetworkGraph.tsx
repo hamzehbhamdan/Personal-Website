@@ -55,14 +55,6 @@ export function NetworkGraph({ contacts, showNicknames }: { contacts: Contact[],
     const filteredStart = contacts.filter(c => c.name.toLowerCase().includes(startSearch.toLowerCase()));
     const filteredEnd = contacts.filter(c => c.name.toLowerCase().includes(endSearch.toLowerCase()));
 
-    if (contacts.length === 0) {
-        return (
-            <div className="w-full h-full flex items-center justify-center opacity-20 italic text-xs uppercase tracking-widest">
-                No neural nodes detected...
-            </div>
-        );
-    }
-
     // BFS Pathfinding Algorithm
     const findPath = (start: string, end: string) => {
         if (!start || !end) return;
@@ -98,13 +90,16 @@ export function NetworkGraph({ contacts, showNicknames }: { contacts: Contact[],
         setPath([]); // No path found
     };
 
+    // Clear any previously traced path whenever the endpoints or the graph links
+    // change, so a stale route can't render against a new selection/topology.
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset of derived path state on input change
         setPath([]);
     }, [pathStart, pathEnd, links]);
 
     useEffect(() => {
         // Initialize nodes with random positions
-        let currentNodes = contacts.map(c => ({
+        const currentNodes = contacts.map(c => ({
             ...c,
             x: Math.random() * 800,
             y: Math.random() * 600,
@@ -200,7 +195,11 @@ export function NetworkGraph({ contacts, showNicknames }: { contacts: Contact[],
             });
         }
 
+        // Commit the freshly computed force-directed layout + derived links. This is a
+        // compute-from-props initialization effect, so seeding state here is intended.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize simulation state from contacts
         setNodes(currentNodes);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize simulation state from contacts
         setLinks(newLinks);
     }, [contacts]);
 
@@ -338,6 +337,15 @@ export function NetworkGraph({ contacts, showNicknames }: { contacts: Contact[],
             setDragNode(null);
         }
     };
+
+    // Empty-state guard AFTER all hooks so hook order stays stable across renders.
+    if (contacts.length === 0) {
+        return (
+            <div className="w-full h-full flex items-center justify-center opacity-20 italic text-xs uppercase tracking-widest">
+                No neural nodes detected...
+            </div>
+        );
+    }
 
     return (
         <div

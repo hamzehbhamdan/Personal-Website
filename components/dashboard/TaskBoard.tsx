@@ -105,8 +105,8 @@ export function TaskBoard() {
     const [defaultQuadrant, setDefaultQuadrant] = useState<{ urgency: string; importance: string } | null>(null);
 
     // Sprint tracking state
-    const [sprints, setSprints] = useState<any[]>([]);
-    const [activeSprint, setActiveSprint] = useState<any | null>(null);
+    const [sprints, setSprints] = useState<Sprint[]>([]);
+    const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
     const [isCreatingSprint, setIsCreatingSprint] = useState(false);
 
     // Advanced Features State
@@ -201,8 +201,8 @@ export function TaskBoard() {
 
     // Handle global subview switching (Cmd + Shift + Arrows)
     useEffect(() => {
-        const handleSwitchView = (e: any) => {
-            const direction = e.detail.direction;
+        const handleSwitchView = (e: Event) => {
+            const direction = (e as CustomEvent<{ direction: string }>).detail.direction;
             const views: Array<"kanban" | "list" | "matrix" | "sprint"> = ["kanban", "list", "matrix", "sprint"];
             const currentIndex = views.indexOf(view);
             let nextIndex = 0;
@@ -387,7 +387,7 @@ export function TaskBoard() {
             const { scoredTasks } = await response.json();
 
             // Reorder tasks based on scores
-            const scoreMap = new Map(scoredTasks.map((t: any) => [t.id, t.score]));
+            const scoreMap = new Map(scoredTasks.map((t: { id: string; score: number }) => [t.id, t.score]));
 
             // Sort the tasks array
             const sorted = [...tasks].sort((a, b) => {
@@ -531,10 +531,10 @@ export function TaskBoard() {
                                 <div className="space-y-3">
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-white/30">Temporal & Status</h4>
                                     <div className="flex gap-2 flex-wrap">
-                                        {['all', 'today', 'week', 'overdue'].map(r => (
+                                        {(['all', 'today', 'week', 'overdue'] as const).map(r => (
                                             <button
                                                 key={r}
-                                                onClick={() => setActiveFilters({ ...activeFilters, dateRange: r as any })}
+                                                onClick={() => setActiveFilters({ ...activeFilters, dateRange: r })}
                                                 className={cn(
                                                     "px-3 py-1.5 rounded-lg text-xs font-bold capitalize border transition-all",
                                                     activeFilters.dateRange === r
@@ -948,7 +948,7 @@ export function TaskBoard() {
     );
 }
 
-function CreateSprintModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (data: any) => void }) {
+function CreateSprintModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (data: { name: string; goal: string; startDate: Date; endDate: Date }) => void }) {
     const [name, setName] = useState("");
     const [goal, setGoal] = useState("");
     const [duration, setDuration] = useState(7); // default 7 days

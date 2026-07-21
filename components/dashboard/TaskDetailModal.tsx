@@ -39,11 +39,14 @@ function TimeTracker({
     onTimerStateChange: (startedAt: Date | null) => void;
 }) {
     const [displayTime, setDisplayTime] = useState(initialTime);
+    const [liveSeconds, setLiveSeconds] = useState(0);
 
     // Calculate if timer is running based on timerStartedAt from database
     const isRunning = !!timerStartedAt;
 
-    // Calculate elapsed time including saved time
+    // Sync the displayed elapsed time from the DB-backed timerStartedAt/initialTime
+    // props (intentional external -> local sync; seeding state here is the point).
+    /* eslint-disable react-hooks/set-state-in-effect -- prop-driven sync of displayed elapsed time */
     useEffect(() => {
         if (timerStartedAt) {
             // Calculate elapsed time since timer was started
@@ -53,6 +56,7 @@ function TimeTracker({
             setDisplayTime(initialTime);
         }
     }, [timerStartedAt, initialTime]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Live update every second when running
     useEffect(() => {
@@ -65,6 +69,19 @@ function TimeTracker({
 
         return () => clearInterval(interval);
     }, [isRunning, timerStartedAt, initialTime]);
+
+    // Live seconds counter for the pulsing animation. Updated from an interval
+    // callback (a subscription) instead of reading Date.now() during render, which
+    // would be an impure render. The value is only displayed while the timer runs.
+    useEffect(() => {
+        if (!timerStartedAt) return;
+        const interval = setInterval(() => {
+            setLiveSeconds(
+                Math.floor((Date.now() - new Date(timerStartedAt).getTime()) / 1000) % 60
+            );
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [timerStartedAt]);
 
     const handleToggle = async () => {
         if (isRunning) {
@@ -84,11 +101,6 @@ function TimeTracker({
         const m = minutes % 60;
         return `${h}h ${m}m`;
     };
-
-    // Calculate live seconds for animation
-    const liveSeconds = timerStartedAt
-        ? Math.floor((Date.now() - new Date(timerStartedAt).getTime()) / 1000) % 60
-        : 0;
 
     return (
         <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-3 px-4 h-[50px]">

@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import {
     Settings, X, Image as ImageIcon, Type, Layout, Save, Sliders, Palette,
     Upload, Sun, Moon, History, Monitor, Shield, Database, Cloud, AlertCircle,
-    ChevronRight, RefreshCcw, Trash2, Download, Quote as QuoteIcon, Heart, Calendar as CalendarIcon, User
+    ChevronRight, RefreshCcw, Trash2, Download, Quote as QuoteIcon, Heart, Calendar as CalendarIcon, User,
+    type LucideIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardSettings } from "@/lib/types";
@@ -27,13 +28,18 @@ export function SettingsModal({ isOpen, onClose, currentSettings, onSave }: Sett
     const [isSyncing, setIsSyncing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Re-seed the editable form from the caller's saved settings whenever the modal
+    // opens (and when the caller's settings change while it is open). This is an
+    // intentional external-prop -> local-form sync; a render-phase reset can't
+    // reproduce both triggers without extra bookkeeping, so the rule is scoped off.
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate prop->form sync on open
             setSettings(currentSettings);
         }
     }, [isOpen, currentSettings]);
 
-    const tabs: { id: TabID; label: string; icon: any }[] = [
+    const tabs: { id: TabID; label: string; icon: LucideIcon }[] = [
         { id: "workspace", label: "Workspace", icon: Monitor },
         { id: "appearance", label: "Appearance", icon: Palette },
         { id: "modules", label: "Modules", icon: Layout },
@@ -430,7 +436,7 @@ export function SettingsModal({ isOpen, onClose, currentSettings, onSave }: Sett
                                                 ].map(mode => (
                                                     <button
                                                         key={mode.id}
-                                                        onClick={() => setSettings({ ...settings, themeMode: mode.id as any })}
+                                                        onClick={() => setSettings({ ...settings, themeMode: mode.id as DashboardSettings["themeMode"] })}
                                                         className={cn(
                                                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all",
                                                             settings.themeMode === mode.id

@@ -39,6 +39,51 @@ interface ChatMessage {
     content: string;
 }
 
+// Optional tool-call metadata attached to an assistant message by the AI SDK.
+interface ToolInvocation {
+    toolCallId: string;
+    toolName: string;
+    state?: string;
+    args?: unknown;
+}
+
+interface NeuralMessage extends ChatMessage {
+    toolInvocations?: ToolInvocation[];
+}
+
+// A persisted chat row from the `neural_chats` table.
+interface NeuralChat {
+    id: string;
+    title?: string;
+    messages: NeuralMessage[];
+    is_pinned?: boolean;
+    updated_at: string;
+}
+
+// An ingested document row from the `documents` table.
+interface NeuralDocument {
+    id?: string;
+    created_at: string;
+    metadata?: { filename?: string };
+}
+
+// Summary of a vector store returned by /api/vector/stores.
+interface VectorStoreSummary {
+    id: string;
+    name?: string;
+    status?: string;
+    file_counts?: { total?: number };
+}
+
+// A file within a vector store returned by /api/vector/files.
+interface VectorFile {
+    id: string;
+    filename?: string;
+    status?: string;
+    bytes: number;
+    created_at: number;
+}
+
 interface SecondBrainViewProps {
     settings: DashboardSettings;
     onSettingsChange: (settings: DashboardSettings) => void;
@@ -48,12 +93,12 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
     const supabase = createSupabaseBrowserClient();
     const [activeTab, setActiveTab] = useState<"docs" | "stores" | "settings">("docs");
     const [isUploading, setIsUploading] = useState(false);
-    const [documents, setDocuments] = useState<any[]>([]);
+    const [documents, setDocuments] = useState<NeuralDocument[]>([]);
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [vectorStores, setVectorStores] = useState<any[]>([]);
+    const [vectorStores, setVectorStores] = useState<VectorStoreSummary[]>([]);
     const [isLoadingStores, setIsLoadingStores] = useState(false);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<NeuralChat[]>([]);
     const [activeChatId, setActiveChatId] = useState<string | null>(null);
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState("");
@@ -64,7 +109,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
     const [query, setQuery] = useState("");
 
     // Manual chat state
-    const [messages, setAiMessages] = useState<any[]>([]);
+    const [messages, setAiMessages] = useState<NeuralMessage[]>([]);
     const [isThinking, setIsThinking] = useState(false);
 
     // Chat attachment modal state
@@ -207,7 +252,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
         }
     }, [activeChatId, history, setAiMessages]);
 
-    const [storeFiles, setStoreFiles] = useState<any[]>([]);
+    const [storeFiles, setStoreFiles] = useState<VectorFile[]>([]);
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -266,9 +311,9 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                 if (data) fetchHistory();
                 return data?.id || null;
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Neural: Critical Save Error:", error);
-            alert(`Neural Persistence Failure: ${error.message}`);
+            alert(`Neural Persistence Failure: ${error instanceof Error ? error.message : String(error)}`);
             return chatId;
         }
     };
@@ -294,7 +339,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
         }, 0);
     };
 
-    const startRenaming = (chat: any, e: React.MouseEvent) => {
+    const startRenaming = (chat: NeuralChat, e: React.MouseEvent) => {
         e.stopPropagation();
         setEditingChatId(chat.id);
         setEditTitle(chat.title || "");
@@ -349,7 +394,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
 
 
 
-    const handleFileUpload = async (e: any) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         setIsUploading(true);
@@ -433,9 +478,9 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
             }
 
             await fetchStores();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Cluster creation error:", error);
-            alert(`Neural Error: ${error.message}`);
+            alert(`Neural Error: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsLoadingStores(false);
         }
@@ -465,9 +510,9 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
 
             fetchStoreFiles(managingStoreId);
             fetchStores(); // Update counts
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload error:", error);
-            alert(`Upload failed: ${error.message}`);
+            alert(`Upload failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsLoadingFiles(false);
             if (storeFileInputRef.current) storeFileInputRef.current.value = "";
@@ -483,9 +528,9 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                 throw new Error(err.error || "Deletion failed");
             }
             fetchStores();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to delete store", error);
-            alert(`Failed to delete cluster: ${error.message}`);
+            alert(`Failed to delete cluster: ${error instanceof Error ? error.message : String(error)}`);
         }
     };
 
@@ -562,7 +607,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                                     {/* Action Buttons */}
                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); handlePin(chat.id, chat.is_pinned); }}
+                                            onClick={(e) => { e.stopPropagation(); handlePin(chat.id, !!chat.is_pinned); }}
                                             className={cn("p-1.5 rounded-lg hover:bg-white/10 transition-all", chat.is_pinned ? "text-primary" : "text-white/40")}
                                         >
                                             <Pin size={12} className={chat.is_pinned ? "fill-current" : ""} />
@@ -632,7 +677,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                         </div>
                     ) : (
                         <div className="space-y-8">
-                            {messages.map((m: any, i: number) => (
+                            {messages.map((m, i) => (
                                 <motion.div
                                     key={i}
                                     initial={{ opacity: 0, y: 10 }}
@@ -656,13 +701,13 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                                         </div>
                                         {m.toolInvocations && m.toolInvocations.length > 0 && (
                                             <div className="mt-4 flex flex-col gap-2">
-                                                {m.toolInvocations.map((tool: any) => (
+                                                {m.toolInvocations.map((tool) => (
                                                     <div key={tool.toolCallId} className="bg-white/5 rounded-lg p-3 text-xs border border-white/5">
                                                         <div className="flex items-center gap-2 font-medium text-purple-300 mb-1">
                                                             <span>⚡ Executing: {tool.toolName}</span>
                                                             {tool.state === 'result' && <span className="text-green-400">✓</span>}
                                                         </div>
-                                                        {tool.args && (
+                                                        {!!tool.args && (
                                                             <div className="opacity-60 font-mono truncate max-w-[200px]">{JSON.stringify(tool.args)}</div>
                                                         )}
                                                         {tool.state === 'result' && (
@@ -809,7 +854,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                             ].map(tab => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as any)}
+                                    onClick={() => setActiveTab(tab.id as "docs" | "stores" | "settings")}
                                     className={cn(
                                         "flex-1 flex flex-col items-center gap-2 py-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden",
                                         activeTab === tab.id ? "text-primary" : "text-white/20 hover:text-white"
@@ -878,7 +923,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                                                         key={m}
                                                         onClick={() => onSettingsChange({
                                                             ...settings,
-                                                            neuralSettings: { ...settings.neuralSettings, model: m as any }
+                                                            neuralSettings: { ...settings.neuralSettings, model: m as ChatParameters["model"] }
                                                         })}
                                                         className={cn(
                                                             "p-4 rounded-2xl border text-left transition-all",
@@ -1071,7 +1116,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                                     ) : storeFiles.length === 0 ? (
                                         <p className="text-center opacity-30 text-xs uppercase tracking-widest py-10">No memory nodes found</p>
                                     ) : (
-                                        storeFiles.map((file: any) => (
+                                        storeFiles.map((file) => (
                                             <div key={file.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-colors">
                                                 <div className="flex items-center gap-3 overflow-hidden">
                                                     <div className={cn("p-2 rounded-lg bg-white/5",
@@ -1169,7 +1214,7 @@ export function SecondBrainView({ settings, onSettingsChange }: SecondBrainViewP
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-1 gap-2">
-                                            {vectorStores.map((store: any) => (
+                                            {vectorStores.map((store) => (
                                                 <label
                                                     key={store.id}
                                                     className={cn(
