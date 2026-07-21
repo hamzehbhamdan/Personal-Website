@@ -3,9 +3,9 @@ const MAX_RECIPIENTS = 200, MAX_SUBJECT = 500, MAX_BODY = 20_000;
 
 export type SearchReq = { mailbox: "sent" | "inbox" };
 export function parseSearchReq(body: unknown): { ok: true; value: SearchReq } | { ok: false; reason: string } {
-  const b = body as any;
-  if (b?.mailbox !== "sent" && b?.mailbox !== "inbox") return { ok: false, reason: "mailbox must be sent|inbox" };
-  return { ok: true, value: { mailbox: b.mailbox } };
+  const mailbox = (body as Record<string, unknown> | null)?.mailbox;
+  if (mailbox !== "sent" && mailbox !== "inbox") return { ok: false, reason: "mailbox must be sent|inbox" };
+  return { ok: true, value: { mailbox } };
 }
 
 export type DraftReq = { to: string[]; cc: string[]; bcc: string[]; subject: string; body: string };
@@ -17,12 +17,12 @@ function emails(v: unknown): string[] | null {
   return out;
 }
 export function parseDraftReq(body: unknown): { ok: true; value: DraftReq } | { ok: false; reason: string } {
-  const b = body as any;
-  const to = emails(b?.to), cc = emails(b?.cc), bcc = emails(b?.bcc);
+  const b = (body ?? {}) as Record<string, unknown>;
+  const to = emails(b.to), cc = emails(b.cc), bcc = emails(b.bcc);
   if (!to || !cc || !bcc) return { ok: false, reason: "invalid recipient email" };
   if (to.length < 1) return { ok: false, reason: "at least one 'to' recipient required" };
   if (to.length + cc.length + bcc.length > MAX_RECIPIENTS) return { ok: false, reason: "too many recipients" };
-  const subject = String(b?.subject ?? ""), body_ = String(b?.body ?? "");
+  const subject = String(b.subject ?? ""), body_ = String(b.body ?? "");
   if (/[\r\n]/.test(subject)) return { ok: false, reason: "subject must not contain newlines" };
   if (subject.length > MAX_SUBJECT) return { ok: false, reason: "subject too long" };
   if (body_.length === 0 || body_.length > MAX_BODY) return { ok: false, reason: "body size invalid" };
@@ -32,8 +32,8 @@ export function parseDraftReq(body: unknown): { ok: true; value: DraftReq } | { 
 const MAX_DRAFT_ID = 256;
 export type SendReq = DraftReq & { draftId: string };
 export function parseSendReq(body: unknown): { ok: true; value: SendReq } | { ok: false; reason: string } {
-  const b = body as any;
-  const draftId = typeof b?.draftId === "string" ? b.draftId.trim() : "";
+  const b = (body ?? {}) as Record<string, unknown>;
+  const draftId = typeof b.draftId === "string" ? b.draftId.trim() : "";
   if (!draftId || draftId.length > MAX_DRAFT_ID) return { ok: false, reason: "invalid draftId" };
   const d = parseDraftReq(body);
   if (!d.ok) return d;
@@ -55,16 +55,16 @@ export function sentRecipientQuery(recipient: string): string {
 export type SentSearchReq = { to: string; pageToken: string };
 export function parseSentSearchReq(body: unknown): { ok: true; value: SentSearchReq } | { ok: false; reason: string } {
   if (body != null && typeof body !== "object") return { ok: false, reason: "invalid body" };
-  const b = body as any;
-  const to = typeof b?.to === "string" ? b.to.slice(0, MAX_Q_FIELD) : "";
-  const pageToken = typeof b?.pageToken === "string" ? b.pageToken.slice(0, 4096) : "";
+  const b = (body ?? {}) as Record<string, unknown>;
+  const to = typeof b.to === "string" ? b.to.slice(0, MAX_Q_FIELD) : "";
+  const pageToken = typeof b.pageToken === "string" ? b.pageToken.slice(0, 4096) : "";
   return { ok: true, value: { to, pageToken } };
 }
 
 export type SentBodiesReq = { ids: string[] };
 export function parseSentBodiesReq(body: unknown): { ok: true; value: SentBodiesReq } | { ok: false; reason: string } {
-  const b = body as any;
-  if (!Array.isArray(b?.ids)) return { ok: false, reason: "ids must be an array" };
+  const b = (body ?? {}) as Record<string, unknown>;
+  if (!Array.isArray(b.ids)) return { ok: false, reason: "ids must be an array" };
   if (b.ids.length < 1) return { ok: false, reason: "at least one id required" };
   if (b.ids.length > MAX_IDS) return { ok: false, reason: "too many ids (max 20)" };
   const ids: string[] = b.ids.map((x: unknown) => String(x));

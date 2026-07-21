@@ -70,8 +70,11 @@ export function parseTagsAllResponse(text: string): { name: string; tags: string
   try { arr = JSON.parse(text.slice(start, end + 1)); } catch { return []; }
   if (!Array.isArray(arr)) return [];
   return arr
-    .filter((x: any) => x && typeof x.name === "string" && Array.isArray(x.tags))
-    .map((x: any) => ({ name: String(x.name), tags: x.tags.map((t: any) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, 5) }))
+    .filter((x: unknown) => x && typeof (x as Record<string, unknown>).name === "string" && Array.isArray((x as Record<string, unknown>).tags))
+    .map((x: unknown) => {
+      const rec = x as Record<string, unknown>;
+      return { name: String(rec.name), tags: (rec.tags as unknown[]).map((t: unknown) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, 5) };
+    })
     .filter((x) => x.tags.length > 0);
 }
 /** Pure name-keyed merge of batch suggestions into the db (crm.html:675). Returns a NEW db. */
