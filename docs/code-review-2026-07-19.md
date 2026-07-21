@@ -684,7 +684,7 @@ Confirmed by reading both sides of the write path. Client (lib/dashboard/useAppS
 
 ### 40. `lib/data.ts:193` — Six project links in lib/data.ts point to files that do not exist under public/ — every one 404s on the live site.
 
-> **DEFERRED** (Stage 3, cluster 3E) — Not in Stage-2 scope; the 404ing project links in lib/data.ts are tracked for the Stage-3 public-site cleanup.
+> **FIXED** (Stage 3, commit e5a89f9) — Removed the six 404ing `/files/…` project links from lib/data.ts (targets absent; the projects render without a broken download link).
 
 *Category: broken-links · Area: public-site*
 
@@ -773,6 +773,8 @@ Confirmed by direct live reproduction plus code inspection. (1) The entire mcp-i
 
 ### 45. `.github/dependabot.yml:6` — Dependabot opens weekly npm PRs but the repo has zero CI workflows, so dependency bumps (and all other PRs) merge with no automated test/lint/audit validation; the github-actions ecosystem entry watches a workflows directory that does not exist.
 
+> **FIXED** (Stage 3, commit d197c93) — Added `.github/workflows/ci.yml` (PR + push-to-main runs `npm ci` → lint → `tsc --noEmit` → test → `npm audit --audit-level=high` on Node 20), so Dependabot PRs and pushes are now validated.
+
 *Category: infra · Area: config-infra-security*
 
 **Problem.** .github/ contains only dependabot.yml — no workflows/. The 280 vitest tests, eslint, and the package.json `audit:ci` script run only when invoked locally; Netlify's deploy runs `next build` (catching type errors) but never runs the test suite. Failure scenario: Dependabot bumps e.g. @supabase/ssr or the ai SDK with a behavioral (non-type) breaking change; the PR shows green (no checks), gets merged, Netlify builds successfully, and the regression ships to production — the auth-refresh middleware or chat route breaks at runtime with nothing having exercised it. The `package-ecosystem: github-actions` entry (lines 6-8) is dead config until workflows exist.
@@ -786,6 +788,8 @@ Confirmed by direct inspection: .github/ contains only dependabot.yml (no workfl
 </details>
 
 ### 46. `app/(public)/contact/page.tsx:234` — The contact form claims "Fill in the form and your email client will open pre-filled," but submission actually posts to Netlify Forms and never opens a mail client.
+
+> **FIXED** (Stage 3, commit 3327055) — Contact-page copy now truthfully describes the Netlify form POST instead of the false "your email client will open pre-filled" claim.
 
 *Category: misleading-copy · Area: public-site*
 
@@ -801,6 +805,8 @@ Confirmed by reading app/(public)/contact/page.tsx. Line 234 renders "Fill in th
 
 ### 47. `app/api/gmail/send/route.ts:20` — The send route validates and echoes to/cc/bcc that have no effect on the actual send, so the advertised 'reconfirmation' cannot detect a draft/recipient mismatch.
 
+> **FIXED** (Stage 3, commit 41eaae5) — Corrected the gmail send route's misleading "reconfirmation" comment to state honestly that it sends a draft by id and the echoed recipients are UI-confirmation only.
+
 *Category: misleading-code · Area: api-google-gmail*
 
 **Problem.** parseSendReq requires a full valid to/cc/bcc/subject/body payload, but gmailSendDraft(token, draftId) sends purely by draftId — the message's real recipients were baked in at draft-create time and are never re-read or compared. The route's comment claims it 'Echoes recipients back for UI reconfirmation,' but it echoes the client-supplied values (`{ to, cc, bcc }` from the request), not the draft's actual recipients. If the client ever passes a draftId whose stored recipients differ from the echoed to/cc/bcc (stale/reused draftId, client bug), the endpoint reports success for recipients that differ from who the mail actually went to, giving false assurance on an irreversible action. It also 400s a valid send when recipients are omitted, coupling send to data it does not use.
@@ -814,6 +820,8 @@ Verified in code: app/api/gmail/send/route.ts:16-23 requires a full to/cc/bcc/su
 </details>
 
 ### 48. `app/api/google/connect/route.ts:8` — The Google OAuth `state` parameter is the user's stable Supabase UUID instead of a per-request random nonce, making the account-linking callback replayable and CSRF-able by anyone who ever learns that UUID.
+
+> **FIXED** (Stage 2, commits 1bd2d53, 3c554d4) — Duplicate of #15; fixed by the Stage-2 OAuth single-use state-nonce work (random httpOnly cookie, verify-and-consume, guessable `state===userId` removed).
 
 *Category: oauth-csrf · Area: config-infra-security*
 
@@ -835,6 +843,8 @@ Fix: the suggested remediation is correct and standard — per-request crypto.ra
 
 ### 49. `app/api/vector/files/route.ts:109` — Vector file upload accepts unlimited file count/size with no type checks, buffers every file fully in memory in parallel, and leaves orphaned billed OpenAI Files on partial failure.
 
+> **FIXED** (Stage 3, commits 52ed0d2, 0ec7d35, 02839d1) — `POST /api/vector/files` now caps count + per-file size, validates the whole batch atomically before any upload, sniffs each file's magic-byte type, uploads sequentially with per-file (207) results, and cleans up an orphaned OpenAI file on attach failure.
+
 *Category: resource-limits · Area: api-ai-vector-state*
 
 **Problem.** POST reads formData.getAll('file') with no cap on count or per-file bytes (contrast /api/vector/ingest: 15MB cap + magic-byte sniffing), then does Buffer.from(await file.arrayBuffer()) for all files concurrently — a request with several 100MB+ files can OOM the function, and everything that does succeed is billed OpenAI assistants storage indefinitely. Because uploads run under Promise.all with two steps each (files.create then vector-store attach), one failure 500s the whole request after some files were already uploaded to OpenAI Files but never attached — invisible orphans that keep costing money and are not listed by the GET (which only lists store-attached files).
@@ -848,6 +858,8 @@ Real, but overstated. Confirmed in app/api/vector/files/route.ts POST (lines 93-
 </details>
 
 ### 50. `app/api/vector/ingest/route.ts:37` — The filename-based 'mcp-injection|injection_test' rejection is security theater that blocks nothing and implies a defense that doesn't exist.
+
+> **FIXED** (Stage 3, commits 334cf14, b3eaaba) — Ingest branches on the SNIFFED content-type (not the spoofable client `file.type`) and returns 400 on bad/non-object metadata JSON.
 
 *Category: misleading-code · Area: api-ai-vector-state*
 
@@ -863,6 +875,8 @@ Confirmed at app/api/vector/ingest/route.ts:37-39. The check originated intentio
 
 ### 51. `app/api/vector/ingest/route.ts:44` — Ingest validates content with magic-byte sniffing but then branches on the client-declared file.type, so mismatched declarations produce garbage embeddings or spurious 500s.
 
+> **FIXED** (Stage 3, commit 334cf14) — Ingest returns 422 on an unparseable PDF and drops the misleading filename-based "injection" check (replaced with an honest comment; the LLM-reachable tools are read-only).
+
 *Category: correctness · Area: api-ai-vector-state*
 
 **Problem.** sniffMime(head) gates ALLOWED types (line 33-35), but the parse branch at line 44/52 keys off file.type, which the client controls. Scenarios: (a) a real PDF uploaded with type text/plain passes the sniff as application/pdf, then falls into the text branch and stores/embeds raw PDF bytes decoded as UTF-8 mojibake — a permanently garbage document in the corpus that pollutes match_documents results; (b) a text file declared as application/pdf passes sniff as text/plain, then pdf-parse throws on it and the route 500s instead of ingesting; (c) a text file declared image/png goes to GPT-4 vision with non-image bytes, wasting a billed call that errors. Also, a metadataRaw that isn't valid JSON throws at line 25 and returns 500 instead of 400.
@@ -876,6 +890,8 @@ Confirmed by direct trace of app/api/vector/ingest/route.ts. Lines 33-35 gate on
 </details>
 
 ### 52. `app/login/actions.ts:46` — Password login skips the ALLOWED_EMAIL allow-list and never signs out non-allowed accounts, unlike the OAuth callback which explicitly does both.
+
+> **FIXED** (Stage 3, commit c31fc1c) — Password login now enforces the `ALLOWED_EMAIL` allow-list via `gateResult` and signs out a valid-but-unauthorized account, mirroring the OAuth callback.
 
 *Category: correctness · Area: auth-middleware-supabase*
 
@@ -891,6 +907,8 @@ Confirmed by reading the code. app/login/actions.ts:41-51 signs in with password
 
 ### 53. `components/dashboard/CommandPalette.tsx:151` — One Escape press closes both the command palette and any Modal open underneath it, because the palette's window-level Escape handler does not participate in Modal's LIFO stack.
 
+> **FIXED** (Stage 3, commit c31fc1c) — CommandPalette joins Modal's LIFO layer stack (`pushModalLayer`/`isTopModalLayer`), so Escape closes only the topmost layer instead of the palette and an overlaid modal together.
+
 *Category: correctness · Area: components-shell-home*
 
 **Problem.** components/dashboard/ui/Modal.tsx keeps a module-level modalStack and its document keydown handler fires for the topmost modal id; the palette never pushes onto that stack. Concrete scenario: in People, open a contact (people/ContactDetailModal uses the shared Modal), press ⌘K (Shell.tsx:52 works globally so the palette opens above it at z-[200]), then press Escape once -> the palette's handler closes the palette AND Modal's handler (still topmost in its own stack) closes the contact detail modal. Expected layered behavior is one layer per Escape. Applies to every People/Coach modal (ContactEditModal, GoalModal, CrmSettingsModal, etc.).
@@ -904,6 +922,8 @@ Confirmed by tracing the actual event flow. Shell.tsx:52-59 toggles the palette 
 </details>
 
 ### 54. `components/dashboard/CrmView.tsx:1` — Roughly 400KB of legacy top-level dashboard components have zero importers from any live entry point and are pure dead source, including a 0-byte AIAssistant.tsx and a second, divergent ContactDetailModal.
+
+> **FIXED** (Stage 3, commit 584de03) — Purged 11 unimported legacy dashboard components (~3,200 lines); kept the components retained for reintegration (TaskBoard + its deps, contacts-graph set) and the active `people/ContactDetailModal`.
 
 *Category: dead-code · Area: components-shell-home*
 
@@ -919,6 +939,8 @@ CONFIRMED by direct inspection of the repo at main (1365731). Every claim traced
 
 ### 55. `components/dashboard/brain/BrainView.tsx:107` — The Cmd-K deep-link intent is consumed before the brain doc has loaded, so 'open note' intents silently no-op on a fresh mount and 'ask' intents run against the empty seed.
 
+> **FIXED** (Stage 1) — Fixed as a Stage-1 side effect: BrainView's intent-gating effect was gated on `loaded`, so it no longer fires against the empty seed before the initial GET resolves.
+
 *Category: correctness · Area: components-people-brain*
 
 **Problem.** The intent effect (lines 107-123) runs whenever `intent` is set, without checking `loaded`: on a fresh page load, doc.notes is still the empty seed, so `doc.notes.find(intent.noteId)` misses, no editor opens, and consumeIntent() throws the intent away — the user's Cmd-K note selection just does nothing. A chat intent with a draft additionally calls addChat/sendChat pre-load, feeding the seed-wipe race described in the useAppState finding. PeopleView fixed this exact bug for its own intents by gating on `loaded` (PeopleView.tsx:76-92 and its comment); BrainView didn't get the same guard.
@@ -932,6 +954,8 @@ Confirmed by tracing the real code. BrainView.tsx:107-123 consumes the deep-link
 </details>
 
 ### 56. `components/dashboard/home/usePeopleSnapshot.ts:29` — summaryCounts and attentionList run un-memoized on every render, and HomeView re-renders every second from useClock, so the full all-contacts CRM state derivation executes once per second.
+
+> **FIXED** (Stage 3, commit e8637d4) — `usePeopleSnapshot`'s `stateOf`/`counts`/`attention` derivations are memoized on the doc identity + the day-stable `useToday()` value, so the 1s clock tick no longer recomputes the full CRM state.
 
 *Category: perf · Area: components-shell-home*
 
@@ -947,6 +971,8 @@ Confirmed by tracing the full chain. useClock (useClock.ts:9) re-renders HomeVie
 
 ### 57. `components/dashboard/people/ContactEditModal.tsx:140` — 'Add contact' with an email that matches an existing contact silently overwrites that contact's name, tier, notes, tags, birthday and howWeMet with the new form's values.
 
+> **FIXED** (Stage 3, commits e60a529, 236ed57) — Adding a contact whose email/id collides with an existing one now prompts and fill-empty-merges (existing curated fields win; tags/emails union) instead of silently overwriting, and preserves the existing contact's group membership on merge.
+
 *Category: data-loss · Area: components-people-brain*
 
 **Problem.** For a new contact the id is `emails[0]` (line 140), and the id convention across the app is the primary email (CSV import uses the same, lib/dashboard/people/csv.ts:32). handleSave's updater finds `existing` by that id and replaces the row wholesale (only log/lastTouch/snoozeUntil survive, lines 146-165). Scenario: user forgets John (with years of notes and tags) is already in the CRM and adds him again from a suggestion or manually with the same email — John's notes/howWeMet/tags/birthday are wiped by the mostly-empty new form with no warning, and the Saved state persists 500ms later with no undo.
@@ -960,6 +986,8 @@ Confirmed by tracing ContactEditModal.tsx: on the add path (init.id null) the id
 </details>
 
 ### 58. `components/dashboard/people/NetworkPanel.tsx:49` — The network graph's requestAnimationFrame loop never idles: it clones every node, runs the O(n^2) physics step, and re-renders the whole panel at 60fps for as long as the Network tab is open.
+
+> **FIXED** (Stage 2, commits 1f25a6f, 2b9ded6) — Duplicate of #27; fixed by the Stage-2 NetworkPanel work (force-graph sleeps on convergence + O(1) Map lookups).
 
 *Category: perf · Area: components-people-brain*
 
@@ -975,6 +1003,8 @@ Confirmed by direct code reading. NetworkPanel.tsx:49-62 schedules requestAnimat
 
 ### 59. `components/hero-motion.tsx:78` — The homepage hero's "The Story" CTA links to /about, which is just `redirect("/")` — clicking it reloads the homepage.
 
+> **FIXED** (Stage 3, commit a0de3b0) — The dead "The Story" hero CTA (which pointed at `/about`, a redirect back to `/`) now points at `/#story`, a new anchored homepage section.
+
 *Category: broken-links · Area: public-site*
 
 **Problem.** app/(public)/about/page.tsx contains only a redirect to "/". A visitor on the homepage clicks the prominent "The Story" button expecting an about page and lands back where they started; the CTA is a no-op loop.
@@ -988,6 +1018,8 @@ Confirmed by direct code reading: components/hero-motion.tsx:78 links "The Story
 </details>
 
 ### 60. `lib/consulting-blog.ts:22` — Five AI posts are duplicated verbatim in lib/blog.ts and lib/consulting-blog.ts and served at both /blog/[slug] and /consulting/blog/[slug] with no cross-canonical.
+
+> **FIXED** (Stage 3, commit 4a10f56) — Posts duplicated across `/blog` and `/consulting/blog` now set the consulting copy's `alternates.canonical` to the main `/blog/<slug>`, so search engines index one.
 
 *Category: seo · Area: public-site*
 
@@ -1003,6 +1035,8 @@ Confirmed by direct comparison: transpiling and importing both lib/blog.ts and l
 
 ### 61. `lib/dashboard/coach/intake.ts:32` — addProposedGoals crashes (TypeError on undefined.toLowerCase) when the AI's ```goals``` block omits a title, and parseGoalsBlock/parseSuggestedTasks perform no shape validation on the parsed JSON.
 
+> **FIXED** (Stage 3, commit 3fb272a) — Coach intake guards a missing/non-string goal title and shape-validates each parsed goal item, so a malformed LLM block can't crash `addProposedGoals`.
+
 *Category: correctness · Area: lib-coach*
 
 **Problem.** parseGoalsBlock (parse.ts:14) accepts any JSON array — items may be strings, nulls, or objects without `title`. addProposedGoals then executes g.title.toLowerCase() at line 32 (after already pushing a goal with title:undefined at line 31), throwing inside the mutate() setState updater, which aborts the intake apply and can blow away the intake conversation UI. Similarly parseSuggestedTasks (parse.ts:23) can return [null] and applyRollForward (rollforward.ts:35) then throws on `s.goal`, and RollForwardModal renders `s.label` of null items. All AI-boundary parsing trusts the model's output shape.
@@ -1016,6 +1050,8 @@ Confirmed by tracing the real code. parse.ts:14 assigns any JSON array unvalidat
 </details>
 
 ### 62. `lib/dashboard/coach/migrate.ts:5` — uid() has only 10,000 possible random suffixes within a single millisecond, so bulk id generation (board migration with subs, applyRollForward cloning a week, cloneSubs) has a realistic birthday-collision chance, and colliding task ids make edits/deletes hit the wrong task.
+
+> **FIXED** (Stage 3, commit cc61892) — `uid()` uses `crypto.randomUUID()` when available (keeping the prefix), eliminating the bulk-clone birthday collisions of the old `Date.now()`+counter scheme; Stage-2's deterministic board→task ids are unaffected.
 
 *Category: correctness · Area: lib-coach*
 
@@ -1031,6 +1067,8 @@ Confirmed by reading the code. uid() at lib/dashboard/coach/migrate.ts:5 concate
 
 ### 63. `lib/dashboard/coach/periods.ts:15` — Week keys are generated via toISOString() on a local-midnight Date, so in any timezone ahead of UTC the key is the Sunday date, and keys created in different timezones fragment the same calendar week into two buckets.
 
+> **FIXED** (Stage 2, commit c156633) — Fixed by Stage-2's `parseDayKey` local-time convention (2B.1), which routes week-key generation and parsing through `new Date(y, m-1, d)` so negative-offset timezones don't shift a day.
+
 *Category: correctness · Area: lib-coach*
 
 **Problem.** In UTC+X (e.g. traveling to the Middle East or Europe), local Monday 00:00 converts to Sunday 22:00-23:00 UTC, so periodRange('week') yields key 'W2026-07-05' for the week whose Monday is Jul 6. Tasks created at home in Chicago use 'W2026-07-06'; created while traveling they use 'W2026-07-05' — weekModel/weekMetrics/rollForwardPlan then see two disjoint 'current weeks', findOffset returns 0 for keys minted in the other timezone, and carried/recurring tasks land in a week bucket the home timezone never displays.
@@ -1044,6 +1082,8 @@ Confirmed by direct execution, not just reading. periodRange builds `start` at l
 </details>
 
 ### 64. `lib/dashboard/coach/timers.ts:6` — startTimer/pauseTimer/taskTime bank `now - timerStart` without clamping, so a backwards system-clock change (NTP correction, manual change, cross-device clock skew on the synced doc) subtracts time or shows negative durations.
+
+> **FIXED** (Stage 3, commit 359b561) — Coach timer elapsed is clamped at 0 (`Math.max(0, now - timerStart)`) in startTimer/pauseTimer/taskTime, so a backward clock jump never banks negative time.
 
 *Category: correctness · Area: lib-coach*
 
@@ -1059,6 +1099,8 @@ Confirmed by reading the code. lib/dashboard/coach/timers.ts:6 (startTimer) and 
 
 ### 65. `lib/dashboard/people/csv.ts:32` — CSV import can push a second contact carrying an id that already belongs to an existing contact, corrupting id-keyed lookups, edges, and React keys.
 
+> **FIXED** (Stage 2, commit 9cd757d) — Fixed by Stage-2's CSV re-import (2C.4): an imported row whose id collides with a different existing contact merges into the same contact instead of creating a duplicate id.
+
 *Category: correctness · Area: lib-people*
 
 **Problem.** New-contact id is the raw email (line 32), but the duplicate check (line 35) matches only on the emails array. Scenario: a contact was created from j@x.com (id='j@x.com'), the user later edits that contact's email to a new address (ContactEditModal keeps the old id); importing a CSV that still lists j@x.com finds no email match and pushes a new contact whose id equals the existing contact's id. getContact/edit/delete then act on whichever comes first, connections edges become ambiguous, and the network/people lists get duplicate React keys.
@@ -1072,6 +1114,8 @@ Confirmed by tracing real code. (1) ContactEditModal.tsx:140 assigns new-contact
 </details>
 
 ### 66. `lib/dashboard/people/interactions.ts:9` — buildGmailMap/buildCalMap gate on the isPerson() spam heuristics even for saved contacts, so a real contact whose address trips a heuristic has all their email/calendar activity silently ignored and shows permanently overdue.
+
+> **FIXED** (Stage 3, commit 8cb3d8e) — Interaction ingest skips the `isPerson` spam heuristic for addresses that belong to SAVED contacts (an explicit human signal), layered onto Stage-2C's `toEpochMs` instant comparisons.
 
 *Category: correctness · Area: lib-people*
 
@@ -1087,6 +1131,8 @@ Confirmed. addMsg (lib/dashboard/people/interactions.ts:9) and buildCalMap (:34)
 
 ### 67. `lib/dashboard/state-schema.ts:11` — Once the lifeCRM document exceeds the 2MB cap (avatars + growing logs), every PUT 400s permanently — the retry can never succeed and all subsequent edits exist only in memory, with just a small 'Save failed' label as warning.
 
+> **FIXED** (Stage 3, commits a14e760, 2923e7f) — A size-cap (2MB) rejection now returns 413, is non-retryable in the SaveQueue (a distinct "too-large" terminal with a persistent banner), and re-sends a newer/trimmed mid-flight snapshot that may fit — no more un-winnable retry loop.
+
 *Category: data-loss · Area: lib-people*
 
 **Problem.** Avatars are ~2-4KB data-URL JPEGs stored inline per contact (avatar-client.ts) and logs/notes grow unbounded, so a heavy user (several hundred contacts with photos) can cross MAX_STATE_BYTES. From then on validateStateWrite rejects the whole document, useAppState's single retry sends the identical oversized body, status becomes 'error', and every edit made afterward is silently lost on refresh; nothing tells the user why or which data to trim, and there is no client-side size check before saving.
@@ -1100,6 +1146,8 @@ Every link of the claimed chain is verifiable in the code. (1) state-schema.ts:1
 </details>
 
 ### 68. `lib/rate-limit.ts:4` — The in-memory fixed-window limiter is per-lambda-instance, so on Netlify it barely limits: N concurrent function instances each grant the full quota, and cold starts reset all windows.
+
+> **FIXED** (Stage 3, commit 9fd2b82) — Documented the per-instance rate-limiter's residual gap in the spec threat model and added a code comment; the real cost ceiling is provider-side spend caps (a manual dashboard step).
 
 *Category: security · Area: api-ai-vector-state*
 
@@ -1127,6 +1175,8 @@ On the suggested fix: directionally fine, but note (a) the second alternative �
 
 ### 69. `middleware.ts:10` — Any path containing a dot bypasses the auth gate entirely, and middleware is the ONLY protection for dashboard pages (no server-side check in app/dashboard).
 
+> **FIXED** (Stage 3, commit f9b887b) — Middleware's `pathname.includes(".")` auth-gate bypass is replaced with a closed static-asset extension allowlist (`isStaticAsset`), so a dotted PAGE path no longer skips authentication.
+
 *Category: security · Area: auth-middleware-supabase*
 
 **Problem.** pathname.includes(".") returns an ungated NextResponse.next() before the gate runs, and the matcher only excludes specific static extensions (svg|png|...|ico) — so e.g. GET /dashboard/report.v2 or my.<domain>/notes/a.b reaches the Next router with zero auth and no session refresh. app/dashboard/page.tsx renders DashboardShell with no requireUser/gateResult call, so the gate is a single point of failure. Today the only protected route is the static /dashboard segment, so dotted paths merely 404; but the first dynamic segment added under /dashboard (e.g. /dashboard/notes/[id] where an id contains a dot, which is common for slugs/filenames) is served fully unauthenticated with no compiler or test signal.
@@ -1140,6 +1190,8 @@ Confirmed by direct code trace. middleware.ts:7-13 returns an ungated NextRespon
 </details>
 
 ### 70. `public/playground/mcp-injection-lab/index.html:544` — Chart.js is loaded from cdn.jsdelivr.net with no Subresource Integrity attribute, on a page that (per the live-header check) receives no CSP, so a CDN compromise executes arbitrary JS on the hamzehhamdan.com origin.
+
+> **FIXED** (Stage 3, commit 5f7d4a6) — Chart.js is now vendored (self-hosted at `./vendor/chart.umd.min.js`) instead of loaded from a third-party CDN, removing the external dependency (SRI unnecessary for a same-origin file).
 
 *Category: supply-chain · Area: config-infra-security*
 
