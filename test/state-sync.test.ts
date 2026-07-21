@@ -194,22 +194,41 @@ describe("SaveQueue optimistic locking", () => {
     expect(statuses).toEqual(["saving", "too-large"]);
   });
 
-  it("a too-large rejection drops the mid-flight dirty snapshot instead of resending it", async () => {
+  it("a too-large rejection re-sends a still-oversize mid-flight snapshot, then converges to terminal 'too-large'", async () => {
     const d1 = deferred();
     let sends = 0;
     const statuses: string[] = [];
     const q = new SaveQueue<number>(async () => {
       sends++;
-      await d1.promise;
-      throw new TooLargeError();
+      if (sends === 1) await d1.promise; // first (oversize) send stalls
+      throw new TooLargeError();          // both snapshots are over the cap
     }, (s) => statuses.push(s));
     q.submit(1);
     await tick();
-    q.submit(2);                  // arrives while 1 is in flight
+    q.submit(2);                  // arrives while 1 is in flight — a NEWER snapshot that MIGHT fit
     d1.resolve();
     await tick(); await tick(); await tick();
-    expect(sends).toBe(1);        // 2 is also over the cap → no chained resend
-    expect(statuses[statuses.length - 1]).toBe("too-large");
+    expect(sends).toBe(2);        // the newer snapshot is tried once (it might have been trimmed under-cap)
+    expect(statuses[statuses.length - 1]).toBe("too-large"); // still oversize → converges to terminal
+  });
+
+  it("a too-large rejection re-sends a newer (trimmed) mid-flight snapshot that now fits and ends 'saved'", async () => {
+    const d1 = deferred();
+    const sent: number[] = [];
+    const statuses: string[] = [];
+    // doc 1 is over the cap → 413; the user then TRIMS it mid-flight to doc 2, which fits.
+    const q = new SaveQueue<number>(async (doc) => {
+      sent.push(doc);
+      if (doc === 1) { await d1.promise; throw new TooLargeError(); }
+      // doc 2 is under the cap → resolves (saved)
+    }, (s) => statuses.push(s));
+    q.submit(1);
+    await tick();
+    q.submit(2);                  // trimmed snapshot arrives while the oversize PUT is in flight
+    d1.resolve();
+    await tick(); await tick(); await tick();
+    expect(sent).toEqual([1, 2]);                          // oversize sent, then the trimmed retry
+    expect(statuses[statuses.length - 1]).toBe("saved");   // recovered — not lost, not stuck at "too-large"
   });
 
   it("recovers after a conflict once the base is refreshed", async () => {

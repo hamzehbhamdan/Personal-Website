@@ -40,9 +40,11 @@ export function replayPending<T>(base: T, pending: Array<(prev: T) => T>): T {
  * refresh the base via setBase().
  *
  * Size cap: a TooLargeError — HTTP 413, the doc exceeds the server's byte cap —
- * is likewise NON-retryable (the same oversize body would 413 again) and reports
- * the distinct "too-large" status so the UI can show a persistent, actionable
- * over-limit banner rather than the transient "Save failed" retry loop.
+ * is not retried with the SAME body (it would 413 again). But if a NEWER snapshot
+ * arrived mid-flight (the user may have trimmed the doc), the chain resends that one
+ * since a smaller payload on the same base can slip under the cap; this converges to
+ * the terminal "too-large" status once no fresh snapshot remains, so the UI can show
+ * a persistent, actionable over-limit banner rather than a transient retry loop.
  */
 export class SaveQueue<T> {
   private latest: T | null = null;
@@ -103,7 +105,12 @@ export class SaveQueue<T> {
       return;
     }
     if (outcome === "too-large") {
-      this.dirty = false;   // dropping, not resending: same oversize doc would 413 again
+      // Unlike a conflict (a stale base 409s again no matter the payload), a
+      // SMALLER payload on the SAME base can slip under the cap. So if a newer
+      // snapshot arrived mid-flight (the user may have TRIMMED the doc), chain it:
+      // it might now fit. This converges — if the newer snapshot is still oversize
+      // it 413s again, but by then `dirty` is false, so we fall through to terminal.
+      if (this.dirty) return this.send();
       this.inFlight = false;
       this.onStatus("too-large");
       return;
