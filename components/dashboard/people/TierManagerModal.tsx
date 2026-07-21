@@ -34,9 +34,12 @@ export function TierManagerModal({ db, setState, onClose }: {
   setState: (u: (prev: CrmDB) => CrmDB) => void;
   onClose: () => void;
 }) {
-  const nextKey = useRef(0);
+  // Seed keys from the array index so the lazy initializer stays pure (no ref read
+  // during render); `nextKey` starts past the seeded range so keys minted later when
+  // ADDING rows (in the addRow event handler) never collide with the initial ones.
+  const nextKey = useRef(db.tiers.length);
   const [rows, setRows] = useState<EditRow[]>(() =>
-    db.tiers.map((t) => ({ _k: nextKey.current++, orig: t.name, name: t.name, cad: t.cadenceDays }))
+    db.tiers.map((t, i) => ({ _k: i, orig: t.name, name: t.name, cad: t.cadenceDays }))
   );
 
   function updateRow(k: number, patch: Partial<Pick<EditRow, "name" | "cad">>) {

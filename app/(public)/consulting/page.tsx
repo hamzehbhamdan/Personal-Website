@@ -357,8 +357,8 @@ export default function ConsultingPage() {
                         </h2>
                         <div className="space-y-4 text-base leading-relaxed text-stone-600">
                             <p>There are too many resources, too many platforms, and too much conflicting advice. Most people waste weeks trying random tools without a structured approach.</p>
-                            <p>AI is frequently misapplied — used on the wrong problems, in the wrong ways, with no clear measure of whether it's actually helping.</p>
-                            <p>The solution isn't doing more. It's adopting <em>gradually</em>, <em>strategically</em>, and with a clear log of what's working for you.</p>
+                            <p>AI is frequently misapplied — used on the wrong problems, in the wrong ways, with no clear measure of whether it&apos;s actually helping.</p>
+                            <p>The solution isn&apos;t doing more. It&apos;s adopting <em>gradually</em>, <em>strategically</em>, and with a clear log of what&apos;s working for you.</p>
                         </div>
                     </div>
                     <div>
@@ -397,7 +397,7 @@ export default function ConsultingPage() {
                     <div>
                         <h2 className="mb-4 text-3xl font-bold text-stone-900 sm:text-4xl" style={serif}>What I Offer</h2>
                         <p className="text-sm leading-relaxed text-stone-500">
-                            Whether you're an executive learning the basics or a company building AI infrastructure — there's an engagement that fits.
+                            Whether you&apos;re an executive learning the basics or a company building AI infrastructure — there&apos;s an engagement that fits.
                         </p>
                     </div>
                     <ServicesTabs />
@@ -516,7 +516,7 @@ export default function ConsultingPage() {
                                 Ready to get started?
                             </h2>
                             <p className="mb-8 max-w-md text-base leading-relaxed text-stone-500">
-                                Tell me a little about what you're working on. I'll follow up to schedule a free intro call — no commitment, no pressure.
+                                Tell me a little about what you&apos;re working on. I&apos;ll follow up to schedule a free intro call — no commitment, no pressure.
                             </p>
                             <a
                                 href={`mailto:${personalInfo.email}`}
@@ -533,7 +533,7 @@ export default function ConsultingPage() {
                                     <CheckCircle2 className="h-10 w-10 text-[#A51C30]" />
                                     <div>
                                         <p className="text-base font-semibold text-stone-900" style={serif}>Request received.</p>
-                                        <p className="mt-1 text-sm text-stone-500">I'll be in touch soon.</p>
+                                        <p className="mt-1 text-sm text-stone-500">I&apos;ll be in touch soon.</p>
                                     </div>
                                     <button
                                         onClick={() => setIntakeStatus("idle")}

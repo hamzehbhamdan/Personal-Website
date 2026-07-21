@@ -10,7 +10,7 @@ import { parseCSV, importCsvInto } from "@/lib/dashboard/people/csv";
 import { interactionsFor } from "@/lib/dashboard/people/interactions";
 import { buildTagsAllPrompt, parseTagsAllResponse, applyTagsAll, type TagsAllPerson } from "@/lib/dashboard/people/ai-prompts";
 import { askAi } from "@/lib/dashboard/people/client-ai";
-import type { CrmDB } from "@/lib/dashboard/people/types";
+import type { CrmDB, VoiceProfile } from "@/lib/dashboard/people/types";
 import type { LiveState } from "@/components/dashboard/people/useLiveInteractions";
 
 const mono = { fontFamily: "var(--font-geist-mono), monospace" };
@@ -98,9 +98,9 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
   function learnClear() {
     setState((prev) => {
       const d = normalizeDb(prev);
-      const voice = { ...(d.settings.voice ?? {}) };
-      delete (voice as any).styleSummary;
-      delete (voice as any).sentSamples;
+      const voice: VoiceProfile = { ...(d.settings.voice ?? {}) };
+      delete voice.styleSummary;
+      delete voice.sentSamples;
       return { ...d, settings: { ...d.settings, voice: Object.keys(voice).length ? voice : undefined } };
     });
   }
@@ -357,7 +357,7 @@ export function CrmSettingsModal({ db, live, setState, onClose, googleStatus }: 
             {suggestMsg && <span className="text-[11.5px] text-stone-500">{suggestMsg}</span>}
           </div>
           <div className={noteCls}>
-            When on, a "Suggest" button also appears next to Tags on each contact. Nothing is sent anywhere except to Claude to generate the tags.
+            When on, a &quot;Suggest&quot; button also appears next to Tags on each contact. Nothing is sent anywhere except to Claude to generate the tags.
           </div>
         </div>
 

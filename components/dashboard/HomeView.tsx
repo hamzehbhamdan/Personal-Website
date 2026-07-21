@@ -29,6 +29,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   // Gate date-derived content past first paint so the prerendered HTML (build-time
   // date) can't mismatch the client (avoids a QuoteOfDay hydration warning).
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration mount flag (intentional)
   useEffect(() => setMounted(true), []);
 
   const { state: rawHome, setState } = useAppState<HomeState>("home", emptyHome());

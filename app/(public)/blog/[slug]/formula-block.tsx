@@ -341,7 +341,7 @@ export function DFTCoefficientsFormula({ defaultExpanded = false }: { defaultExp
                                 To find how much of frequency n is present in the path, the DFT multiplies each path point z(k)
                                 by a rotating reference signal e^(−2πink/N) and sums over all N points.
                                 When the reference frequency matches a frequency actually present in the path, the products add
-                                constructively and the sum is large. When there's no match, the products cancel out and the sum
+                                constructively and the sum is large. When there&apos;s no match, the products cancel out and the sum
                                 is near zero.
                             </p>
                             <p className="text-[11px] leading-relaxed text-stone-500">
