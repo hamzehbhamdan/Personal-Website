@@ -16,7 +16,7 @@ export function SiteFooter() {
                         >
                             HH<span className="text-[#A51C30]">.</span>
                         </Link>
-                        <p className="text-[13px] text-stone-400 leading-relaxed max-w-[200px]">
+                        <p className="text-[15px] text-stone-500 leading-relaxed max-w-[200px]">
                             AI Software Engineer.<br />Harvard Class of 2025.<br />Chicago, IL.
                         </p>
                         <div className="flex items-center gap-4 pt-1">
@@ -24,7 +24,7 @@ export function SiteFooter() {
                                 href={personalInfo.linkedin}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                                className="text-stone-500 hover:text-stone-900 transition-colors"
                             >
                                 <Linkedin className="h-4 w-4" />
                             </a>
@@ -32,13 +32,13 @@ export function SiteFooter() {
                                 href={personalInfo.github}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                                className="text-stone-500 hover:text-stone-900 transition-colors"
                             >
                                 <Github className="h-4 w-4" />
                             </a>
                             <a
                                 href={`mailto:${personalInfo.email}`}
-                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                                className="text-stone-500 hover:text-stone-900 transition-colors"
                             >
                                 <Mail className="h-4 w-4" />
                             </a>
@@ -46,7 +46,7 @@ export function SiteFooter() {
                                 href={personalInfo.resume}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-stone-300 hover:text-stone-600 transition-colors"
+                                className="text-stone-500 hover:text-stone-900 transition-colors"
                             >
                                 <FileText className="h-4 w-4" />
                             </a>
@@ -56,10 +56,13 @@ export function SiteFooter() {
                 </div>
 
                 <div className="mt-10 md:mt-12 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-300">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500">
                         © {new Date().getFullYear()} {personalInfo.name}
                     </p>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-300">
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-stone-500">
+                        psst: there&apos;s a terminal in the corner. press <kbd className="border border-stone-300 px-1">`</kbd> to open it.
+                    </p>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500">
                         Chicago, IL
                     </p>
                 </div>

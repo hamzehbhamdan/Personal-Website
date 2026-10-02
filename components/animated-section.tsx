@@ -25,8 +25,7 @@ export function AnimatedSection({
     return (
         <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
+            animate="visible"
             transition={{ duration: 0.6, ease: "easeOut", delay }}
             variants={variants[direction]}
             className={className}

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { personalInfo } from "@/lib/data"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
 export function SiteHeader() {
@@ -35,16 +36,16 @@ export function SiteHeader() {
                 </Link>
 
                 {/* Desktop nav */}
-                <nav className="hidden md:flex items-center gap-7">
+                <nav className="hidden md:flex items-center gap-5 lg:gap-7">
                     {routes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors pb-0.5",
+                                "font-mono text-[11px] uppercase tracking-[0.2em] transition-colors pb-0.5",
                                 route.active
                                     ? "text-stone-900 border-b border-[#A51C30]"
-                                    : "text-stone-400 hover:text-stone-700"
+                                    : "text-stone-500 hover:text-stone-900"
                             )}
                         >
                             {route.label}
@@ -53,7 +54,7 @@ export function SiteHeader() {
                     <Link
                         href="/consulting"
                         className={cn(
-                            "font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1 border transition-all",
+                            "font-mono text-[11px] uppercase tracking-[0.2em] px-3 py-1 border transition-all",
                             isConsultingActive
                                 ? "border-[#A51C30] text-[#A51C30] bg-[#A51C30]/8"
                                 : "border-[#A51C30]/32 text-[#A51C30] hover:border-[#A51C30]/80 hover:bg-[#A51C30]/5"
@@ -61,6 +62,14 @@ export function SiteHeader() {
                     >
                         Consulting
                     </Link>
+                    <a
+                        href={personalInfo.resume}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[11px] uppercase tracking-[0.2em] px-3 py-1 bg-stone-900 text-white border border-stone-900 hover:bg-stone-700 transition-colors"
+                    >
+                        Resume
+                    </a>
                 </nav>
 
                 {/* Mobile hamburger */}
@@ -85,8 +94,8 @@ export function SiteHeader() {
                                         href={route.href}
                                         onClick={() => setIsOpen(false)}
                                         className={cn(
-                                            "font-mono text-[10px] uppercase tracking-[0.2em] transition-colors",
-                                            route.active ? "text-stone-900" : "text-stone-400 hover:text-stone-700"
+                                            "font-mono text-[11px] uppercase tracking-[0.2em] transition-colors",
+                                            route.active ? "text-stone-900" : "text-stone-500 hover:text-stone-700"
                                         )}
                                     >
                                         {route.label}
@@ -96,12 +105,21 @@ export function SiteHeader() {
                                     href="/consulting"
                                     onClick={() => setIsOpen(false)}
                                     className={cn(
-                                        "font-mono text-[10px] uppercase tracking-[0.2em] text-[#A51C30] hover:text-[#7a0e1e] transition-colors",
+                                        "font-mono text-[11px] uppercase tracking-[0.2em] text-[#A51C30] hover:text-[#7a0e1e] transition-colors",
                                         isConsultingActive && "font-semibold"
                                     )}
                                 >
                                     Consulting ›
                                 </Link>
+                                <a
+                                    href={personalInfo.resume}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={() => setIsOpen(false)}
+                                    className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-900 underline underline-offset-4"
+                                >
+                                    Resume
+                                </a>
                             </div>
                         </SheetContent>
                     </Sheet>

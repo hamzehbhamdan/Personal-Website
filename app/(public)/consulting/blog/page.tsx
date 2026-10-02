@@ -66,7 +66,7 @@ export default function BlogPage() {
 
                 {/* Header */}
                 <div className="mb-14">
-                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">
                         Insights
                     </div>
                     <h1
@@ -79,18 +79,18 @@ export default function BlogPage() {
 
                 {/* Search */}
                 <div className="relative mb-8">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500" />
                     <input
                         type="text"
                         placeholder="Search posts..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full rounded-sm border border-stone-200 bg-white/80 py-2.5 pl-9 pr-9 font-mono text-xs text-stone-800 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none transition-colors"
+                        className="w-full rounded-sm border border-stone-200 bg-white/80 py-2.5 pl-9 pr-9 font-mono text-xs text-stone-800 placeholder:text-stone-500 focus:border-stone-400 focus:outline-none transition-colors"
                     />
                     {search && (
                         <button
                             onClick={() => setSearch("")}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-600 transition-colors"
                         >
                             <X className="h-3.5 w-3.5" />
                         </button>
@@ -101,7 +101,7 @@ export default function BlogPage() {
                 <div className="mb-10 space-y-4">
                     {/* Topics row */}
                     <div>
-                        <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">
+                        <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-500">
                             Topics
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -135,7 +135,7 @@ export default function BlogPage() {
 
                     {/* Platforms row */}
                     <div>
-                        <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">
+                        <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-500">
                             Platforms
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -171,7 +171,7 @@ export default function BlogPage() {
                 {/* Post list */}
                 {filtered.length === 0 ? (
                     <div className="py-20 text-center">
-                        <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                        <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">
                             No results
                         </div>
                         <p className="text-sm text-stone-500">
@@ -203,7 +203,7 @@ export default function BlogPage() {
                                         {post.topics.map((t) => (
                                             <span
                                                 key={t}
-                                                className="font-mono text-[8px] uppercase tracking-[0.15em] text-stone-400"
+                                                className="font-mono text-[8px] uppercase tracking-[0.15em] text-stone-500"
                                             >
                                                 {t}
                                             </span>
@@ -224,18 +224,18 @@ export default function BlogPage() {
                                     </p>
 
                                     {/* Meta */}
-                                    <div className="flex items-center gap-4 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">
+                                    <div className="flex items-center gap-4 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">
                                         <span>{post.date}</span>
-                                        <span className="text-stone-300">·</span>
+                                        <span className="text-stone-500">·</span>
                                         <span>{post.readTime}</span>
                                     </div>
                                 </div>
 
-                                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-stone-300 transition-colors group-hover:text-[#A51C30]" />
+                                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-stone-500 transition-colors group-hover:text-[#A51C30]" />
                             </Link>
                         ))}
 
-                        <div className="mt-5 font-mono text-[9px] text-stone-400">
+                        <div className="mt-5 font-mono text-[9px] text-stone-500">
                             {filtered.length} post{filtered.length !== 1 ? "s" : ""}
                             {hasFilters && " matching current filters"}
                         </div>

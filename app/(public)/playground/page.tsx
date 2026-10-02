@@ -1,8 +1,7 @@
 
 "use client"
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { playgroundProjects } from "@/lib/playground";
@@ -10,11 +9,6 @@ import { playgroundProjects } from "@/lib/playground";
 const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" };
 
 export default function PlaygroundPage() {
-    const headerRef = useRef(null);
-    const gridRef = useRef(null);
-    const headerInView = useInView(headerRef, { once: true });
-    const gridInView = useInView(gridRef, { once: true, margin: "-60px" });
-
     return (
         <main className="flex flex-col min-h-screen bg-[#f9f8f6]">
             {/* Noise texture */}
@@ -33,21 +27,20 @@ export default function PlaygroundPage() {
             <section className="relative z-10 w-full pt-16 pb-10 md:pb-14 bg-[#f9f8f6]">
                 <div className="mx-auto max-w-5xl px-6 space-y-8">
                     <motion.div
-                        ref={headerRef}
                         initial={{ opacity: 0, y: 12 }}
-                        animate={headerInView ? { opacity: 1, y: 0 } : {}}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         className="space-y-6"
                     >
                         <div className="flex items-center gap-4">
                             <Link
                                 href="/"
-                                className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-600 transition-colors"
+                                className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500 hover:text-stone-600 transition-colors"
                             >
                                 Home
                             </Link>
-                            <span className="text-stone-300 font-mono text-[10px]">/</span>
-                            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500">
+                            <span className="text-stone-500 font-mono text-[11px]">/</span>
+                            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500">
                                 Playground
                             </p>
                         </div>
@@ -75,9 +68,8 @@ export default function PlaygroundPage() {
             {/* Grid */}
             <section className="relative z-10 w-full py-12 md:py-16">
                 <motion.div
-                    ref={gridRef}
                     initial={{ opacity: 0, y: 20 }}
-                    animate={gridInView ? { opacity: 1, y: 0 } : {}}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
                     className="mx-auto max-w-5xl px-6"
                 >
@@ -86,7 +78,7 @@ export default function PlaygroundPage() {
                             <motion.div
                                 key={project.slug}
                                 initial={{ opacity: 0, y: 16 }}
-                                animate={gridInView ? { opacity: 1, y: 0 } : {}}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{
                                     duration: 0.5,
                                     delay: i * 0.08,
@@ -100,13 +92,13 @@ export default function PlaygroundPage() {
                                         {project.tags.map((tag) => (
                                             <span
                                                 key={tag}
-                                                className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 bg-stone-50 border border-stone-100 px-1.5 py-0.5"
+                                                className="font-mono text-[11px] uppercase tracking-[0.15em] text-stone-500 bg-stone-50 border border-stone-100 px-1.5 py-0.5"
                                             >
                                                 {tag}
                                             </span>
                                         ))}
                                     </div>
-                                    <span className="font-mono text-[9px] text-stone-300">{project.date}</span>
+                                    <span className="font-mono text-[11px] text-stone-500">{project.date}</span>
                                 </div>
 
                                 {/* Title */}
@@ -120,7 +112,7 @@ export default function PlaygroundPage() {
                                 </div>
 
                                 {/* Description */}
-                                <p className="px-5 pb-4 text-[12px] text-stone-400 leading-relaxed flex-1">
+                                <p className="px-5 pb-4 text-[14px] text-stone-500 leading-relaxed flex-1">
                                     {project.description}
                                 </p>
 
@@ -132,8 +124,8 @@ export default function PlaygroundPage() {
                                         rel="noopener noreferrer"
                                         className="group flex flex-1 items-center gap-1.5 px-4 py-3 hover:bg-stone-50 transition-colors"
                                     >
-                                        <ExternalLink className="h-3 w-3 text-stone-300 group-hover:text-[#A51C30] transition-colors" />
-                                        <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 group-hover:text-[#A51C30] transition-colors">
+                                        <ExternalLink className="h-3 w-3 text-stone-500 group-hover:text-[#A51C30] transition-colors" />
+                                        <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-stone-500 group-hover:text-[#A51C30] transition-colors">
                                             Launch Demo
                                         </span>
                                     </a>
@@ -142,8 +134,8 @@ export default function PlaygroundPage() {
                                             href={`/blog/${project.blogSlug}`}
                                             className="group flex items-center gap-1.5 px-4 py-3 hover:bg-stone-50 transition-colors"
                                         >
-                                            <ArrowRight className="h-3 w-3 text-stone-300 group-hover:text-stone-600 transition-colors" />
-                                            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 group-hover:text-stone-600 transition-colors">
+                                            <ArrowRight className="h-3 w-3 text-stone-500 group-hover:text-stone-600 transition-colors" />
+                                            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-stone-500 group-hover:text-stone-600 transition-colors">
                                                 Read write-up
                                             </span>
                                         </Link>

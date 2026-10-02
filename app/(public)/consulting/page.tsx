@@ -1,9 +1,9 @@
 
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { motion, useInView } from "framer-motion"
+import { motion } from "framer-motion"
 import {
     ArrowRight,
     Brain,
@@ -23,7 +23,7 @@ import {
     Send,
 } from "lucide-react"
 import { personalInfo } from "@/lib/data"
-import { blogPosts } from "@/lib/consulting-blog"
+// import { blogPosts } from "@/lib/consulting-blog" // re-enable with the Insights section below
 
 // ── Shared style constants ───────────────────────────────────────────────────
 const serif = { fontFamily: "var(--font-playfair), Georgia, 'Times New Roman', serif" }
@@ -50,24 +50,19 @@ function EditorialSection({
 }: {
     id: string; label?: string; children: React.ReactNode; className?: string; wide?: boolean
 }) {
-    const ref = useRef(null)
-    const inView = useInView(ref, { once: true, margin: "-80px" })
     return (
-        <motion.section
-            id={id} ref={ref}
-            initial={{ opacity: 0, y: 24 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        <section
+            id={id}
             className={`relative z-10 mx-auto px-6 py-12 md:py-20 ${wide ? "max-w-6xl" : "max-w-4xl"} ${className}`}
         >
             {label && (
                 <div className="mb-10 flex items-center gap-4">
-                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">{label}</span>
+                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.25em] text-stone-500">{label}</span>
                     <div className="h-px flex-1 bg-stone-200" />
                 </div>
             )}
             {children}
-        </motion.section>
+        </section>
     )
 }
 
@@ -78,7 +73,7 @@ const chapters = [
     { id: "the-problem", label: "The Problem" },
     { id: "services", label: "Services" },
     { id: "how-it-works", label: "How It Works" },
-    { id: "insights", label: "Insights" },
+    // { id: "insights", label: "Insights" }, // re-enable with the Insights section
     { id: "book", label: "Book a Call" },
 ]
 
@@ -90,7 +85,7 @@ function ChapterRow() {
                     onClick={() => document.getElementById(ch.id)?.scrollIntoView({ behavior: "smooth" })}
                     className="group flex items-center gap-2 text-xs text-stone-500 transition-colors hover:text-[#A51C30]"
                 >
-                    <span className="font-mono text-[10px] text-stone-300">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-mono text-[10px] text-stone-500">{String(i + 1).padStart(2, "0")}</span>
                     <span className="border-b border-transparent group-hover:border-[#A51C30]/55 transition-all">{ch.label}</span>
                 </button>
             ))}
@@ -157,7 +152,7 @@ function ServicesTabs() {
                             : "border-stone-200 bg-white/60 hover:border-stone-300 hover:bg-white/80"
                             }`}
                     >
-                        <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">{s.number}</div>
+                        <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">{s.number}</div>
                         <div className="mt-1 text-xs font-semibold text-stone-800">{s.tab}</div>
                         <div className="mt-0.5 font-mono text-[10px] font-bold text-[#A51C30]">{s.price}</div>
                     </button>
@@ -168,9 +163,9 @@ function ServicesTabs() {
             <div className="flex gap-1 border-b border-stone-200">
                 {serviceTabs.map((s) => (
                     <button key={s.id} onClick={() => setActive(s.id)}
-                        className={`relative px-4 py-2.5 text-sm transition-colors ${active === s.id ? "text-stone-900" : "text-stone-400 hover:text-stone-600"}`}
+                        className={`relative px-4 py-2.5 text-sm transition-colors ${active === s.id ? "text-stone-900" : "text-stone-500 hover:text-stone-600"}`}
                     >
-                        <span className="mr-1.5 font-mono text-[10px] text-stone-300">{s.number}</span>
+                        <span className="mr-1.5 font-mono text-[10px] text-stone-500">{s.number}</span>
                         {s.tab}
                         {active === s.id && (
                             <motion.div layoutId="service-underline"
@@ -188,16 +183,16 @@ function ServicesTabs() {
                     <div className="flex flex-wrap items-baseline gap-3">
                         <h3 className="text-xl font-bold text-stone-800" style={serif}>{tab.headline}</h3>
                         <span className="font-mono text-sm font-bold text-[#A51C30]">{tab.price}</span>
-                        <span className="font-mono text-[10px] uppercase text-stone-400">{tab.priceNote}</span>
+                        <span className="font-mono text-[10px] uppercase text-stone-500">{tab.priceNote}</span>
                     </div>
                     <p className="text-sm leading-relaxed text-stone-600">{tab.body}</p>
                     <div className="grid grid-cols-2 gap-2.5">
                         {tab.items.map((item) => (
                             <div key={item.label} className="flex items-start gap-2.5 rounded-sm border border-stone-200 bg-white/60 px-3 py-2.5">
-                                <item.icon className="mt-[1px] h-3.5 w-3.5 shrink-0 text-stone-400" />
+                                <item.icon className="mt-[1px] h-3.5 w-3.5 shrink-0 text-stone-500" />
                                 <div>
                                     <p className="text-xs font-semibold text-stone-700">{item.label}</p>
-                                    <p className="text-[11px] leading-snug text-stone-400">{item.desc}</p>
+                                    <p className="text-[11px] leading-snug text-stone-500">{item.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -267,8 +262,8 @@ export default function ConsultingPage() {
         }
     }
 
-    const inputLight = "w-full border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-500 transition-colors"
-    const labelLight = "block font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400 mb-1.5"
+    const inputLight = "w-full border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-800 placeholder:text-stone-500 outline-none focus:border-stone-500 transition-colors"
+    const labelLight = "block font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500 mb-1.5"
 
     return (
         <main className="relative min-h-screen bg-[#f9f8f6] text-stone-900">
@@ -277,7 +272,7 @@ export default function ConsultingPage() {
             {/* ── HERO ──────────────────────────────────────────────── */}
             <section className="relative z-10 mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-center px-6 py-16 sm:py-24">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
-                    className="mb-8 font-mono text-[10px] uppercase tracking-[0.3em] text-stone-400"
+                    className="mb-8 font-mono text-[10px] uppercase tracking-[0.3em] text-stone-500"
                 >
                     AI Consulting &amp; Training
                 </motion.div>
@@ -315,9 +310,9 @@ export default function ConsultingPage() {
                             </a>
                         </motion.div>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.65 }}
-                            className="mt-5 flex items-center gap-1.5 font-mono text-[10px] text-stone-400"
+                            className="mt-5 flex items-center gap-1.5 font-mono text-[10px] text-stone-500"
                         >
-                            <Clock className="h-3 w-3" /> Free 30-min intro call — no commitment, no pressure
+                            <Clock className="h-3 w-3" /> Free 30-min intro call
                         </motion.div>
                     </div>
 
@@ -326,13 +321,13 @@ export default function ConsultingPage() {
                         transition={{ duration: 0.7, delay: 0.45 }} className="flex items-center"
                     >
                         <div className="w-full rounded-sm border border-stone-200 bg-white/70 p-6">
-                            <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Background</div>
+                            <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Background</div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {proofStats.map((s) => (
                                     <div key={s.label} className="rounded-sm border border-stone-100 bg-stone-50 px-3 py-3">
                                         <div className="text-lg font-bold text-stone-800" style={serif}>{s.value}</div>
                                         <div className="text-xs font-medium text-stone-600">{s.label}</div>
-                                        <div className="mt-0.5 font-mono text-[9px] text-stone-400">{s.note}</div>
+                                        <div className="mt-0.5 font-mono text-[9px] text-stone-500">{s.note}</div>
                                     </div>
                                 ))}
                             </div>
@@ -362,7 +357,7 @@ export default function ConsultingPage() {
                         </div>
                     </div>
                     <div>
-                        <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">The Challenge Differs</div>
+                        <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500">The Challenge Differs</div>
                         <p className="mb-6 text-base font-semibold text-stone-800" style={serif}>The right starting point depends on who you are.</p>
                         <div className="space-y-4">
                             {[
@@ -421,14 +416,14 @@ export default function ConsultingPage() {
                                 <div className="flex shrink-0 flex-col items-center gap-1.5 pt-0.5">
                                     <span className="font-mono text-[10px] text-[#A51C30]">{step.num}</span>
                                     <div className="flex h-8 w-8 items-center justify-center rounded-sm border border-stone-200 bg-stone-50">
-                                        <step.icon className="h-3.5 w-3.5 text-stone-400" />
+                                        <step.icon className="h-3.5 w-3.5 text-stone-500" />
                                     </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                         <h4 className="text-sm font-semibold text-stone-800">{step.title}</h4>
                                         {step.optional && (
-                                            <span className="rounded-sm bg-stone-100 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-stone-400">Optional</span>
+                                            <span className="rounded-sm bg-stone-100 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-stone-500">Optional</span>
                                         )}
                                     </div>
                                     <p className="mt-1 text-sm leading-relaxed text-stone-500">{step.desc}</p>
@@ -442,6 +437,7 @@ export default function ConsultingPage() {
             <Divider />
 
             {/* ── 04 INSIGHTS ───────────────────────────────────────── */}
+            {/* Insights (blog) hidden until there are posts. Restore the block below to bring it back.
             <EditorialSection id="insights" label="04 — Insights" wide>
                 <div className="grid gap-10 md:grid-cols-[1fr_2.2fr]">
                     <div>
@@ -479,7 +475,7 @@ export default function ConsultingPage() {
                                     </p>
                                 </div>
                                 <div className="mt-4 flex items-center justify-between">
-                                    <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-stone-400">
+                                    <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-stone-500">
                                         {post.readTime}
                                     </div>
                                     <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#A51C30] transition-transform group-hover:translate-x-0.5">
@@ -491,36 +487,36 @@ export default function ConsultingPage() {
                     </div>
                 </div>
             </EditorialSection>
+            */}
 
             <Divider />
 
-            {/* ── 05 BOOK A CALL ────────────────────────────────────── */}
+            {/* ── 04 BOOK A CALL ────────────────────────────────────── */}
             <section id="book" className="relative z-10 w-full bg-[#f9f8f6] px-6 py-12 md:py-20">
                 <div className="mx-auto max-w-5xl">
                     {/* Section label */}
                     <div className="mb-10 flex items-center gap-4">
-                        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">05 — Book a Call</span>
+                        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.25em] text-stone-500">04 — Book a Call</span>
                         <div className="h-px flex-1 bg-stone-200" />
                     </div>
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                        initial={false}
                         className="grid gap-14 lg:grid-cols-[1fr_480px]"
                     >
                         {/* Left: copy */}
                         <div className="flex flex-col justify-center">
-                            <div className="mb-6 inline-flex w-fit items-center gap-2 border border-stone-200 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400">
+                            <div className="mb-6 inline-flex w-fit items-center gap-2 border border-stone-200 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500">
                                 <Clock className="h-3 w-3" /> Free 30-min intro call
                             </div>
                             <h2 className="mb-5 text-4xl font-bold leading-tight text-stone-900 sm:text-5xl" style={serif}>
                                 Ready to get started?
                             </h2>
                             <p className="mb-8 max-w-md text-base leading-relaxed text-stone-500">
-                                Tell me a little about what you&apos;re working on. I&apos;ll follow up to schedule a free intro call — no commitment, no pressure.
+                                Tell me a little about what you&apos;re working on. I&apos;ll follow up to schedule a free intro call.
                             </p>
                             <a
                                 href={`mailto:${personalInfo.email}`}
-                                className="self-start font-mono text-[11px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-700 transition-colors"
+                                className="self-start font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500 hover:text-stone-700 transition-colors"
                             >
                                 {personalInfo.email}
                             </a>
@@ -537,7 +533,7 @@ export default function ConsultingPage() {
                                     </div>
                                     <button
                                         onClick={() => setIntakeStatus("idle")}
-                                        className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-700 transition-colors border border-stone-200 px-4 py-2"
+                                        className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500 hover:text-stone-700 transition-colors border border-stone-200 px-4 py-2"
                                     >
                                         Send another
                                     </button>

@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { BackToTop } from "@/components/back-to-top";
 import { PageTransition } from "@/components/page-transition";
+import { TerminalWidget } from "@/components/terminal-widget";
 
 export default function PublicLayout({
     children,
@@ -18,6 +19,7 @@ export default function PublicLayout({
             </PageTransition>
             <SiteFooter />
             <BackToTop />
+            <TerminalWidget />
         </>
     );
 }

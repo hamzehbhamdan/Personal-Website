@@ -20,7 +20,7 @@ export function BackToTop() {
             onClick={scrollToTop}
             aria-label="Back to top"
             className={cn(
-                "fixed bottom-8 right-8 z-50 p-3 rounded-full",
+                "fixed bottom-20 right-6 md:bottom-24 md:right-8 z-50 p-3 rounded-full",
                 "bg-background border border-border shadow-lg",
                 "text-muted-foreground hover:text-primary hover:border-primary/40",
                 "transition-all duration-300",

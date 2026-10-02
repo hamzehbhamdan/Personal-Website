@@ -9,10 +9,9 @@ const APEX = "https://hamzehhamdan.com"
 describe("sitemap", () => {
     const urls = sitemap().map((e) => e.url)
 
-    it("lists the blog, playground, and consulting-blog index pages", () => {
+    it("lists the blog and playground index pages", () => {
         expect(urls).toContain(`${APEX}/blog`)
         expect(urls).toContain(`${APEX}/playground`)
-        expect(urls).toContain(`${APEX}/consulting/blog`)
     })
 
     it("lists every blog post URL", () => {
@@ -23,7 +22,6 @@ describe("sitemap", () => {
     })
 
     it("lists every consulting-blog post URL", () => {
-        expect(consultingBlogPosts.length).toBeGreaterThan(0)
         for (const post of consultingBlogPosts) {
             expect(urls).toContain(`${APEX}/consulting/blog/${post.slug}`)
         }

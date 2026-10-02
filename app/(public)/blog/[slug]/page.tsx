@@ -45,43 +45,43 @@ function DiagramChatGPT() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">
                     Three modes compared
                 </span>
             </div>
             <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-3">
                 <div className="p-5">
-                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">01</div>
+                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-500">01</div>
                     <div className="mb-4 text-xs font-bold text-stone-700">Regular Chats</div>
                     <div className="space-y-1.5">
                         <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
                             <div className="text-[10px] font-semibold text-stone-700">User sends a message</div>
-                            <div className="text-[9px] text-stone-400">Any topic, any session</div>
+                            <div className="text-[9px] text-stone-500">Any topic, any session</div>
                         </div>
                         <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                         <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
-                            <div className="text-[10px] font-semibold text-stone-400">New chat (cold start)</div>
-                            <div className="text-[9px] text-stone-400">No memory of prior work</div>
+                            <div className="text-[10px] font-semibold text-stone-500">New chat (cold start)</div>
+                            <div className="text-[9px] text-stone-500">No memory of prior work</div>
                         </div>
                         <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                         <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
-                            <div className="text-[10px] font-semibold text-stone-400">Generic response</div>
-                            <div className="text-[9px] text-stone-400">Not tailored to your context</div>
+                            <div className="text-[10px] font-semibold text-stone-500">Generic response</div>
+                            <div className="text-[9px] text-stone-500">Not tailored to your context</div>
                         </div>
                         <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                         <div className="rounded-sm border border-stone-200 bg-stone-100 px-3 py-2 opacity-60">
                             <div className="text-[10px] font-semibold text-stone-500">Next session — repeat</div>
-                            <div className="text-[9px] text-stone-400">Re-explain from scratch</div>
+                            <div className="text-[9px] text-stone-500">Re-explain from scratch</div>
                         </div>
                     </div>
                     <div className="mt-4 rounded-sm bg-stone-100 px-3 py-2">
                         <div className="text-[9px] font-semibold text-stone-500">Result</div>
-                        <div className="text-[9px] text-stone-400">Disposable. No continuity.</div>
+                        <div className="text-[9px] text-stone-500">Disposable. No continuity.</div>
                     </div>
                 </div>
 
                 <div className="p-5">
-                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">02</div>
+                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-500">02</div>
                     <div className="mb-4 text-xs font-bold text-stone-700">Projects</div>
                     <div className="space-y-1.5">
                         <div className="rounded-sm border border-stone-300 bg-white px-3 py-2.5">
@@ -98,12 +98,12 @@ function DiagramChatGPT() {
                         <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                         <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
                             <div className="text-[10px] font-semibold text-stone-700">Context-aware response</div>
-                            <div className="text-[9px] text-stone-400">Knows your files & history</div>
+                            <div className="text-[9px] text-stone-500">Knows your files & history</div>
                         </div>
                         <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                         <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
                             <div className="text-[10px] font-semibold text-stone-700">Next session: continues</div>
-                            <div className="text-[9px] text-stone-400">Builds on prior work</div>
+                            <div className="text-[9px] text-stone-500">Builds on prior work</div>
                         </div>
                     </div>
                     <div className="mt-4 rounded-sm bg-stone-100 px-3 py-2">
@@ -130,12 +130,12 @@ function DiagramChatGPT() {
                         <div className="py-1 text-center text-sm font-bold text-[#A51C30]/60">↓</div>
                         <div className="rounded-sm border border-[#A51C30]/15 bg-white/70 px-3 py-2">
                             <div className="text-[10px] font-semibold text-stone-700">Specialized AI expert</div>
-                            <div className="text-[9px] text-stone-400">Behaves as a focused role</div>
+                            <div className="text-[9px] text-stone-500">Behaves as a focused role</div>
                         </div>
                         <div className="py-1 text-center text-sm font-bold text-[#A51C30]/60">↓</div>
                         <div className="rounded-sm border border-[#A51C30]/15 bg-white/70 px-3 py-2">
                             <div className="text-[10px] font-semibold text-stone-700">Shareable & reusable</div>
-                            <div className="text-[9px] text-stone-400">Build once, use always</div>
+                            <div className="text-[9px] text-stone-500">Build once, use always</div>
                         </div>
                     </div>
                     <div className="mt-4 rounded-sm bg-[#A51C30]/10 px-3 py-2">
@@ -163,17 +163,17 @@ function DiagramPerplexity() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Execution pipeline</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Execution pipeline</span>
             </div>
             <div className="space-y-px">
                 <div className="bg-stone-50 px-5 py-4 text-center">
-                    <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Input</div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">Input</div>
                     <div className="mt-1 text-sm font-semibold text-stone-800" style={serif}>Natural Language Goal</div>
                     <div className="mt-0.5 text-[11px] text-stone-500">One instruction. Plain language. Any complexity.</div>
                 </div>
                 <div className="flex justify-center bg-stone-50 py-0.5 text-base font-bold text-stone-500">↓</div>
                 <div className="bg-stone-50 px-5 py-4 text-center">
-                    <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Perplexity Computer</div>
+                    <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">Perplexity Computer</div>
                     <div className="mt-1 text-sm font-semibold text-stone-800" style={serif}>Task Decomposition</div>
                     <div className="mt-0.5 text-[11px] text-stone-500">Goal → ordered subtasks → subtasks routed to best-fit model → parallel execution</div>
                 </div>
@@ -185,14 +185,14 @@ function DiagramPerplexity() {
                         {models.map((m) => (
                             <div key={m.name} className="rounded-sm border border-[#A51C30]/15 bg-white/80 px-2.5 py-2">
                                 <div className="text-[10px] font-semibold text-stone-800">{m.name}</div>
-                                <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-stone-400">{m.role}</div>
+                                <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-stone-500">{m.role}</div>
                             </div>
                         ))}
                     </div>
                 </div>
                 <div className="flex justify-center bg-[#A51C30]/[0.02] py-0.5 text-base font-bold text-stone-500">↓</div>
                 <div className="bg-stone-50 px-5 py-4">
-                    <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">400+ Connectors & Cloud Tools</div>
+                    <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">400+ Connectors & Cloud Tools</div>
                     <div className="flex flex-wrap gap-1.5">
                         {connectors.map((c) => (
                             <span key={c} className="rounded-sm border border-stone-200 bg-white px-2 py-0.5 font-mono text-[9px] text-stone-600">{c}</span>
@@ -206,7 +206,7 @@ function DiagramPerplexity() {
                 </div>
                 <div className="flex justify-center bg-stone-50 py-0.5 text-base font-bold text-stone-500">↓</div>
                 <div className="bg-stone-50 px-5 py-4">
-                    <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Finished Output</div>
+                    <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">Finished Output</div>
                     <div className="flex flex-wrap gap-1.5">
                         {outputs.map((o) => (
                             <span key={o} className="rounded-sm bg-stone-900 px-2 py-0.5 font-mono text-[9px] text-stone-200">{o}</span>
@@ -229,7 +229,7 @@ function DiagramDeepResearchPipeline() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Deep Research — how the pipeline works</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Deep Research — how the pipeline works</span>
             </div>
             <div className="divide-y divide-stone-100">
                 {steps.map((step) => (
@@ -243,7 +243,7 @@ function DiagramDeepResearchPipeline() {
                 ))}
             </div>
             <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
-                <span className="font-mono text-[9px] text-stone-400">Output: structured cited report · 1,500–3,000 words · inline citations · reference list</span>
+                <span className="font-mono text-[9px] text-stone-500">Output: structured cited report · 1,500–3,000 words · inline citations · reference list</span>
             </div>
         </div>
     )
@@ -262,14 +262,14 @@ function DiagramDeepResearchComparison() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Manual research vs. Deep Research</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Manual research vs. Deep Research</span>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                     <thead>
                         <tr className="border-b border-stone-100 bg-stone-50">
-                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 w-1/3"></th>
-                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Manual</th>
+                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500 w-1/3"></th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">Manual</th>
                             <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-[#A51C30]">Deep Research</th>
                         </tr>
                     </thead>
@@ -277,7 +277,7 @@ function DiagramDeepResearchComparison() {
                         {rows.map((row) => (
                             <tr key={row.label} className="hover:bg-stone-50/50">
                                 <td className="px-5 py-2.5 font-medium text-stone-700">{row.label}</td>
-                                <td className="px-4 py-2.5 text-stone-400">{row.traditional}</td>
+                                <td className="px-4 py-2.5 text-stone-500">{row.traditional}</td>
                                 <td className="px-4 py-2.5 text-stone-800 font-semibold">{row.deep}</td>
                             </tr>
                         ))}
@@ -301,14 +301,14 @@ function DiagramCanvasComparison() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Standard chat vs. Canvas</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Standard chat vs. Canvas</span>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                     <thead>
                         <tr className="border-b border-stone-100 bg-stone-50">
-                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400 w-1/3"></th>
-                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-400">Standard Chat</th>
+                            <th className="px-5 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500 w-1/3"></th>
+                            <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-stone-500">Standard Chat</th>
                             <th className="px-4 py-2.5 text-left font-mono text-[9px] uppercase tracking-[0.15em] text-[#A51C30]">Canvas</th>
                         </tr>
                     </thead>
@@ -316,7 +316,7 @@ function DiagramCanvasComparison() {
                         {rows.map((row) => (
                             <tr key={row.label} className="hover:bg-stone-50/50">
                                 <td className="px-5 py-2.5 font-medium text-stone-700">{row.label}</td>
-                                <td className="px-4 py-2.5 text-stone-400">{row.chat}</td>
+                                <td className="px-4 py-2.5 text-stone-500">{row.chat}</td>
                                 <td className="px-4 py-2.5 text-stone-800 font-semibold">{row.canvas}</td>
                             </tr>
                         ))}
@@ -346,11 +346,11 @@ function DiagramCanvasShortcuts() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Canvas shortcuts — writing & coding</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Canvas shortcuts — writing & coding</span>
             </div>
             <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-2">
                 <div className="p-5">
-                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Writing</div>
+                    <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Writing</div>
                     <div className="space-y-3">
                         {writing.map((s) => (
                             <div key={s.name}>
@@ -402,17 +402,17 @@ function DiagramAppsDirectory() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">App Directory — launch apps and what they do</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">App Directory — launch apps and what they do</span>
             </div>
             <div className="divide-y divide-stone-100">
                 {apps.map((app) => (
                     <div key={app.name} className="px-5 py-4">
                         <div className="mb-1 flex items-baseline gap-3">
                             <span className="text-xs font-bold text-stone-900">{app.name}</span>
-                            <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-stone-400">{app.category}</span>
+                            <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-stone-500">{app.category}</span>
                         </div>
                         <p className="mb-1.5 text-[11px] text-stone-600">{app.what}</p>
-                        <p className="text-[10px] italic text-stone-400">{app.example}</p>
+                        <p className="text-[10px] italic text-stone-500">{app.example}</p>
                     </div>
                 ))}
             </div>
@@ -429,7 +429,7 @@ function DiagramAppsInvoke() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">How to add and use an app</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">How to add and use an app</span>
             </div>
             <div className="divide-y divide-stone-100">
                 {steps.map((step, i) => (
@@ -441,7 +441,7 @@ function DiagramAppsInvoke() {
                 ))}
             </div>
             <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
-                <span className="font-mono text-[9px] text-stone-400">Available on web, iOS, and Android · outside EEA/UK/Switzerland</span>
+                <span className="font-mono text-[9px] text-stone-500">Available on web, iOS, and Android · outside EEA/UK/Switzerland</span>
             </div>
         </div>
     )
@@ -464,29 +464,29 @@ function DiagramCoworkVsChat() {
     return (
         <div className="my-10 overflow-hidden rounded-sm border border-stone-200 bg-white/80">
             <div className="border-b border-stone-100 px-5 py-3">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Regular Claude chat vs. Cowork</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Regular Claude chat vs. Cowork</span>
             </div>
             <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-2">
                 {/* Left — Chat */}
                 <div className="p-5">
-                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-400">01</div>
+                    <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.2em] text-stone-500">01</div>
                     <div className="mb-4 text-xs font-bold text-stone-700">Regular Claude Chat</div>
                     <div className="space-y-1.5">
                         {chatSteps.map((s, i) => (
                             <div key={i}>
                                 <div className="rounded-sm border border-stone-200 bg-stone-50 px-3 py-2">
                                     <div className="text-[10px] font-semibold text-stone-700">{s.label}</div>
-                                    <div className="text-[9px] text-stone-400">{s.sub}</div>
+                                    <div className="text-[9px] text-stone-500">{s.sub}</div>
                                 </div>
                                 {i < chatSteps.length - 1 && (
-                                    <div className="py-1 text-center text-sm font-bold text-stone-400">↓</div>
+                                    <div className="py-1 text-center text-sm font-bold text-stone-500">↓</div>
                                 )}
                             </div>
                         ))}
                     </div>
                     <div className="mt-4 rounded-sm bg-stone-100 px-3 py-2">
                         <div className="text-[9px] font-semibold text-stone-500">Output</div>
-                        <div className="text-[9px] text-stone-400">Text in a chat bubble. You still do the work.</div>
+                        <div className="text-[9px] text-stone-500">Text in a chat bubble. You still do the work.</div>
                     </div>
                 </div>
 
@@ -499,7 +499,7 @@ function DiagramCoworkVsChat() {
                             <div key={i}>
                                 <div className="rounded-sm border border-[#A51C30]/20 bg-white/80 px-3 py-2">
                                     <div className="text-[10px] font-semibold text-stone-700">{s.label}</div>
-                                    <div className="text-[9px] text-stone-400">{s.sub}</div>
+                                    <div className="text-[9px] text-stone-500">{s.sub}</div>
                                 </div>
                                 {i === 1 && (
                                     <div className="my-1.5 rounded-sm border border-[#A51C30]/10 bg-white/60 px-3 py-1.5">
@@ -569,16 +569,16 @@ function DiagramCoworkProjects() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-stone-100">
                     <Layers size={12} className="text-stone-500" />
                 </div>
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Projects — context that compounds</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Projects — context that compounds</span>
             </div>
             <div className="grid divide-y divide-stone-100 sm:divide-x sm:divide-y-0 sm:grid-cols-3">
                 {sessions.map((s) => (
                     <div key={s.label} className={`flex flex-col p-5 ${s.highlight ? "bg-[#A51C30]/[0.03]" : ""}`}>
-                        <div className={`mb-3 font-mono text-[8px] uppercase tracking-[0.2em] ${s.highlight ? "text-[#A51C30]" : "text-stone-400"}`}>{s.label}</div>
+                        <div className={`mb-3 font-mono text-[8px] uppercase tracking-[0.2em] ${s.highlight ? "text-[#A51C30]" : "text-stone-500"}`}>{s.label}</div>
 
                         {/* Context stack */}
                         <div className={`mb-4 flex-1 rounded-sm border p-3 ${s.highlight ? "border-[#A51C30]/20 bg-white/60" : "border-stone-200 bg-stone-50"}`}>
-                            <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.1em] text-stone-400">Loaded context</div>
+                            <div className="mb-2 font-mono text-[8px] uppercase tracking-[0.1em] text-stone-500">Loaded context</div>
                             <div className="space-y-1.5">
                                 {s.context.map((c, i) => (
                                     <div key={i} className="flex items-center gap-2">
@@ -594,13 +594,13 @@ function DiagramCoworkProjects() {
                         {/* Output */}
                         <div className={`rounded-sm px-3 py-2 ${s.highlight ? "bg-[#A51C30]/10" : "bg-stone-100"}`}>
                             <div className={`text-[10px] font-semibold ${s.highlight ? "text-[#A51C30]" : "text-stone-700"}`}>{s.output}</div>
-                            <div className={`mt-0.5 font-mono text-[8px] ${s.highlight ? "text-[#A51C30]/70" : "text-stone-400"}`}>{s.outputNote}</div>
+                            <div className={`mt-0.5 font-mono text-[8px] ${s.highlight ? "text-[#A51C30]/70" : "text-stone-500"}`}>{s.outputNote}</div>
                         </div>
                     </div>
                 ))}
             </div>
             <div className="border-t border-stone-100 bg-stone-50 px-5 py-3">
-                <span className="font-mono text-[9px] text-stone-400">One setup · instructions persist · files stay loaded · context never resets</span>
+                <span className="font-mono text-[9px] text-stone-500">One setup · instructions persist · files stay loaded · context never resets</span>
             </div>
         </div>
     )
@@ -625,7 +625,7 @@ function DiagramCoworkScheduledTasks() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#A51C30]/10">
                     <RefreshCw size={12} className="text-[#A51C30]" />
                 </div>
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">Scheduled Tasks — work that runs without you</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">Scheduled Tasks — work that runs without you</span>
             </div>
 
             {/* Loop flow */}
@@ -638,13 +638,13 @@ function DiagramCoworkScheduledTasks() {
                                     {step.icon}
                                 </div>
                                 <div className="text-[10px] font-semibold leading-tight text-stone-800">{step.label}</div>
-                                <div className="text-[9px] leading-tight text-stone-400">{step.sub}</div>
+                                <div className="text-[9px] leading-tight text-stone-500">{step.sub}</div>
                             </div>
                             {i < loop.length - 1 ? (
-                                <span className="shrink-0 font-bold text-stone-300">→</span>
+                                <span className="shrink-0 font-bold text-stone-500">→</span>
                             ) : (
                                 <div className="flex shrink-0 items-center gap-0.5">
-                                    <span className="font-bold text-stone-300">→</span>
+                                    <span className="font-bold text-stone-500">→</span>
                                     <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[#A51C30]/20 bg-[#A51C30]/5">
                                         <RefreshCw size={10} className="text-[#A51C30]" />
                                     </div>
@@ -764,7 +764,7 @@ function PostCTA({ category }: { category: Category }) {
     if (category === "Projects") {
         return (
             <div className="rounded-sm border border-stone-200 bg-white/70 p-8">
-                <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+                <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">
                     Playground
                 </div>
                 <p className="mb-5 text-xl font-semibold leading-snug text-stone-800" style={serif}>
@@ -786,7 +786,7 @@ function PostCTA({ category }: { category: Category }) {
     // AI (default) CTA
     return (
         <div className="rounded-sm border border-stone-200 bg-white/70 p-8">
-            <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400">
+            <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-stone-500">
                 Want to go deeper?
             </div>
             <p className="mb-5 text-xl font-semibold leading-snug text-stone-800" style={serif}>
@@ -833,7 +833,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 {/* Back link */}
                 <Link
                     href="/blog"
-                    className="mb-14 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 transition-colors hover:text-stone-700"
+                    className="mb-14 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-stone-500 transition-colors hover:text-stone-700"
                 >
                     <ArrowLeft className="h-3 w-3" /> All Posts
                 </Link>
@@ -866,7 +866,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
                     <p className="mb-6 text-base leading-relaxed text-stone-500">{post.excerpt}</p>
 
-                    <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.15em] text-stone-400">
+                    <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.15em] text-stone-500">
                         <span className="flex items-center gap-1.5">
                             <Calendar className="h-3 w-3" /> {post.date}
                         </span>

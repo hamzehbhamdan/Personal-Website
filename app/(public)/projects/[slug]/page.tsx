@@ -57,14 +57,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     {/* Back link */}
                     <Link
                         href="/projects"
-                        className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-stone-400 hover:text-stone-700 transition-colors"
+                        className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-stone-500 hover:text-stone-700 transition-colors"
                     >
                         <ArrowLeft className="h-3 w-3" />
                         Back to Projects
                     </Link>
 
                     {/* Type label */}
-                    <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-400">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-500">
                         {project.type}
                     </p>
 
@@ -81,7 +81,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                         {project.tags.map((tag) => (
                             <span
                                 key={tag}
-                                className="font-mono text-[9px] uppercase tracking-[0.18em] px-2.5 py-1 border border-stone-200 text-stone-400 bg-white"
+                                className="font-mono text-[9px] uppercase tracking-[0.18em] px-2.5 py-1 border border-stone-200 text-stone-500 bg-white"
                             >
                                 {tag}
                             </span>
@@ -110,7 +110,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                         {/* Sidebar: links */}
                         {project.links && project.links.length > 0 && (
                             <aside className="space-y-4">
-                                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">
+                                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-500">
                                     Links
                                 </p>
                                 <div className="flex flex-col gap-2">
@@ -122,7 +122,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-2 border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-600 hover:border-stone-400 hover:text-stone-900 transition-all"
                                         >
-                                            <ExternalLink className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                                            <ExternalLink className="h-3.5 w-3.5 text-stone-500 shrink-0" />
                                             {link.label}
                                         </a>
                                     ))}
@@ -138,7 +138,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 <div className="h-px bg-stone-200 mb-8" />
                 <Link
                     href="/projects"
-                    className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-stone-400 hover:text-stone-700 transition-colors"
+                    className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-stone-500 hover:text-stone-700 transition-colors"
                 >
                     <ArrowLeft className="h-3 w-3" />
                     All Projects

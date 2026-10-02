@@ -30,7 +30,7 @@ export function HeroMotion() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-400 mb-10"
+                    className="font-mono text-[11px] uppercase tracking-[0.28em] text-stone-500 mb-10"
                 >
                     Portfolio · 2026
                 </motion.p>
@@ -42,7 +42,7 @@ export function HeroMotion() {
                             initial={{ opacity: 0, y: 18 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.65, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                            className="text-4xl sm:text-5xl md:text-7xl leading-[1.05] text-stone-900"
+                            className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.25rem] leading-[1.04] text-stone-900"
                             style={serif}
                         >
                             Hi, I&apos;m Hamzeh.
@@ -56,7 +56,7 @@ export function HeroMotion() {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.12 }}
-                            className="text-stone-500 text-base sm:text-lg leading-relaxed max-w-lg"
+                            className="text-stone-600 text-base sm:text-lg leading-relaxed max-w-lg"
                         >
                             {personalInfo.bio}
                         </motion.p>
@@ -75,10 +75,10 @@ export function HeroMotion() {
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                             <Link
-                                href="/#story"
+                                href="/thesis"
                                 className="inline-flex items-center gap-2 border border-stone-300 text-stone-700 text-sm font-medium px-5 py-2.5 hover:border-stone-500 hover:text-stone-900 transition-colors"
                             >
-                                The Story
+                                View Thesis
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </motion.div>
@@ -93,7 +93,7 @@ export function HeroMotion() {
                                 href={personalInfo.linkedin}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-700 transition-colors"
+                                className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500 hover:text-stone-700 transition-colors"
                             >
                                 <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                             </a>
@@ -101,7 +101,7 @@ export function HeroMotion() {
                                 href={personalInfo.github}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-700 transition-colors"
+                                className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500 hover:text-stone-700 transition-colors"
                             >
                                 <Github className="h-3.5 w-3.5" /> GitHub
                             </a>
@@ -109,7 +109,7 @@ export function HeroMotion() {
                                 href={personalInfo.resume}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-700 transition-colors"
+                                className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500 hover:text-stone-700 transition-colors"
                             >
                                 <FileText className="h-3.5 w-3.5" /> Resume
                             </a>

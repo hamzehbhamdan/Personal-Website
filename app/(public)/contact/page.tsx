@@ -66,7 +66,7 @@ export default function ContactPage() {
     }
 
     const inputBase =
-        "w-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder:text-stone-300 outline-none focus:border-stone-500 transition-colors"
+        "w-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 placeholder:text-stone-500 outline-none focus:border-stone-500 transition-colors"
 
     return (
         <main className="flex flex-col min-h-screen bg-[#f9f8f6]">
@@ -88,7 +88,7 @@ export default function ContactPage() {
                     <motion.p
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="font-mono text-[10px] uppercase tracking-[0.28em] text-stone-400"
+                        className="font-mono text-[11px] uppercase tracking-[0.28em] text-stone-500"
                     >
                         Contact
                     </motion.p>
@@ -141,10 +141,10 @@ export default function ContactPage() {
                                         className="flex items-center gap-4 py-4"
                                     >
                                         <div className="w-8 h-8 border border-stone-200 bg-white flex items-center justify-center shrink-0">
-                                            <item.icon className="h-3.5 w-3.5 text-stone-400" />
+                                            <item.icon className="h-3.5 w-3.5 text-stone-500" />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-300 mb-0.5">
+                                            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500 mb-0.5">
                                                 {item.label}
                                             </p>
                                             <div className="flex items-center gap-2">
@@ -153,18 +153,18 @@ export default function ContactPage() {
                                                         href={item.link}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="text-[13px] text-stone-700 hover:text-[#A51C30] transition-colors block truncate"
+                                                        className="text-[15px] text-stone-700 hover:text-[#A51C30] transition-colors block truncate"
                                                     >
                                                         {item.value}
                                                     </a>
                                                 ) : (
-                                                    <p className="text-[13px] text-stone-700">{item.value}</p>
+                                                    <p className="text-[15px] text-stone-700">{item.value}</p>
                                                 )}
                                                 {item.label === "Email" && (
                                                     <button
                                                         onClick={copyEmail}
                                                         title={copied ? "Copied!" : "Copy email"}
-                                                        className="shrink-0 text-stone-300 hover:text-stone-600 transition-colors"
+                                                        className="shrink-0 text-stone-500 hover:text-stone-600 transition-colors"
                                                     >
                                                         {copied
                                                             ? <Check className="h-3.5 w-3.5 text-[#A51C30]" />
@@ -186,7 +186,7 @@ export default function ContactPage() {
                                 className="flex items-start gap-3 border border-stone-200 bg-white p-4"
                             >
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 animate-pulse" />
-                                <p className="text-[13px] text-stone-500 leading-relaxed">
+                                <p className="text-[15px] text-stone-500 leading-relaxed">
                                     Currently focusing on AI infrastructure at Cresset Capital,
                                     but open to consulting and collaborations.
                                 </p>
@@ -213,14 +213,14 @@ export default function ContactPage() {
                                         <h3 className="text-xl text-stone-900" style={serif}>
                                             Message Sent!
                                         </h3>
-                                        <p className="text-[13px] text-stone-500 leading-relaxed">
+                                        <p className="text-[15px] text-stone-500 leading-relaxed">
                                             Thanks for reaching out — I&apos;ll get back to you as
                                             soon as possible.
                                         </p>
                                     </div>
                                     <button
                                         onClick={() => setStatus("idle")}
-                                        className="font-mono text-[10px] uppercase tracking-[0.2em] text-stone-400 hover:text-stone-700 border border-stone-200 px-4 py-2 transition-colors"
+                                        className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500 hover:text-stone-700 border border-stone-200 px-4 py-2 transition-colors"
                                     >
                                         Send Another
                                     </button>
@@ -228,10 +228,10 @@ export default function ContactPage() {
                             ) : (
                                 <div className="p-8 space-y-6">
                                     <div>
-                                        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-stone-400">
+                                        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-stone-500">
                                             Send a Message
                                         </p>
-                                        <p className="text-[13px] text-stone-400 mt-1">
+                                        <p className="text-[15px] text-stone-500 mt-1">
                                             Fill in the form and I&apos;ll get your message straight to my inbox.
                                         </p>
                                     </div>
@@ -262,7 +262,7 @@ export default function ContactPage() {
                                             <div className="space-y-1.5">
                                                 <label
                                                     htmlFor="name"
-                                                    className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                    className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500"
                                                 >
                                                     Name <span className="text-red-400">*</span>
                                                 </label>
@@ -282,7 +282,7 @@ export default function ContactPage() {
                                             <div className="space-y-1.5">
                                                 <label
                                                     htmlFor="email"
-                                                    className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                    className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500"
                                                 >
                                                     Email <span className="text-red-400">*</span>
                                                 </label>
@@ -304,7 +304,7 @@ export default function ContactPage() {
                                         <div className="space-y-1.5">
                                             <label
                                                 htmlFor="subject"
-                                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500"
                                             >
                                                 Subject
                                             </label>
@@ -322,7 +322,7 @@ export default function ContactPage() {
                                         <div className="space-y-1.5">
                                             <label
                                                 htmlFor="message"
-                                                className="font-mono text-[9px] uppercase tracking-[0.2em] text-stone-400"
+                                                className="font-mono text-[11px] uppercase tracking-[0.2em] text-stone-500"
                                             >
                                                 Message <span className="text-red-400">*</span>
                                             </label>
@@ -356,7 +356,7 @@ export default function ContactPage() {
                                         </button>
 
                                         {status === "error" && (
-                                            <p className="text-[12px] text-red-400 text-center">
+                                            <p className="text-[14px] text-red-400 text-center">
                                                 Something went wrong — please try again or email me directly.
                                             </p>
                                         )}
@@ -366,7 +366,7 @@ export default function ContactPage() {
                                                 href={personalInfo.resume}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="flex items-center gap-2 text-[13px] text-stone-400 hover:text-stone-700 transition-colors"
+                                                className="flex items-center gap-2 text-[15px] text-stone-500 hover:text-stone-700 transition-colors"
                                             >
                                                 <FileText className="h-4 w-4" /> View Resume
                                             </a>

@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { url: `${siteUrl}/projects`, priority: 0.9, changeFrequency: "weekly" as const },
         { url: `${siteUrl}/blog`, priority: 0.9, changeFrequency: "weekly" as const },
         { url: `${siteUrl}/consulting`, priority: 0.8, changeFrequency: "monthly" as const },
-        { url: `${siteUrl}/consulting/blog`, priority: 0.8, changeFrequency: "weekly" as const },
+        // { url: `${siteUrl}/consulting/blog`, priority: 0.8, changeFrequency: "weekly" as const }, // hidden until there are posts
         { url: `${siteUrl}/thesis`, priority: 0.8, changeFrequency: "monthly" as const },
         { url: `${siteUrl}/playground`, priority: 0.7, changeFrequency: "monthly" as const },
         { url: `${siteUrl}/contact`, priority: 0.7, changeFrequency: "yearly" as const },
